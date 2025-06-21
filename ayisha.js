@@ -20,6 +20,16 @@
         textColor: '#000000',
         fontSize: 16,
         isActive: false,
+        userType: 'guest',
+        showMessage: false,
+        count: 0,
+        name: 'World',
+        items: [
+          { id: 1, name: 'Apple', price: 1.50 },
+          { id: 2, name: 'Banana', price: 0.80 },
+          { id: 3, name: 'Orange', price: 1.20 }
+        ],
+        newItem: '',
         email_valid: false,
         password_valid: false,
         age_valid: false
@@ -717,6 +727,30 @@
       const proxy = new Proxy(obj, {
         get(target, prop, receiver) {
           const val = Reflect.get(target, prop, receiver);
+          
+          // Intercept array methods to trigger reactivity
+          if (Array.isArray(target) && typeof val === 'function') {
+            const arrayMethods = ['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse'];
+            if (arrayMethods.includes(prop)) {
+              return function(...args) {
+                const result = val.apply(target, args);
+                // Store array reference to help with finding watchers
+                if (!target._ayishaWatcherKey) {
+                  // Try to find the property name this array belongs to
+                  for (const [key, value] of Object.entries(self.state)) {
+                    if (value === target) {
+                      target._ayishaWatcherKey = key;
+                      break;
+                    }
+                  }
+                }
+                // Trigger watchers for this array
+                self._triggerArrayWatchers(target, prop, args);
+                return result;
+              };
+            }
+          }
+          
           if (self._isObject(val) && !val._isReactive) {
             return self._makeReactive(val);
           }
@@ -729,18 +763,30 @@
           // Set the new value
           target[prop] = self._isObject(val) && !val._isReactive ? self._makeReactive(val) : val;
           
-          // Trigger watchers asynchronously
-          setTimeout(() => {
-            if (self.watchers[prop]) {
-              self.watchers[prop].forEach(fn => {
+          // Trigger watchers synchronously for better reactivity
+          if (self.watchers[prop]) {
+            self.watchers[prop].forEach(fn => {
+              try {
+                fn(val, old);
+              } catch (e) {
+                console.error('Watcher error for prop:', prop, e);
+              }
+            });
+          }
+          
+          // Also trigger watchers for nested properties
+          const propStr = String(prop);
+          Object.keys(self.watchers).forEach(watcherKey => {
+            if (watcherKey !== propStr && watcherKey.startsWith(propStr + '.')) {
+              self.watchers[watcherKey].forEach(fn => {
                 try {
                   fn(val, old);
                 } catch (e) {
-                  console.error('Watcher error for prop:', prop, e);
+                  console.error('Nested watcher error for prop:', watcherKey, e);
                 }
               });
             }
-          }, 0);
+          });
           
           return true;
         }
@@ -754,6 +800,89 @@
       });
       
       return proxy;
+    }
+
+    _triggerArrayWatchers(array, method, args) {
+      if (this.devMode) {
+        console.log('Array method called:', method, 'with args:', args);
+        console.log('Available watchers:', Object.keys(this.watchers));
+      }
+      
+      // First try to use cached watcher key
+      if (array._ayishaWatcherKey && this.watchers[array._ayishaWatcherKey]) {
+        if (this.devMode) {
+          console.log('Using cached watcher key:', array._ayishaWatcherKey);
+        }
+        this.watchers[array._ayishaWatcherKey].forEach(fn => {
+          try {
+            fn(array, array);
+          } catch (e) {
+            console.error('Array watcher error for prop:', array._ayishaWatcherKey, e);
+          }
+        });
+        return;
+      }
+      
+      // Find which property this array belongs to - search recursively
+      const findArrayProperty = (obj, targetArray, path = '') => {
+        for (const [key, value] of Object.entries(obj)) {
+          const currentPath = path ? `${path}.${key}` : key;
+          
+          // Check for strict equality or if it's the same array (handles proxies)
+          if (value === targetArray || (Array.isArray(value) && Array.isArray(targetArray) && 
+                                       value.length === targetArray.length && 
+                                       JSON.stringify(value) === JSON.stringify(targetArray))) {
+            if (this.devMode) {
+              console.log('Found array property:', currentPath, 'triggering watchers');
+              console.log('Watchers for', currentPath + ':', this.watchers[currentPath]);
+              console.log('Watchers for', key + ':', this.watchers[key]);
+            }
+            
+            let triggered = false;
+            
+            // Try to trigger watchers for this property
+            if (this.watchers[currentPath]) {
+              this.watchers[currentPath].forEach(fn => {
+                try {
+                  fn(targetArray, targetArray); // Trigger with same value to force update
+                  triggered = true;
+                } catch (e) {
+                  console.error('Array watcher error for prop:', currentPath, e);
+                }
+              });
+            }
+            
+            // Also try the simple key name
+            if (this.watchers[key]) {
+              this.watchers[key].forEach(fn => {
+                try {
+                  fn(targetArray, targetArray);
+                  triggered = true;
+                } catch (e) {
+                  console.error('Array watcher error for prop:', key, e);
+                }
+              });
+            }
+            
+            if (this.devMode) {
+              console.log('Triggered watchers:', triggered);
+            }
+            
+            return true;
+          } else if (this._isObject(value) && !Array.isArray(value)) {
+            if (findArrayProperty(value, targetArray, currentPath)) {
+              return true;
+            }
+          }
+        }
+        return false;
+      };
+      
+      if (!findArrayProperty(this.state, array)) {
+        if (this.devMode) {
+          console.log('Could not find array property for:', array);
+        }
+      }
     }
 
     _isObject(val) {
@@ -1095,18 +1224,47 @@
       this.root.querySelectorAll('[\\@switch]').forEach(block => {
         const key = block.getAttribute('@switch');
         const children = Array.from(block.children);
+        
+        // Store case values before removing attributes
+        const caseMap = new Map();
+        let defaultChild = null;
+        
+        children.forEach(child => {
+          if (child.hasAttribute('@case')) {
+            const caseValue = child.getAttribute('@case');
+            caseMap.set(child, caseValue);
+            child.removeAttribute('@case');
+          }
+          if (child.hasAttribute('@default')) {
+            defaultChild = child;
+            child.removeAttribute('@default');
+          }
+        });
+        
         const update = () => {
           const v = this.lookup(this.state, key);
-          children.forEach(child => {
-            if (child.hasAttribute('@case')) {
-              child.style.display = (child.getAttribute('@case') == v) ? '' : 'none';
-            }
-            if (child.hasAttribute('@default')) {
-              const any = children.some(c=>c.hasAttribute('@case') && c.getAttribute('@case') == v);
-              child.style.display = any ? 'none' : '';
+          if (this.devMode) {
+            console.log('Switch update:', key, '=', v);
+          }
+          
+          let hasMatch = false;
+          caseMap.forEach((caseValue, child) => {
+            const shouldShow = (caseValue === v);
+            child.style.display = shouldShow ? '' : 'none';
+            if (shouldShow) hasMatch = true;
+            if (this.devMode) {
+              console.log('Case', caseValue, shouldShow ? 'shown' : 'hidden');
             }
           });
+          
+          if (defaultChild) {
+            defaultChild.style.display = hasMatch ? 'none' : '';
+            if (this.devMode) {
+              console.log('Default', hasMatch ? 'hidden' : 'shown');
+            }
+          }
         };
+        
         update();
         const dep = key.split('.')[0];
         this.addWatcher(dep, update);
@@ -1123,82 +1281,135 @@
         const keyExpr = el.getAttribute('@key');
         const parent = el.parentNode;
         const template = el.cloneNode(true);
+        const placeholder = document.createComment(`for-${list}`);
+        
+        // Insert placeholder and remove original element
+        parent.insertBefore(placeholder, el);
+        el.remove();
 
         const render = () => {
           // Remove existing items
           parent.querySelectorAll(`[data-for="${list}"]`).forEach(n=>n.remove());
           
+          const items = this.lookup(this.state, list) || [];
+          if (this.devMode) {
+            console.log('Rendering @for list:', list, 'with', items.length, 'items', items);
+          }
+          
           // Render new items
-          (this.state[list]||[]).forEach((data, index) => {
+          items.forEach((data, index) => {
             const clone = template.cloneNode(true);
             clone.removeAttribute('@for');
+            clone.removeAttribute('@key');
             clone.setAttribute('data-for', list);
             
             if (keyExpr) {
               try {
-                const kfn = this.compile('item,state', `return ${keyExpr}`);
-                clone.setAttribute('data-key', kfn(data, this.state));
+                // Simple key evaluation
+                const key = data.id || index;
+                clone.setAttribute('data-key', key);
               } catch(e) {
                 console.error('Key eval error:', e);
               }
             }
             
-            // Process @text attributes in clone with item context
-            clone.querySelectorAll('[\\@text]').forEach(n => {
-              const expr = n.getAttribute('@text');
-              try {
-                // Create a safer evaluation context
-                const context = { ...this.state };
-                context[item] = data;
-                context.item = data;
-                context.index = index;
-                
-                const stateKeys = Object.keys(context);
-                const stateValues = stateKeys.map(key => context[key]);
-                const fn = new Function(...stateKeys, `return ${expr}`);
-                const result = fn(...stateValues);
-                
-                n.textContent = result ?? '';
-              } catch (e) {
-                console.error('For text binding error:', e, 'Expression:', expr);
-                n.textContent = '';
-              }
-              n.removeAttribute('@text');
-            });
+            // Process all directives in clone, not just @text
+            this._processForClone(clone, data, index, list);
             
-            // Process @click events in clone
-            clone.querySelectorAll('[\\@click]').forEach(n => {
-              const clickExpr = n.getAttribute('@click');
-              try {
-                const context = { ...this.state };
-                context[item] = data;
-                context.item = data;
-                context.index = index;
-                
-                const stateKeys = Object.keys(context);
-                const handler = new Function('event', ...stateKeys, clickExpr);
-                
-                n.addEventListener('click', e => {
-                  const stateValues = stateKeys.map(key => {
-                    if (key === item || key === 'item') return data;
-                    if (key === 'index') return index;
-                    return this.state[key];
-                  });
-                  handler.call(n, e, ...stateValues);
-                });
-              } catch (e) {
-                console.error('For click binding error:', e);
-              }
-              n.removeAttribute('@click');
-            });
-            
-            parent.insertBefore(clone, el);
+            // Insert before placeholder
+            parent.insertBefore(clone, placeholder);
           });
         };
 
         render();
+        // Watch for deep changes in arrays/objects - use exact property name
         this.addWatcher(list, render);
-        el.remove();
+        if (this.devMode) {
+          console.log('Added watcher for list:', list);
+        }
+        
+        // Also watch for nested property changes
+        const parts = list.split('.');
+        if (parts.length > 1) {
+          this.addWatcher(parts[0], render);
+        }
+      });
+    }
+
+    _processForClone(clone, data, index, listName) {
+      // Process @text attributes
+      clone.querySelectorAll('[\\@text]').forEach(n => {
+        const expr = n.getAttribute('@text');
+        try {
+          // Replace item references with actual data
+          let processedExpr = expr.replace(/\bitem\b/g, 'data');
+          
+          const fn = new Function('data', 'index', 'state', `
+            const item = data;
+            return ${processedExpr};
+          `);
+          const result = fn(data, index, this.state);
+          n.textContent = result ?? '';
+        } catch (e) {
+          console.error('For text binding error:', e, 'Expression:', expr, 'Data:', data);
+          n.textContent = JSON.stringify(data);
+        }
+        n.removeAttribute('@text');
+      });
+      
+      // Process @click events
+      clone.querySelectorAll('[\\@click]').forEach(n => {
+        const clickExpr = n.getAttribute('@click');
+        try {
+          // Replace item references with actual data
+          let processedExpr = clickExpr.replace(/\bitem\b/g, 'data');
+          
+          const handler = new Function('event', 'data', 'index', 'state', `
+            const item = data;
+            ${processedExpr}
+          `);
+          
+          n.addEventListener('click', e => {
+            try {
+              handler(e, data, index, this.state);
+            } catch (err) {
+              console.error('Click handler error:', err);
+            }
+          });
+        } catch (e) {
+          console.error('For click binding error:', e, 'Expression:', clickExpr);
+        }
+        n.removeAttribute('@click');
+      });
+      
+      // Process @model attributes for two-way binding in lists
+      clone.querySelectorAll('[\\@model]').forEach(n => {
+        const modelPath = n.getAttribute('@model');
+        try {
+          // Replace item references in model path
+          let processedPath = modelPath.replace(/\bitem\b/g, `${listName}[${index}]`);
+          
+          // Set initial value
+          const value = this.lookup(this.state, processedPath) ?? '';
+          if (n.value !== value) {
+            n.value = value;
+          }
+          
+          // Add event listener for changes
+          const eventType = n.type === 'checkbox' || n.type === 'radio' ? 'change' : 'input';
+          n.addEventListener(eventType, e => {
+            let newValue = e.target.value;
+            if (e.target.type === 'checkbox') {
+              newValue = e.target.checked;
+            } else if (e.target.type === 'number' || e.target.type === 'range') {
+              newValue = parseFloat(newValue) || 0;
+            }
+            this._setByPath(processedPath, newValue);
+          });
+        } catch (e) {
+          console.error('For model binding error:', e, 'Path:', modelPath);
+        }
+        n.removeAttribute('@model');
       });
     }
 
@@ -1291,11 +1502,32 @@
       this.root.querySelectorAll('[\\@model]').forEach(el => {
         const path = el.getAttribute('@model');
         const update = () => {
-          el.value = this.lookup(this.state, path) ?? '';
+          const value = this.lookup(this.state, path) ?? '';
+          if (el.value !== value) {
+            el.value = value;
+          }
         };
         update();
         this.addWatcher(path.split('.')[0], update);
-        el.addEventListener('input', e => this._setByPath(path, e.target.value));
+        
+        // Handle different input types - add both input and change events for select
+        if (el.tagName.toLowerCase() === 'select') {
+          el.addEventListener('change', e => {
+            this._setByPath(path, e.target.value);
+          });
+        } else {
+          const eventType = el.type === 'checkbox' || el.type === 'radio' ? 'change' : 'input';
+          el.addEventListener(eventType, e => {
+            let value = e.target.value;
+            if (e.target.type === 'checkbox') {
+              value = e.target.checked;
+            } else if (e.target.type === 'number' || e.target.type === 'range') {
+              value = parseFloat(value) || 0;
+            }
+            this._setByPath(path, value);
+          });
+        }
+        
         el.removeAttribute('@model');
       });
     }
@@ -1303,8 +1535,24 @@
     _setByPath(path, val) {
       const keys = path.split('.');
       const last = keys.pop();
-      const obj = keys.reduce((o,k) => o[k], this.state);
+      let obj = this.state;
+      
+      // Navigate to the parent object
+      for (let key of keys) {
+        if (!(key in obj)) {
+          obj[key] = {};
+        }
+        obj = obj[key];
+      }
+      
+      // Set the value and trigger reactivity
       obj[last] = val;
+      
+      // Debug logging
+      if (this.devMode) {
+        console.log('Setting', path, 'to', val);
+        console.log('Current state:', this.getState());
+      }
     }
 
     // —————————————
@@ -1447,11 +1695,44 @@
       }
     }
 
+    // Trigger watchers for a property and related properties
+    triggerWatchers(prop, newVal, oldVal) {
+      // Direct watchers
+      if (this.watchers[prop]) {
+        this.watchers[prop].forEach(fn => {
+          try {
+            fn(newVal, oldVal);
+          } catch (e) {
+            console.error('Watcher error for prop:', prop, e);
+          }
+        });
+      }
+      
+      // Nested property watchers
+      Object.keys(this.watchers).forEach(watcherKey => {
+        if (watcherKey !== prop && watcherKey.startsWith(prop + '.')) {
+          this.watchers[watcherKey].forEach(fn => {
+            try {
+              fn(newVal, oldVal);
+            } catch (e) {
+              console.error('Nested watcher error for prop:', watcherKey, e);
+            }
+          });
+        }
+      });
+    }
+
     // —————————————
     // Public API methods
     // —————————————
+
     setState(newState) {
-      Object.assign(this.state, newState);
+      Object.keys(newState).forEach(key => {
+        const oldValue = this.state[key];
+        this.state[key] = newState[key];
+        // Manually trigger watchers for the updated properties
+        this.triggerWatchers(key, newState[key], oldValue);
+      });
     }
 
     getState() {
@@ -1476,6 +1757,9 @@
   // Global instance
   window.Ayisha = Ayisha;
   window.ayisha = new Ayisha();
+
+  // Enable dev mode for debugging
+  window.ayisha.enableDevMode();
 
   // Auto-init on DOM ready
   if (document.readyState === 'loading') {
