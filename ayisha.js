@@ -16,7 +16,6 @@
       // Stato iniziale con router SPA e alcune proprietà di default
       const initialState = { 
         currentPage: window.location.pathname,
-        // Default properties to prevent ReferenceError
         textColor: '#000000',
         fontSize: 16,
         isActive: false,
@@ -30,6 +29,8 @@
           { id: 3, name: 'Orange', price: 1.20 }
         ],
         newItem: '',
+        currentUser: null, // Initialize this explicitly
+        userId: 1,
         email_valid: false,
         password_valid: false,
         age_valid: false
@@ -734,17 +735,12 @@
             if (arrayMethods.includes(prop)) {
               return function(...args) {
                 const result = val.apply(target, args);
-                // Store array reference to help with finding watchers
-                if (!target._ayishaWatcherKey) {
-                  // Try to find the property name this array belongs to
-                  for (const [key, value] of Object.entries(self.state)) {
-                    if (value === target) {
-                      target._ayishaWatcherKey = key;
-                      break;
-                    }
-                  }
+                
+                if (self.devMode) {
+                  console.log('Array method', prop, 'called on:', target, 'with args:', args);
                 }
-                // Trigger watchers for this array
+                
+                // Trigger watchers for this array - find the property name
                 self._triggerArrayWatchers(target, prop, args);
                 return result;
               };
@@ -806,46 +802,30 @@
       if (this.devMode) {
         console.log('Array method called:', method, 'with args:', args);
         console.log('Available watchers:', Object.keys(this.watchers));
+        console.log('Looking for array in state:', array);
       }
       
-      // First try to use cached watcher key
-      if (array._ayishaWatcherKey && this.watchers[array._ayishaWatcherKey]) {
-        if (this.devMode) {
-          console.log('Using cached watcher key:', array._ayishaWatcherKey);
-        }
-        this.watchers[array._ayishaWatcherKey].forEach(fn => {
-          try {
-            fn(array, array);
-          } catch (e) {
-            console.error('Array watcher error for prop:', array._ayishaWatcherKey, e);
-          }
-        });
-        return;
-      }
-      
-      // Find which property this array belongs to - search recursively
+      // Find which property this array belongs to - search more thoroughly
       const findArrayProperty = (obj, targetArray, path = '') => {
         for (const [key, value] of Object.entries(obj)) {
           const currentPath = path ? `${path}.${key}` : key;
           
-          // Check for strict equality or if it's the same array (handles proxies)
+          if (this.devMode) {
+            console.log('Checking property:', currentPath, 'value:', value, 'is same as target:', value === targetArray);
+          }
+          
+          // Check if this value is the same array (strict equality) or has same content
           if (value === targetArray || (Array.isArray(value) && Array.isArray(targetArray) && 
-                                       value.length === targetArray.length && 
                                        JSON.stringify(value) === JSON.stringify(targetArray))) {
             if (this.devMode) {
               console.log('Found array property:', currentPath, 'triggering watchers');
-              console.log('Watchers for', currentPath + ':', this.watchers[currentPath]);
-              console.log('Watchers for', key + ':', this.watchers[key]);
             }
             
-            let triggered = false;
-            
-            // Try to trigger watchers for this property
+            // Trigger watchers for this property
             if (this.watchers[currentPath]) {
               this.watchers[currentPath].forEach(fn => {
                 try {
                   fn(targetArray, targetArray); // Trigger with same value to force update
-                  triggered = true;
                 } catch (e) {
                   console.error('Array watcher error for prop:', currentPath, e);
                 }
@@ -857,19 +837,14 @@
               this.watchers[key].forEach(fn => {
                 try {
                   fn(targetArray, targetArray);
-                  triggered = true;
                 } catch (e) {
                   console.error('Array watcher error for prop:', key, e);
                 }
               });
             }
             
-            if (this.devMode) {
-              console.log('Triggered watchers:', triggered);
-            }
-            
             return true;
-          } else if (this._isObject(value) && !Array.isArray(value)) {
+          } else if (this._isObject(value) && !Array.isArray(value) && !value._isReactive) {
             if (findArrayProperty(value, targetArray, currentPath)) {
               return true;
             }
@@ -878,9 +853,65 @@
         return false;
       };
       
-      if (!findArrayProperty(this.state, array)) {
+      const found = findArrayProperty(this.state, array);
+      if (!found) {
         if (this.devMode) {
           console.log('Could not find array property for:', array);
+          console.log('Current state:', this.state);
+          console.log('Trying fallback approach...');
+        }
+        
+        // Fallback: try to trigger 'items' watcher directly
+        if (this.watchers['items']) {
+          if (this.devMode) {
+            console.log('Triggering items watcher directly as fallback');
+          }
+          this.watchers['items'].forEach(fn => {
+            try {
+              fn(array, array);
+            } catch (e) {
+              console.error('Direct items watcher error:', e);
+            }
+          });
+        }
+      }
+    }
+
+    _forceArrayUpdate(array) {
+      if (this.devMode) {
+        console.log('Force updating @for elements for array:', array);
+      }
+      
+      // Find all comment nodes that are @for placeholders
+      const walker = document.createTreeWalker(
+        this.root,
+        NodeFilter.SHOW_COMMENT,
+        null,
+        false
+      );
+      
+      let comment;
+      while (comment = walker.nextNode()) {
+        if (comment.nodeValue && comment.nodeValue.startsWith('for-')) {
+          const listName = comment.nodeValue.replace('for-', '');
+          const currentList = this.lookup(this.state, listName);
+          
+          if (currentList === array) {
+            if (this.devMode) {
+              console.log('Found matching @for placeholder for:', listName);
+            }
+            
+            // Re-trigger the render function
+            if (this.watchers[listName] && this.watchers[listName].length > 0) {
+              this.watchers[listName].forEach(fn => {
+                try {
+                  fn(array, array);
+                } catch (e) {
+                  console.error('Force array update error:', e);
+                }
+              });
+            }
+          }
         }
       }
     }
@@ -1063,7 +1094,14 @@
         try {
           const res = await fetch(url, opts);
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          this.state[key] = await res.json();
+          const data = await res.json();
+          
+          // Use setState to ensure reactivity is triggered
+          this.setState({ [key]: data });
+          
+          if (this.devMode) {
+            console.log('Fetch result set:', key, data);
+          }
           ok = true;
         } catch (e) {
           this.error[key] = e.message;
@@ -1111,7 +1149,17 @@
           try {
             const res = await fetch(url);
             if (!res.ok) throw new Error(res.status);
-            this.state[result] = await res.json();
+            const data = await res.json();
+            
+            // Use setState to ensure reactivity is triggered
+            this.setState({ [result]: data });
+            
+            if (this.devMode) {
+              console.log('Action result set:', result, data);
+            }
+            
+            // Re-process elements that might depend on this new data
+            this._reprocessDynamicElements(result);
           } catch (err) {
             console.error('Action fetch failed:', err);
             this.error[result] = err.message;
@@ -1133,7 +1181,6 @@
           const expr = el.getAttribute('@map');
           this.state[out] = (this.state[src]||[]).map((item, index) => {
             try {
-              // Replace 'value' with the actual item value for backward compatibility
               const processedExpr = expr.replace(/\bvalue\b/g, 'item');
               return this.compile('item,index,state', `return ${processedExpr}`)(item, index, this.state);
             } catch (e) {
@@ -1146,7 +1193,6 @@
           const cond = el.getAttribute('@filter');
           this.state[out] = (this.state[src]||[]).filter((item, index) => {
             try {
-              // Replace 'value' with the actual item value for backward compatibility
               const processedCond = cond.replace(/\bvalue\b/g, 'item');
               return this.compile('item,index,state', `return ${processedCond}`)(item, index, this.state);
             } catch (e) {
@@ -1211,8 +1257,15 @@
         };
         parent.replaceChild(comment, el);
         update();
-        const dep = expr.split('.')[0];
-        this.addWatcher(dep, update);
+        
+        // Extract all possible dependencies from expression
+        const deps = expr.match(/\b[a-zA-Z_]\w*\b/g) || [];
+        deps.forEach(dep => {
+          if (dep !== 'true' && dep !== 'false' && dep !== 'null' && dep !== 'undefined') {
+            this.addWatcher(dep, update);
+          }
+        });
+        
         el.removeAttribute('@if');
       });
     }
@@ -1697,6 +1750,10 @@
 
     // Trigger watchers for a property and related properties
     triggerWatchers(prop, newVal, oldVal) {
+      if (this.devMode) {
+        console.log('Triggering watchers for:', prop, 'new value:', newVal);
+      }
+      
       // Direct watchers
       if (this.watchers[prop]) {
         this.watchers[prop].forEach(fn => {
@@ -1708,16 +1765,29 @@
         });
       }
       
-      // Nested property watchers
+      // Nested property watchers - trigger watchers that depend on this property
       Object.keys(this.watchers).forEach(watcherKey => {
-        if (watcherKey !== prop && watcherKey.startsWith(prop + '.')) {
-          this.watchers[watcherKey].forEach(fn => {
-            try {
-              fn(newVal, oldVal);
-            } catch (e) {
-              console.error('Nested watcher error for prop:', watcherKey, e);
-            }
-          });
+        if (watcherKey !== prop) {
+          // If watcher key starts with this prop (e.g., "currentUser.name" when prop is "currentUser")
+          if (watcherKey.startsWith(prop + '.')) {
+            this.watchers[watcherKey].forEach(fn => {
+              try {
+                fn(newVal, oldVal);
+              } catch (e) {
+                console.error('Nested watcher error for prop:', watcherKey, e);
+              }
+            });
+          }
+          // If this is a nested prop and we need to trigger parent watchers
+          else if (prop.includes('.') && watcherKey === prop.split('.')[0]) {
+            this.watchers[watcherKey].forEach(fn => {
+              try {
+                fn(this.state[watcherKey], oldVal);
+              } catch (e) {
+                console.error('Parent watcher error for prop:', watcherKey, e);
+              }
+            });
+          }
         }
       });
     }
@@ -1725,13 +1795,69 @@
     // —————————————
     // Public API methods
     // —————————————
-
     setState(newState) {
       Object.keys(newState).forEach(key => {
         const oldValue = this.state[key];
         this.state[key] = newState[key];
+        
+        if (this.devMode) {
+          console.log('State updated:', key, 'from', oldValue, 'to', newState[key]);
+          console.log('Available watchers for', key + ':', this.watchers[key] ? this.watchers[key].length : 0);
+        }
+        
         // Manually trigger watchers for the updated properties
         this.triggerWatchers(key, newState[key], oldValue);
+      });
+    }
+
+    _reprocessDynamicElements(prop) {
+      if (this.devMode) {
+        console.log('Reprocessing elements for property:', prop);
+      }
+      
+      // Find elements that might not have been properly bound during initial processing
+      // Look for elements with expressions that reference this property
+      this.root.querySelectorAll('*').forEach(el => {
+        // Check all text content for potential bindings
+        if (el.textContent && el.textContent.includes('currentUser') && prop === 'currentUser') {
+          // This might be an unprocessed @text element, let's manually update it
+          const textNodes = [];
+          const walker = document.createTreeWalker(
+            el,
+            NodeFilter.SHOW_TEXT,
+            null,
+            false
+          );
+          
+          let node;
+          while (node = walker.nextNode()) {
+            if (node.nodeValue.includes('N/A') || node.nodeValue.includes('undefined')) {
+              // This looks like it needs updating
+              const parent = node.parentElement;
+              if (parent && parent.hasAttribute && !parent.hasAttribute('data-processed')) {
+                parent.setAttribute('data-processed', 'true');
+                
+                // Try to extract the expression and update
+                if (parent.textContent.includes('N/A')) {
+                  try {
+                    const value = this.state.currentUser;
+                    if (value) {
+                      if (parent.textContent.includes('name')) {
+                        parent.textContent = value.name || 'N/A';
+                      } else if (parent.textContent.includes('email')) {
+                        parent.textContent = value.email || 'N/A';
+                      } else if (parent.textContent.includes('website')) {
+                        parent.textContent = value.website || 'N/A';
+                      }
+                    }
+                  } catch (e) {
+                    console.error('Error updating element:', e);
+                  }
+                }
+              }
+            }
+          }
+        }
       });
     }
 

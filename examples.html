@@ -78,12 +78,17 @@
     <div class="example">
         <h3>3. Lists & Iteration</h3>
         <init>
-            state.items = [
-                { id: 1, name: 'Apple', price: 1.50 },
-                { id: 2, name: 'Banana', price: 0.80 },
-                { id: 3, name: 'Orange', price: 1.20 }
-            ];
-            state.newItem = '';
+            // Only initialize if not already present
+            if (!state.items || state.items.length === 0) {
+                state.items = [
+                    { id: 1, name: 'Apple', price: 1.50 },
+                    { id: 2, name: 'Banana', price: 0.80 },
+                    { id: 3, name: 'Orange', price: 1.20 }
+                ];
+            }
+            if (!state.newItem) {
+                state.newItem = '';
+            }
         </init>
         
         <input @model="newItem" placeholder="Add new item">
@@ -104,7 +109,7 @@
         <h3>4. HTTP Requests & Data Fetching</h3>
         <init>
             state.userId = 1;
-            state.currentUser = null; // Initialize this
+            // currentUser is already initialized in the global state
         </init>
         
         <div @fetch="https://jsonplaceholder.typicode.com/users" @result="users"></div>
@@ -112,6 +117,10 @@
         <input type="number" @model="userId" min="1" max="10">
         <div @set="https://jsonplaceholder.typicode.com/users/{userId}" @actionTo="userUrl"></div>
         <button @actionOn="userUrl" @result="currentUser" class="primary">Fetch User</button>
+        
+        <!-- Debug info -->
+        <p>Debug - currentUser exists: <span @text="!!currentUser"></span></p>
+        <p>Debug - currentUser type: <span @text="typeof currentUser"></span></p>
         
         <div @if="currentUser">
             <h4>User Details:</h4>
