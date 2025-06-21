@@ -1245,28 +1245,48 @@
     // —————————————
     // @if
     // —————————————
-    processIf() {
-      this.root.querySelectorAll('[\\@if]').forEach(el => {
+    processIf(root = this.root) {
+      root.querySelectorAll('[\\@if]:not([data-ayisha-processed])').forEach(el => {
         const expr = el.getAttribute('@if');
         const parent = el.parentNode;
         const comment = document.createComment('ayisha-if');
+        // Salva il template HTML originale
+        comment._template = el.outerHTML;
+        comment._expression = expr;
+        let current = null;
         const update = () => {
           const ok = this.evaluate(expr);
-          if (ok && comment.parentNode === parent) parent.replaceChild(el, comment);
-          if (!ok && el.parentNode === parent) parent.replaceChild(comment, el);
+          if (ok && comment.parentNode === parent) {
+            // Crea un nuovo nodo dal template HTML
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = comment._template;
+            const newNode = wrapper.firstElementChild;
+            parent.replaceChild(newNode, comment);
+            current = newNode;
+            // Processa tutte le direttive sul nuovo nodo
+            this.processText(newNode);
+            this.processShowHide(newNode);
+            this.processClass(newNode);
+            this.processStyle(newNode);
+            this.processModel(newNode);
+            this.processIf(newNode);
+            this.processFor(newNode);
+            this.processSwitch(newNode);
+          } else if (!ok && current && current.parentNode === parent) {
+            parent.replaceChild(comment, current);
+            current = null;
+          }
         };
         parent.replaceChild(comment, el);
         update();
-        
-        // Extract all possible dependencies from expression
+        // Watch tutte le dipendenze
         const deps = expr.match(/\b[a-zA-Z_]\w*\b/g) || [];
         deps.forEach(dep => {
           if (dep !== 'true' && dep !== 'false' && dep !== 'null' && dep !== 'undefined') {
             this.addWatcher(dep, update);
           }
         });
-        
-        el.removeAttribute('@if');
+        el.setAttribute('data-ayisha-processed', 'true');
       });
     }
 
