@@ -1064,55 +1064,36 @@
     // —————————————
     // @fetch (parallelizzato)
     // —————————————
-    async processFetch() {
-      const els = Array.from(this.root.querySelectorAll('[\\@fetch]'));
-      els.forEach(el => {
-        const key = el.getAttribute('@result') || el.getAttribute('@fetch').split('/').pop();
-        this.loading[key] = true;
-        this.error[key] = null;
-        el._key = key;
-      });
-
-      await Promise.all(els.map(async el => {
-        const url = el.getAttribute('@fetch');
-        const key = el._key;
-        const opts = {
-          method: (el.getAttribute('@method') || 'get').toUpperCase(),
-          headers: {}
-        };
-        if (el.hasAttribute('@auth')) {
-          const [type, token] = el.getAttribute('@auth').split('=');
-          opts.headers.Authorization = `${type} ${token}`;
-          el.removeAttribute('@auth');
-        }
-        if (el.hasAttribute('@body')) {
-          opts.headers['Content-Type'] = 'application/json';
-          opts.body = el.getAttribute('@body');
-          el.removeAttribute('@body');
-        }
-        let ok = false;
-        try {
-          const res = await fetch(url, opts);
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          const data = await res.json();
-          
-          // Use setState to ensure reactivity is triggered
-          this.setState({ [key]: data });
-          
-          if (this.devMode) {
-            console.log('Fetch result set:', key, data);
+    async processFetch(root = this.root) {
+      root.querySelectorAll('[\\@fetch]:not([data-ayisha-processed])').forEach(el => {
+        const urlTemplate = el.getAttribute('@fetch');
+        const resultKey = el.getAttribute('@result');
+        const watchVar = el.getAttribute('@watch');
+        const method = (el.getAttribute('@method') || 'GET').toUpperCase();
+        const bodyExpr = el.getAttribute('@body');
+        const doFetch = () => {
+          let url = urlTemplate.replace(/\{(\w+)\}/g, (m, v) => this.state[v] ?? '');
+          let options = { method };
+          if (bodyExpr && method !== 'GET') {
+            let bodyObj = {};
+            try {
+              bodyObj = this.evaluate(bodyExpr);
+            } catch (e) {
+              try { bodyObj = JSON.parse(bodyExpr); } catch (e2) { bodyObj = {}; }
+            }
+            options.body = JSON.stringify(bodyObj);
+            options.headers = { 'Content-Type': 'application/json' };
           }
-          ok = true;
-        } catch (e) {
-          this.error[key] = e.message;
-          console.error('Fetch failed:', e);
-        } finally {
-          this.loading[key] = false;
+          fetch(url, options)
+            .then(res => res.json())
+            .then(data => { if (resultKey) this.state[resultKey] = data; });
+        };
+        doFetch();
+        if (watchVar) {
+          watchVar.split(',').forEach(dep => this.addWatcher(dep.trim(), doFetch));
         }
-        if (ok && el.hasAttribute('@success')) window.location.href = el.getAttribute('@success');
-        if (!ok && el.hasAttribute('@error')) window.location.href = el.getAttribute('@error');
-        ['@fetch','@method','@result','@success','@error'].forEach(a => el.removeAttribute(a));
-      }));
+        el.setAttribute('data-ayisha-processed', 'true');
+      });
     }
 
     // —————————————

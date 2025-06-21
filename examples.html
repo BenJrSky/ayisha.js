@@ -1,25 +1,83 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ayisha.js Examples</title>
     <script src="ayisha.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
-        .example { border: 1px solid #ddd; margin: 20px 0; padding: 20px; border-radius: 8px; }
-        .example h3 { margin-top: 0; color: #333; }
-        .invalid { border: 2px solid red; }
-        .error { color: red; font-size: 0.8em; }
-        .validation-errors { margin-top: 5px; }
-        button { padding: 10px 15px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; }
-        .primary { background: #007bff; color: white; }
-        .secondary { background: #6c757d; color: white; }
-        input, select { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 4px; }
-        .fade-in { opacity: 0; transition: opacity 0.3s; }
-        .slide-down { height: 0; overflow: hidden; transition: height 0.3s; }
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .example {
+            border: 1px solid #ddd;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .example h3 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .invalid {
+            border: 2px solid red;
+        }
+
+        .error {
+            color: red;
+            font-size: 0.8em;
+        }
+
+        .validation-errors {
+            margin-top: 5px;
+        }
+
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        input,
+        select {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .fade-in {
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .slide-down {
+            height: 0;
+            overflow: hidden;
+            transition: height 0.3s;
+        }
     </style>
 </head>
+
 <body>
     <h1>🚀 Ayisha.js Examples</h1>
     <p>Interactive examples showcasing all Ayisha.js features</p>
@@ -31,13 +89,18 @@
             state.name = 'World';
             state.count = 0;
         </init>
-        
+
         <p>Hello, <span @text="name"></span>!</p>
         <input @model="name" placeholder="Enter your name">
-        
+
         <p>Count: <span @text="count"></span></p>
         <button @click="state.count++" class="primary">Increment</button>
         <button @click="state.count--" class="secondary">Decrement</button>
+    </div>
+
+
+    <div @if="count==5">
+        <h2>Ciao</h2>
     </div>
 
     <!-- Conditional Rendering -->
@@ -47,25 +110,25 @@
             state.showMessage = false;
             state.userType = 'guest';
         </init>
-        
+
         <button @click="state.showMessage = !state.showMessage" class="primary">
             Toggle Message (@if)
         </button>
-        
+
         <div @if="showMessage">
             <p>🎉 This message appears conditionally!</p>
         </div>
-        
+
         <p @show="showMessage">This uses @show (display: none)</p>
-        
+
         <hr>
-        
+
         <select @model="userType">
             <option value="guest">Guest</option>
             <option value="user">User</option>
             <option value="admin">Admin</option>
         </select>
-        
+
         <div @switch="userType">
             <div @case="guest">Welcome, Guest! Please log in.</div>
             <div @case="user">Hello, User! You have access.</div>
@@ -80,26 +143,29 @@
         <init>
             // Only initialize if not already present
             if (!state.items || state.items.length === 0) {
-                state.items = [
-                    { id: 1, name: 'Apple', price: 1.50 },
-                    { id: 2, name: 'Banana', price: 0.80 },
-                    { id: 3, name: 'Orange', price: 1.20 }
-                ];
+            state.items = [
+            { id: 1, name: 'Apple', price: 1.50 },
+            { id: 2, name: 'Banana', price: 0.80 },
+            { id: 3, name: 'Orange', price: 1.20 }
+            ];
             }
             if (!state.newItem) {
-                state.newItem = '';
+            state.newItem = '';
             }
         </init>
-        
+
         <input @model="newItem" placeholder="Add new item">
-        <button @click="state.items.push({id: Date.now(), name: state.newItem, price: Math.random() * 5}); state.newItem = ''" class="primary">
+        <button
+            @click="state.items.push({id: Date.now(), name: state.newItem, price: Math.random() * 5}); state.newItem = ''"
+            class="primary">
             Add Item
         </button>
-        
+
         <ul>
             <li @for="item in items" @key="item.id">
                 <span @text="item.name"></span> - $<span @text="item.price.toFixed(2)"></span>
-                <button @click="state.items = state.items.filter(i => i.id !== item.id)" style="margin-left: 10px;">Remove</button>
+                <button @click="state.items = state.items.filter(i => i.id !== item.id)"
+                    style="margin-left: 10px;">Remove</button>
             </li>
         </ul>
     </div>
@@ -111,24 +177,34 @@
             state.userId = 1;
             // currentUser is already initialized in the global state
         </init>
-        
+
         <div @fetch="https://jsonplaceholder.typicode.com/users" @result="users"></div>
-        
+
         <input type="number" @model="userId" min="1" max="10">
+
         <div @set="https://jsonplaceholder.typicode.com/users/{userId}" @actionTo="userUrl"></div>
         <button @actionOn="userUrl" @result="currentUser" class="primary">Fetch User</button>
-        
+
         <!-- Debug info -->
         <p>Debug - currentUser exists: <span @text="!!currentUser"></span></p>
         <p>Debug - currentUser type: <span @text="typeof currentUser"></span></p>
-        
+
         <div @if="currentUser">
             <h4>User Details:</h4>
             <p>Name: <span @text="currentUser.name || 'N/A'"></span></p>
             <p>Email: <span @text="currentUser.email || 'N/A'"></span></p>
             <p>Website: <span @text="currentUser.website || 'N/A'"></span></p>
+
+            <p>{{currentUser.name}}</p>
         </div>
     </div>
+    <div class="example">
+        <h3>4. HTTP Requests & Data Fetching</h3>
+        <input type="number" @model="userId" min="1" max="10">
+        <div @fetch="https://jsonplaceholder.typicode.com/users/{userId}" @result="currentUser" @watch="userId">
+        </div>
+    </div>
+
 
     <!-- Form Validation -->
     <div class="example">
@@ -142,25 +218,25 @@
             state.password_valid = false;
             state.age_valid = false;
         </init>
-        
+
         <form>
             <div>
                 <label>Email:</label><br>
                 <input type="email" @model="email" @validate="required|email" placeholder="your@email.com">
             </div>
-            
+
             <div>
                 <label>Password:</label><br>
                 <input type="password" @model="password" @validate="required|min:6" placeholder="At least 6 characters">
             </div>
-            
+
             <div>
                 <label>Age:</label><br>
                 <input type="text" @model="age" @validate="required|number" placeholder="Enter your age">
             </div>
-            
-            <button type="submit" @click.prevent="console.log('Form submitted!')" 
-                    @class="{primary: email_valid && password_valid && age_valid}">
+
+            <button type="submit" @click.prevent="console.log('Form submitted!')"
+                @class="{primary: email_valid && password_valid && age_valid}">
                 Submit
             </button>
         </form>
@@ -175,16 +251,16 @@
             state.evenNumbers = [];
             state.sum = 0;
         </init>
-        
+
         <!-- Map: square each number -->
         <div @source="numbers" @map="item * item" @result="squares"></div>
-        
+
         <!-- Filter: only even numbers -->
         <div @source="numbers" @filter="item % 2 === 0" @result="evenNumbers"></div>
-        
+
         <!-- Reduce: sum all numbers -->
         <div @source="numbers" @reduce="acc,item => acc + item" @initial="0" @result="sum"></div>
-        
+
         <p>Original: <span @text="numbers.join(', ')"></span></p>
         <p>Squared: <span @text="squares.join(', ')"></span></p>
         <p>Even numbers: <span @text="evenNumbers.join(', ')"></span></p>
@@ -197,13 +273,12 @@
         <init>
             state.showBox = false;
         </init>
-        
+
         <button @click="state.showBox = !state.showBox" class="primary">
             Toggle Box
         </button>
-        
-        <div @if="showBox" @animate="fadeIn" 
-             style="width: 100px; height: 100px; background: #007bff; margin: 10px;">
+
+        <div @if="showBox" @animate="fadeIn" style="width: 100px; height: 100px; background: #007bff; margin: 10px;">
         </div>
     </div>
 
@@ -213,25 +288,22 @@
         <init>
             // Register a component
             ayisha.component('user-card', {
-                template: `
-                    <div style="border: 1px solid #ddd; padding: 15px; margin: 10px; border-radius: 8px;">
-                        <h4>{{name}}</h4>
-                        <p>{{email}}</p>
-                        <p>{{website}}</p>
-                    </div>
-                `,
-                mounted(context) {
-                    console.log('User card mounted with:', context);
-                }
+            template: `
+            <div style="border: 1px solid #ddd; padding: 15px; margin: 10px; border-radius: 8px;">
+                <h4>{{name}}</h4>
+                <p>{{email}}</p>
+                <p>{{website}}</p>
+            </div>
+            `,
+            mounted(context) {
+            console.log('User card mounted with:', context);
+            }
             });
-            
+
             state.user = { name: 'John Doe', email: 'john@example.com', website: 'johndoe.com' };
         </init>
-        
-        <div @component="user-card" 
-             prop-name="user.name" 
-             prop-email="user.email" 
-             prop-website="user.website">
+
+        <div @component="user-card" prop-name="user.name" prop-email="user.email" prop-website="user.website">
         </div>
     </div>
 
@@ -242,11 +314,11 @@
             state.watchedValue = 'Hello';
             state.log = [];
         </init>
-        
+
         <div @watch="watchedValue: state.log.push('Value changed to: ' + newVal)"></div>
-        
+
         <input @model="watchedValue" placeholder="Type something to trigger watcher">
-        
+
         <h4>Watcher Log:</h4>
         <ul>
             <li @for="entry in log" @text="entry"></li>
@@ -261,16 +333,16 @@
             state.enterPresses = 0;
             state.debounceCount = 0;
         </init>
-        
+
         <button @click.once="state.clicks++" class="primary">
             Click Once Only (clicks: <span @text="clicks"></span>)
         </button>
-        
+
         <br><br>
-        
+
         <input @keyup.enter="state.enterPresses++" placeholder="Press Enter">
         <p>Enter presses: <span @text="enterPresses"></span></p>
-        
+
         <input @input.debounce.500="state.debounceCount++" placeholder="Debounced input">
         <p>Debounced events: <span @text="debounceCount"></span></p>
     </div>
@@ -283,9 +355,9 @@
             <a href="#" @link="/about">About</a> |
             <a href="#" @link="/contact">Contact</a>
         </nav>
-        
+
         <div @page=""></div>
-        
+
         <p>Current page: <span @text="currentPage"></span></p>
     </div>
 
@@ -297,37 +369,43 @@
             state.textColor = '#000000';
             state.fontSize = 16;
         </init>
-        
+
         <button @click="state.isActive = !state.isActive" class="primary">
             Toggle Active State
         </button>
-        
+
         <input type="color" @model="textColor">
         <input type="range" @model="fontSize" min="12" max="24">
-        
+
         <div @class="{active: isActive, inactive: !isActive}"
-             @style="{color: textColor, fontSize: fontSize + 'px', padding: '20px', border: '1px solid #ddd', margin: '10px 0'}"
-             @text="'I am ' + (isActive ? 'active' : 'inactive') + ' with dynamic styling!'">
+            @style="{color: textColor, fontSize: fontSize + 'px', padding: '20px', border: '1px solid #ddd', margin: '10px 0'}"
+            @text="'I am ' + (isActive ? 'active' : 'inactive') + ' with dynamic styling!'">
         </div>
-        
+
         <style>
-            .active { background-color: #d4edda; }
-            .inactive { background-color: #f8d7da; }
+            .active {
+                background-color: #d4edda;
+            }
+
+            .inactive {
+                background-color: #f8d7da;
+            }
         </style>
     </div>
 
     <script>
         // Enable dev mode for better debugging
         ayisha.enableDevMode();
-        
+
         // Custom error handler
         ayisha.onError((error, context) => {
             console.warn('Custom error handler:', error, context);
             return 'retry'; // Auto retry on errors
         });
-        
+
         console.log('🎉 Ayisha.js Examples loaded!');
         console.log('Access developer tools via: window.__AYISHA_DEVTOOLS__');
     </script>
 </body>
+
 </html>
