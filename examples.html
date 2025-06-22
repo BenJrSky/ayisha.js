@@ -394,17 +394,28 @@
     </div>
 
     <script>
-        // Enable dev mode for better debugging
-        ayisha.enableDevMode();
+        function ayishaReady(fn) {
+            if (window.ayisha) fn();
+            else document.addEventListener('DOMContentLoaded', function waitAyisha() {
+                if (window.ayisha) {
+                    fn();
+                    document.removeEventListener('DOMContentLoaded', waitAyisha);
+                }
+            });
+        }
+        ayishaReady(function() {
+            // Enable dev mode for better debugging
+            ayisha.enableDevMode();
 
-        // Custom error handler
-        ayisha.onError((error, context) => {
-            console.warn('Custom error handler:', error, context);
-            return 'retry'; // Auto retry on errors
+            // Custom error handler
+            ayisha.onError((error, context) => {
+                console.warn('Custom error handler:', error, context);
+                return 'retry'; // Auto retry on errors
+            });
+
+            console.log('🎉 Ayisha.js Examples loaded!');
+            console.log('Access developer tools via: window.__AYISHA_DEVTOOLS__');
         });
-
-        console.log('🎉 Ayisha.js Examples loaded!');
-        console.log('Access developer tools via: window.__AYISHA_DEVTOOLS__');
     </script>
 </body>
 
