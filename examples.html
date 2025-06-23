@@ -195,8 +195,14 @@
         <div @fetch="https://jsonplaceholder.typicode.com/users" @result="users"></div>
 
         <input type="number" @model="userId" min="1" max="10">
+        
 
-        <div @set="https://jsonplaceholder.typicode.com/users/{userId}" @actionTo="userUrl"></div>
+        <div @watch="userId=>userUrl=`https://jsonplaceholder.typicode.com/users/${userId}`">
+            {{userUrl}}
+        </div>
+           
+        
+        
         <button @actionOn="userUrl" @result="currentUser" class="primary">Fetch User</button>
 
         <!-- Debug info -->

@@ -71,7 +71,12 @@ class AyishaVDOM {
   _makeReactive() {
     this.state = new Proxy(this.state, {
       set: (target, prop, value) => {
-        target[prop] = value;
+        // Permetti la creazione di nuove proprietà dinamicamente
+        if (!(prop in target)) {
+          target[prop] = value;
+        } else {
+          target[prop] = value;
+        }
         if (this.watchers[prop]) {
           this.watchers[prop].forEach(fn => fn(value));
         }
@@ -217,66 +222,37 @@ class AyishaVDOM {
 
     // Fetch data: @fetch e risultato @result
     if (vNode.directives['@fetch']) {
-      const url = this._evalExpr(vNode.directives['@fetch'], ctx);
-      const resultKey = vNode.directives['@result'];
-      if (!url || url === 'undefined') {
-        el.textContent = 'Error: fetch URL is undefined or empty';
-      } else {
-        el.textContent = 'Loading...';
-        fetch(url)
-          .then(res => {
-            const contentType = res.headers.get('content-type') || '';
-            if (!res.ok) throw new Error('HTTP error ' + res.status);
-            if (contentType.includes('application/json')) {
-              return res.json();
-            } else {
-              return res.text().then(txt => { throw new Error('Not JSON: ' + txt.slice(0, 100)); });
+      // Usa un identificatore unico per l'elemento e la fetch
+      const fetchId = vNode.directives['@fetch'] + (vNode.directives['@result'] || '');
+      if (!this._fetched) this._fetched = {};
+      if (!this._fetched[fetchId]) {
+        const urlTemplate = vNode.directives['@fetch'];
+        const resultKey = vNode.directives['@result'];
+        const watchVar = vNode.directives['@watch'];
+        const method = (vNode.directives['@method'] || 'GET').toUpperCase();
+        const bodyExpr = vNode.directives['@body'];
+        const doFetch = () => {
+          let url = urlTemplate.replace(/\{(\w+)\}/g, (m, v) => this.state[v] ?? '');
+          let options = { method };
+          if (bodyExpr && method !== 'GET') {
+            let bodyObj = {};
+            try {
+              bodyObj = this._evalExpr(bodyExpr, ctx);
+            } catch (e) {
+              try { bodyObj = JSON.parse(bodyExpr); } catch (e2) { bodyObj = {}; }
             }
-          })
-          .then(data => {
-            if (resultKey) {
-              this.state[resultKey] = data;
-              // Mostra anteprima tabellare se array di oggetti
-              if (Array.isArray(data) && data.length && typeof data[0] === 'object') {
-                const table = document.createElement('table');
-                table.style.width = '100%';
-                table.style.borderCollapse = 'collapse';
-                const thead = document.createElement('thead');
-                const headerRow = document.createElement('tr');
-                Object.keys(data[0]).forEach(key => {
-                  const th = document.createElement('th');
-                  th.textContent = key;
-                  th.style.border = '1px solid #ccc';
-                  th.style.padding = '4px';
-                  headerRow.appendChild(th);
-                });
-                thead.appendChild(headerRow);
-                table.appendChild(thead);
-                const tbody = document.createElement('tbody');
-                data.forEach(row => {
-                  const tr = document.createElement('tr');
-                  Object.values(row).forEach(val => {
-                    const td = document.createElement('td');
-                    td.textContent = typeof val === 'object' ? JSON.stringify(val) : val;
-                    td.style.border = '1px solid #ccc';
-                    td.style.padding = '4px';
-                    tr.appendChild(td);
-                  });
-                  tbody.appendChild(tr);
-                });
-                table.appendChild(tbody);
-                el.innerHTML = '';
-                el.appendChild(table);
-              } else {
-                el.textContent = JSON.stringify(data, null, 2);
-              }
-            } else {
-              el.textContent = JSON.stringify(data, null, 2);
-            }
-          })
-          .catch(err => {
-            el.textContent = 'Error: ' + err.message;
-          });
+            options.body = JSON.stringify(bodyObj);
+            options.headers = { 'Content-Type': 'application/json' };
+          }
+          fetch(url, options)
+            .then(res => res.json())
+            .then(data => { if (resultKey) this.state[resultKey] = data; });
+        };
+        doFetch();
+        if (watchVar) {
+          watchVar.split(',').forEach(dep => this.addWatcher(dep.trim(), doFetch));
+        }
+        this._fetched[fetchId] = true;
       }
     }
     if (vNode.directives['@result'] && !vNode.directives['@fetch']) {
@@ -291,7 +267,8 @@ class AyishaVDOM {
       if (fnBody) {
         this.addWatcher(prop, value => {
           try {
-            new Function('value', 'state', fnBody)(value, this.state);
+            // Permetti sia "userId => userUrl = ..." che "userId => state.userUrl = ..."
+            new Function('value', 'state', 'with(state){' + fnBody + '}')(value, this.state);
           } catch {}
         });
       }
