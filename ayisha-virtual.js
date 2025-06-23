@@ -13,8 +13,11 @@ class AyishaVDOM {
   parse(node) {
     if (node.nodeType === 3) return { type: 'text', text: node.textContent };
     if (node.nodeType !== 1) return null;
+    // Ignora <script> e <style> nel virtual dom
+    const tag = node.tagName.toLowerCase();
+    if (tag === 'script' || tag === 'style') return null;
     const vNode = {
-      tag: node.tagName.toLowerCase(),
+      tag,
       attrs: {},
       directives: {},
       children: [],
@@ -93,11 +96,19 @@ class AyishaVDOM {
     if (vNode.directives['@if']) {
       if (!this._evalExpr(vNode.directives['@if'], ctx)) return null;
     }
+    // Gestione @show / @hide (punto 2: Conditional Rendering)
+    if (vNode.directives['@show']) {
+      if (!this._evalExpr(vNode.directives['@show'], ctx)) return null;
+    }
+    if (vNode.directives['@hide']) {
+      if (this._evalExpr(vNode.directives['@hide'], ctx)) return null;
+    }
+    // Gestione @for (supporta anche @key)
     if (vNode.directives['@for']) {
       const [item, arrExpr] = vNode.directives['@for'].split(' in ').map(s=>s.trim());
       const arr = this._evalExpr(arrExpr, ctx) || [];
       const frag = document.createDocumentFragment();
-      arr.forEach(val => {
+      arr.forEach((val, idx) => {
         const newCtx = { ...ctx, [item]: val };
         vNode.children.forEach(child => {
           const n = this._renderVNode(child, newCtx);
@@ -106,22 +117,10 @@ class AyishaVDOM {
       });
       return frag;
     }
-    if (vNode.directives['@switch']) {
-      const val = this._evalExpr(vNode.directives['@switch'], ctx);
-      let matched = false;
-      for (const child of vNode.children) {
-        if (child.directives && child.directives['@case'] && this._evalExpr(child.directives['@case'], ctx) == val) {
-          return this._renderVNode(child, ctx);
-        }
-        if (child.directives && child.directives['@default']) matched = child;
-      }
-      if (matched) return this._renderVNode(matched, ctx);
-      return null;
-    }
     // Crea nodo reale senza direttive
     const el = document.createElement(vNode.tag);
     Object.entries(vNode.attrs).forEach(([k, v]) => el.setAttribute(k, v));
-    // Gestione @text
+    // Gestione @text (su qualsiasi elemento)
     if (vNode.directives['@text']) {
       el.textContent = this._evalExpr(vNode.directives['@text'], ctx);
     } else {
@@ -130,13 +129,36 @@ class AyishaVDOM {
         if (n) el.appendChild(n);
       });
     }
-    // Gestione @model (two-way binding base)
+    // Gestione @model (two-way binding base, input/select/checkbox/radio)
     if (vNode.directives['@model']) {
-      el.value = this._evalExpr(vNode.directives['@model'], ctx);
-      el.addEventListener('input', e => {
-        this.state[vNode.directives['@model']] = e.target.value;
-        this.render();
-      });
+      const modelKey = vNode.directives['@model'];
+      if (el.tagName === 'SELECT') {
+        el.value = String(this._evalExpr(modelKey, ctx));
+        el.addEventListener('change', e => {
+          this.state[modelKey] = e.target.value;
+        });
+        // Aggiorna selected sulle option
+        Array.from(el.options).forEach(opt => {
+          opt.selected = (opt.value === String(this.state[modelKey]));
+        });
+      } else if (el.type === 'checkbox') {
+        el.checked = !!this._evalExpr(modelKey, ctx);
+        el.addEventListener('change', e => {
+          this.state[modelKey] = e.target.checked;
+        });
+      } else if (el.type === 'radio') {
+        el.checked = this._evalExpr(modelKey, ctx) == el.value;
+        el.addEventListener('change', e => {
+          if (e.target.checked) {
+            this.state[modelKey] = el.value;
+          }
+        });
+      } else {
+        el.value = this._evalExpr(modelKey, ctx);
+        el.addEventListener('input', e => {
+          this.state[modelKey] = e.target.value;
+        });
+      }
     }
     // Gestione @show / @hide
     if (vNode.directives['@show']) {
@@ -278,15 +300,39 @@ class AyishaVDOM {
         if (compEl) el.appendChild(compEl);
       }
     }
+    // Gestione @switch/@case/@default: renderizza SOLO il case corrispondente
+    if (vNode.directives['@switch']) {
+      const val = String(this._evalExpr(vNode.directives['@switch'], ctx));
+      let matched = null;
+      let defaultNode = null;
+      for (const child of vNode.children) {
+        if (child.directives && child.directives['@case']) {
+          let caseVal = child.directives['@case'];
+          // Se è una stringa letterale, usala direttamente, altrimenti valuta l'espressione
+          if (/^['"].*['"]$/.test(caseVal)) {
+            caseVal = caseVal.replace(/^['"]|['"]$/g, '');
+          }
+          // Confronta direttamente con il valore della select
+          if (caseVal === val) {
+            matched = child;
+            break;
+          }
+        }
+        if (child.directives && child.directives['@default']) defaultNode = child;
+      }
+      if (matched) return this._renderVNode(matched, ctx);
+      if (defaultNode) return this._renderVNode(defaultNode, ctx);
+      return null;
+    }
     return el;
   }
 
-  // Valuta espressione JS in contesto
+  // Valuta espressione JS in contesto (corretto per tutte le direttive)
   _evalExpr(expr, ctx, event) {
     try {
-      // Usa sempre il Proxy reattivo this.state come oggetto principale
-      // ctx serve solo per variabili di ciclo (@for)
-      return new Function('state', 'event', 'with(state){with(this){return ('+expr+')}}').call(ctx || {}, this.state, event);
+      // ctx: variabili di ciclo, this.state: stato globale
+      // Le mutazioni avvengono sempre su this.state (Proxy reattivo)
+      return new Function('state', 'ctx', 'event', `with(state){with(ctx){return (${expr})}}`)(this.state, ctx || {}, event);
     } catch (e) {
       return undefined;
     }
