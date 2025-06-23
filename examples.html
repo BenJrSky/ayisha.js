@@ -198,7 +198,7 @@
         
 
         <div @watch="userId=>userUrl=`https://jsonplaceholder.typicode.com/users/${userId}`">
-            {{userUrl}}
+            {{userUrl || ''}}
         </div>
            
         

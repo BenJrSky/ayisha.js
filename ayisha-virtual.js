@@ -329,6 +329,27 @@ class AyishaVDOM {
       return defaultNode ? this._renderVNode(defaultNode, ctx) : document.createComment('noswitch');
     }
 
+    // Gestione @set: esegue assegnazione nello stato solo se cambia
+    if (vNode.directives['@set']) {
+      try {
+        // Supporta più assegnazioni separate da ;
+        vNode.directives['@set'].split(';').forEach(assign => {
+          if (!assign.trim()) return;
+          const [key, ...rest] = assign.split('=');
+          const varName = key.trim();
+          const expr = rest.join('=').trim();
+          if (varName && expr) {
+            const newValue = new Function('state', 'with(state){return (' + expr + ')}')(this.state);
+            if (this.state[varName] !== newValue) {
+              this.state[varName] = newValue;
+            }
+          }
+        });
+      } catch (e) {
+        console.error('Errore in @set:', e);
+      }
+    }
+
     return el;
   }
 
