@@ -128,15 +128,24 @@
             <option value="guest">Guest</option>
             <option value="user">User</option>
             <option value="admin">Admin</option>
+            <option value="ds">Other</option>
         </select>
 
         <div @switch="userType">
             <div @case="guest">Welcome, Guest! Please log in.</div>
             <div @case="user">Hello, User! You have access.<p @if="name=='World'">Ciao Mondo</p></div>
-            <div @case="admin">Hi, Admin! You have full control.</div>
-            <div @default>Unknown user type</div>
+            <div @case="admin" class="bg-red">Hi, Admin! You have full control.</div>
+            <div @default><p>Unknown user type</p></div>
         </div>
     </div>
+
+
+    <div @if="userType==user">
+        Questo è visibile solo ad un user
+
+    </div>
+
+    {{userType}}
 
     <!-- Lists and Iteration -->
     <div class="example">

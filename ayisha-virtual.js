@@ -7,6 +7,7 @@ class AyishaVDOM {
     this.watchers = {};
     this.components = {};
     this._vdom = null;
+    window.ayisha = this; // Rende ayisha globale per i blocchi <init>
   }
 
   // Parsing: crea virtual dom (ogni nodo: {tag, attrs, children, directives, ...})
@@ -105,7 +106,7 @@ class AyishaVDOM {
     }
     // Gestione @for (supporta anche @key)
     if (vNode.directives['@for']) {
-      const [item, arrExpr] = vNode.directives['@for'].split(' in ').map(s=>s.trim());
+      const [item, arrExpr] = vNode.directives['@for'].split(' in ').map(s => s.trim());
       const arr = this._evalExpr(arrExpr, ctx) || [];
       const frag = document.createDocumentFragment();
       arr.forEach((val, idx) => {
@@ -238,13 +239,13 @@ class AyishaVDOM {
         this.addWatcher(prop, val => {
           try {
             new Function('value', 'state', fnBody)(val, this.state);
-          } catch (e) {}
+          } catch (e) { }
         });
       }
     }
     // Gestione @validate (solo required e minLength base)
     if (vNode.directives['@validate']) {
-      const rules = vNode.directives['@validate'].split(',').map(r=>r.trim());
+      const rules = vNode.directives['@validate'].split(',').map(r => r.trim());
       el.addEventListener('input', e => {
         let valid = true;
         rules.forEach(rule => {
@@ -300,52 +301,73 @@ class AyishaVDOM {
         if (compEl) el.appendChild(compEl);
       }
     }
-    // Gestione @switch/@case/@default: renderizza SOLO il case corrispondente
+    // Gestione @switch/@case/@default: soluzione definitiva e robusta
     if (vNode.directives['@switch']) {
-      const val = String(this._evalExpr(vNode.directives['@switch'], ctx));
+      let val = '';
+      try {
+        val = String(this._evalExpr(vNode.directives['@switch'], ctx));
+      } catch (e) {
+        val = '';
+      }
       let matched = null;
       let defaultNode = null;
-      for (const child of vNode.children) {
+
+      // Analizza SOLO i figli diretti, ignora i nodi di testo
+      for (const child of (vNode.children || [])) {
+        if (child.type === 'text') continue;
+
+        // caso @case
         if (child.directives && child.directives['@case']) {
           let caseVal = child.directives['@case'];
-          // Se è una stringa letterale, usala direttamente, altrimenti valuta l'espressione
           if (/^['"].*['"]$/.test(caseVal)) {
             caseVal = caseVal.replace(/^['"]|['"]$/g, '');
           }
-          // Confronta direttamente con il valore della select
-          if (caseVal === val) {
+          caseVal = String(caseVal);
+          if (matched === null && caseVal === val) {
             matched = child;
-            break;
+            break; // abbiamo trovato il match, esco dal ciclo
           }
         }
-        if (child.directives && child.directives['@default']) defaultNode = child;
+
+        // default: verifico solo l'esistenza della direttiva
+        if (child.directives && Object.prototype.hasOwnProperty.call(child.directives, '@default')) {
+          defaultNode = child;
+        }
       }
-      if (matched) return this._renderVNode(matched, ctx);
-      if (defaultNode) return this._renderVNode(defaultNode, ctx);
-      return null;
+
+      // Rendering
+      if (matched !== null) {
+        return this._renderVNode(matched, ctx);
+      }
+      if (defaultNode) {
+        return this._renderVNode(defaultNode, ctx);
+      }
+
+      return document.createComment('switch-no-match');
     }
+
     return el;
   }
 
-  // Valuta espressione JS in contesto (corretto per tutte le direttive)
+  // Valuta espressioni: supporta variabili, funzioni, operatore ternario
   _evalExpr(expr, ctx, event) {
     try {
-      // ctx: variabili di ciclo, this.state: stato globale
-      // Le mutazioni avvengono sempre su this.state (Proxy reattivo)
+      // Usa sempre this.state come contesto principale, ctx come variabili locali
       return new Function('state', 'ctx', 'event', `with(state){with(ctx){return (${expr})}}`)(this.state, ctx || {}, event);
     } catch (e) {
       return undefined;
     }
   }
+
+  // Valuta testo: supporta {{}} per variabili e espressioni
   _evalText(text, ctx) {
-    return text.replace(/\{\{(.+?)\}\}/g, (_, expr) => this._evalExpr(expr, ctx));
+    return text.replace(/{{(.*?)}}/g, (_, expr) => this._evalExpr(expr.trim(), ctx));
   }
 }
 
-// Esportazione globale
-window.AyishaVDOM = AyishaVDOM;
-
-document.addEventListener('DOMContentLoaded', () => {
-  window.ayisha = new AyishaVDOM(document.body);
-  ayisha.mount();
-});
+// Avvia automaticamente AyishaVDOM su document.body dopo il caricamento
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => new AyishaVDOM(document.body).mount());
+} else {
+  new AyishaVDOM(document.body).mount();
+}
