@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ayisha.js Examples</title>
-    <script src="ayisha.js"></script>
+    <script src="ayisha-virtual.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -100,7 +100,8 @@
 
 
     <div @if="count==5">
-        <h2>Ciao <p @if="name=='Ben'">Ben Sky</p></h2>
+        <h2>Ciao <p @if="name=='Ben'">Ben Sky</p>
+        </h2>
     </div>
 
     <!-- Conditional Rendering -->
@@ -197,7 +198,7 @@
 
             <p>INSIDE IF ---> <span @text="currentUser.name"></span></p>
         </div>
-            <p>OUTSIDE IF ---> <span @text="currentUser.name"></span></p>
+        <p>OUTSIDE IF ---> <span @text="currentUser.name"></span></p>
 
     </div>
     <div class="example">
@@ -395,30 +396,7 @@
         </style>
     </div>
 
-    <script>
-        function ayishaReady(fn) {
-            if (window.ayisha) fn();
-            else document.addEventListener('DOMContentLoaded', function waitAyisha() {
-                if (window.ayisha) {
-                    fn();
-                    document.removeEventListener('DOMContentLoaded', waitAyisha);
-                }
-            });
-        }
-        ayishaReady(function() {
-            // Enable dev mode for better debugging
-            ayisha.enableDevMode();
 
-            // Custom error handler
-            ayisha.onError((error, context) => {
-                console.warn('Custom error handler:', error, context);
-                return 'retry'; // Auto retry on errors
-            });
-
-            console.log('🎉 Ayisha.js Examples loaded!');
-            console.log('Access developer tools via: window.__AYISHA_DEVTOOLS__');
-        });
-    </script>
 </body>
 
 </html>
