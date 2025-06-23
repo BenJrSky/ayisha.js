@@ -200,10 +200,8 @@
         <div @watch="userId=>userUrl=`https://jsonplaceholder.typicode.com/users/${userId}`">
             {{userUrl || ''}}
         </div>
-           
         
-        
-        <button @actionOn="userUrl" @result="currentUser" class="primary">Fetch User</button>
+        <button @click="userId++" class="primary">Incrementa userId</button>
 
         <!-- Debug info -->
         <p>Debug - currentUser exists: <span @text="!!currentUser"></span></p>
@@ -221,7 +219,7 @@
 
     </div>
     <div class="example">
-        <h3>4. HTTP Requests & Data Fetching</h3>
+        <h3>4. HTTP Requests & Data Fetching with watch</h3>
         <input type="number" @model="userId" min="1" max="10">
         <div @fetch="https://jsonplaceholder.typicode.com/users/{userId}" @result="currentUser" @watch="userId">
         </div>
