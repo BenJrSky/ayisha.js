@@ -83,9 +83,46 @@ class AyishaVDOM {
 
   // Render: genera DOM reale dal VDOM e lo monta
   render() {
+    // Salva focus e posizione cursore se un input è attivo
+    const active = document.activeElement;
+    let focusInfo = null;
+    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
+      focusInfo = {
+        el: active,
+        name: active.getAttribute('name'),
+        id: active.getAttribute('id'),
+        class: active.getAttribute('class'),
+        value: active.value,
+        selectionStart: active.selectionStart,
+        selectionEnd: active.selectionEnd,
+        type: active.type
+      };
+    }
     const real = this._renderVNode(this._vdom, this.state);
     this.root.innerHTML = '';
     if (real) this.root.appendChild(real);
+    // Ripristina focus e posizione cursore se possibile
+    if (focusInfo) {
+      // Cerca l'input corrispondente nel nuovo DOM
+      let selector = '';
+      if (focusInfo.id) selector = `#${focusInfo.id}`;
+      else if (focusInfo.name) selector = `[name='${focusInfo.name}']`;
+      else if (focusInfo.class) selector = `.${focusInfo.class.split(' ')[0]}`;
+      let newInput = selector ? this.root.querySelector(selector) : null;
+      // Se non trovato, cerca per tipo e valore
+      if (!newInput && focusInfo.type) {
+        const candidates = Array.from(this.root.querySelectorAll(focusInfo.type === 'textarea' ? 'textarea' : 'input'));
+        newInput = candidates.find(i => i.value === focusInfo.value);
+      }
+      if (newInput) {
+        newInput.focus();
+        if (focusInfo.selectionStart != null && newInput.setSelectionRange) {
+          try {
+            newInput.setSelectionRange(focusInfo.selectionStart, focusInfo.selectionEnd);
+          } catch {}
+        }
+      }
+    }
   }
 
   // Ricorsivo: genera un nodo DOM a partire da un vNode
