@@ -14,7 +14,6 @@ class AyishaVDOM {
   parse(node) {
     if (node.nodeType === 3) return { type: 'text', text: node.textContent };
     if (node.nodeType !== 1) return null;
-    // Ignora <script> e <style> nel virtual dom
     const tag = node.tagName.toLowerCase();
     if (tag === 'script' || tag === 'style') return null;
     const vNode = {
@@ -22,7 +21,7 @@ class AyishaVDOM {
       attrs: {},
       directives: {},
       children: [],
-      key: node.getAttribute && node.getAttribute('key')
+      key: node.getAttribute ? node.getAttribute('key') : null
     };
     Array.from(node.attributes).forEach(attr => {
       if (attr.name.startsWith('@')) {
@@ -31,7 +30,9 @@ class AyishaVDOM {
         vNode.attrs[attr.name] = attr.value;
       }
     });
-    vNode.children = Array.from(node.childNodes).map(child => this.parse(child)).filter(Boolean);
+    vNode.children = Array.from(node.childNodes)
+      .map(child => this.parse(child))
+      .filter(Boolean);
     return vNode;
   }
 
@@ -40,7 +41,6 @@ class AyishaVDOM {
     const inits = this.root.querySelectorAll('init');
     inits.forEach(init => {
       try {
-        // Esegui il codice JS nel contesto di this.state
         new Function('state', init.textContent)(this.state);
       } catch (e) {
         console.error('Init block error:', e);
@@ -48,7 +48,7 @@ class AyishaVDOM {
     });
   }
 
-  // Mount: crea virtual dom dalla root
+  // Mount: esegue init, parsing, rende reattivo e renderizza
   mount() {
     this._runInitBlocks();
     this._vdom = this.parse(this.root);
@@ -56,153 +56,129 @@ class AyishaVDOM {
     this.render();
   }
 
-  // 1. Supporto componenti custom
+  // Registra componente custom
   component(name, html) {
     this.components[name] = html;
   }
 
-  // 2. Supporto watcher base (solo per @watch)
+  // Aggiunge watcher per proprietà di stato
   addWatcher(prop, fn) {
     if (!this.watchers[prop]) this.watchers[prop] = [];
     this.watchers[prop].push(fn);
   }
 
-  // 3. Estendi _makeReactive per watcher
+  // Crea proxy reattivo sullo stato
   _makeReactive() {
-    const self = this;
     this.state = new Proxy(this.state, {
-      set(target, prop, value) {
+      set: (target, prop, value) => {
         target[prop] = value;
-        if (self.watchers[prop]) self.watchers[prop].forEach(fn => fn(value));
-        self.render();
+        if (this.watchers[prop]) {
+          this.watchers[prop].forEach(fn => fn(value));
+        }
+        this.render();
         return true;
       }
     });
   }
 
-  // Render: genera DOM reale dal virtual dom, senza direttive
+  // Render: genera DOM reale dal VDOM e lo monta
   render() {
     const real = this._renderVNode(this._vdom, this.state);
     this.root.innerHTML = '';
     if (real) this.root.appendChild(real);
   }
 
-  // Ricorsivo: genera DOM reale da un vNode
+  // Ricorsivo: genera un nodo DOM a partire da un vNode
   _renderVNode(vNode, ctx) {
     if (!vNode) return null;
     if (vNode.type === 'text') {
       return document.createTextNode(this._evalText(vNode.text, ctx));
     }
-    // Gestione direttive principali
-    if (vNode.directives['@if']) {
-      if (!this._evalExpr(vNode.directives['@if'], ctx)) return null;
+
+    // Direttive condizionali
+    if (vNode.directives['@if'] && !this._evalExpr(vNode.directives['@if'], ctx)) {
+      return null;
     }
-    // Gestione @show / @hide (punto 2: Conditional Rendering)
-    if (vNode.directives['@show']) {
-      if (!this._evalExpr(vNode.directives['@show'], ctx)) return null;
+    if (vNode.directives['@show'] && !this._evalExpr(vNode.directives['@show'], ctx)) {
+      return null;
     }
-    if (vNode.directives['@hide']) {
-      if (this._evalExpr(vNode.directives['@hide'], ctx)) return null;
+    if (vNode.directives['@hide'] && this._evalExpr(vNode.directives['@hide'], ctx)) {
+      return null;
     }
-    // Gestione @for (supporta anche @key)
+
+    // Direttiva @for
     if (vNode.directives['@for']) {
       const [item, arrExpr] = vNode.directives['@for'].split(' in ').map(s => s.trim());
       const arr = this._evalExpr(arrExpr, ctx) || [];
       const frag = document.createDocumentFragment();
-      arr.forEach((val, idx) => {
-        const newCtx = { ...ctx, [item]: val };
+      arr.forEach(val => {
+        const subCtx = { ...ctx, [item]: val };
         vNode.children.forEach(child => {
-          const n = this._renderVNode(child, newCtx);
-          if (n) frag.appendChild(n);
+          const node = this._renderVNode(child, subCtx);
+          if (node) frag.appendChild(node);
         });
       });
       return frag;
     }
-    // Crea nodo reale senza direttive
+
+    // Creazione elemento reale
     const el = document.createElement(vNode.tag);
-    Object.entries(vNode.attrs).forEach(([k, v]) => el.setAttribute(k, v));
-    // Gestione @text (su qualsiasi elemento)
+    Object.entries(vNode.attrs).forEach(([name, value]) => el.setAttribute(name, value));
+
+    // Gestione @text
     if (vNode.directives['@text']) {
       el.textContent = this._evalExpr(vNode.directives['@text'], ctx);
     } else {
       vNode.children.forEach(child => {
-        const n = this._renderVNode(child, ctx);
-        if (n) el.appendChild(n);
+        const node = this._renderVNode(child, ctx);
+        if (node) el.appendChild(node);
       });
     }
-    // Gestione @model (two-way binding base, input/select/checkbox/radio)
+
+    // Two-way binding: @model
     if (vNode.directives['@model']) {
-      const modelKey = vNode.directives['@model'];
-      if (el.tagName === 'SELECT') {
-        el.value = String(this._evalExpr(modelKey, ctx));
-        el.addEventListener('change', e => {
-          this.state[modelKey] = e.target.value;
-        });
-        // Aggiorna selected sulle option
-        Array.from(el.options).forEach(opt => {
-          opt.selected = (opt.value === String(this.state[modelKey]));
-        });
-      } else if (el.type === 'checkbox') {
-        el.checked = !!this._evalExpr(modelKey, ctx);
-        el.addEventListener('change', e => {
-          this.state[modelKey] = e.target.checked;
-        });
-      } else if (el.type === 'radio') {
-        el.checked = this._evalExpr(modelKey, ctx) == el.value;
-        el.addEventListener('change', e => {
-          if (e.target.checked) {
-            this.state[modelKey] = el.value;
-          }
-        });
-      } else {
-        el.value = this._evalExpr(modelKey, ctx);
-        el.addEventListener('input', e => {
-          this.state[modelKey] = e.target.value;
-        });
-      }
+      this._bindModel(el, vNode.directives['@model'], ctx);
     }
-    // Gestione @show / @hide
-    if (vNode.directives['@show']) {
-      if (!this._evalExpr(vNode.directives['@show'], ctx)) el.style.display = 'none';
-    }
-    if (vNode.directives['@hide']) {
-      if (this._evalExpr(vNode.directives['@hide'], ctx)) el.style.display = 'none';
-    }
-    // Gestione @class
+
+    // Classi dinamiche: @class
     if (vNode.directives['@class']) {
-      const classObj = this._evalExpr(vNode.directives['@class'], ctx);
-      if (classObj && typeof classObj === 'object') {
-        Object.entries(classObj).forEach(([cls, val]) => {
-          if (val) el.classList.add(cls); else el.classList.remove(cls);
-        });
-      }
+      const classes = this._evalExpr(vNode.directives['@class'], ctx) || {};
+      Object.entries(classes).forEach(([cls, cond]) => {
+        if (cond) el.classList.add(cls);
+        else el.classList.remove(cls);
+      });
     }
-    // Gestione @style
+
+    // Stili dinamici: @style
     if (vNode.directives['@style']) {
-      const styleObj = this._evalExpr(vNode.directives['@style'], ctx);
-      if (styleObj && typeof styleObj === 'object') {
-        Object.entries(styleObj).forEach(([prop, val]) => {
-          el.style[prop] = val;
-        });
-      }
+      const styles = this._evalExpr(vNode.directives['@style'], ctx) || {};
+      Object.entries(styles).forEach(([prop, val]) => {
+        el.style[prop] = val;
+      });
     }
-    // Gestione @model (two-way binding base) già sopra
-    // Gestione @click
+
+    // Eventi: @click con supporto multi-statement
     if (vNode.directives['@click']) {
-      el.addEventListener('click', e => {
-        this._evalExpr(vNode.directives['@click'], ctx, e);
+      const expr = vNode.directives['@click'];
+      el.addEventListener('click', event => {
+        try {
+          new Function('state', 'ctx', 'event', `with(state){with(ctx){${expr}}}`)(this.state, ctx, event);
+        } catch (err) {
+          console.error('Errore in @click:', err);
+        }
         this.render();
       });
     }
-    // Gestione @mounted
+
+    // Lifecycle hooks: @mounted e @init
     if (vNode.directives['@mounted']) {
-      setTimeout(() => this._evalExpr(vNode.directives['@mounted'], ctx, el), 0);
+      setTimeout(() => this._evalExpr(vNode.directives['@mounted'], ctx), 0);
     }
-    // Gestione @init
     if (vNode.directives['@init']) {
-      this._evalExpr(vNode.directives['@init'], ctx, el);
+      this._evalExpr(vNode.directives['@init'], ctx);
     }
-    // Gestione @fetch (completa: supporta @result, loading, error)
+
+    // Fetch data: @fetch e risultato @result
     if (vNode.directives['@fetch']) {
       const url = this._evalExpr(vNode.directives['@fetch'], ctx);
       const resultKey = vNode.directives['@result'];
@@ -221,45 +197,30 @@ class AyishaVDOM {
           el.textContent = 'Error: ' + err.message;
         });
     }
-    // Gestione @result (binding automatico)
-    if (vNode.directives['@result']) {
+    if (vNode.directives['@result'] && !vNode.directives['@fetch']) {
       const key = vNode.directives['@result'];
-      if (typeof this.state[key] === 'object') {
-        el.textContent = JSON.stringify(this.state[key]);
-      } else {
-        el.textContent = this.state[key] || '';
-      }
+      const val = this.state[key];
+      el.textContent = typeof val === 'object' ? JSON.stringify(val) : (val || '');
     }
-    // Gestione @watch (solo esecuzione funzione su cambio stato)
+
+    // Watchers: @watch
     if (vNode.directives['@watch']) {
-      const expr = vNode.directives['@watch'];
-      const prop = expr.split('=>')[0].trim();
-      const fnBody = expr.split('=>')[1] ? expr.split('=>')[1].trim() : null;
+      const [prop, fnBody] = vNode.directives['@watch'].split('=>').map(s => s.trim());
       if (fnBody) {
-        this.addWatcher(prop, val => {
+        this.addWatcher(prop, value => {
           try {
-            new Function('value', 'state', fnBody)(val, this.state);
-          } catch (e) { }
+            new Function('value', 'state', fnBody)(value, this.state);
+          } catch {}
         });
       }
     }
-    // Gestione @validate (solo required e minLength base)
+
+    // Validation: @validate
     if (vNode.directives['@validate']) {
-      const rules = vNode.directives['@validate'].split(',').map(r => r.trim());
-      el.addEventListener('input', e => {
-        let valid = true;
-        rules.forEach(rule => {
-          if (rule === 'required' && !el.value) valid = false;
-          if (rule.startsWith('minLength')) {
-            const min = parseInt(rule.split(':')[1], 10);
-            if (el.value.length < min) valid = false;
-          }
-        });
-        if (!valid) el.classList.add('invalid');
-        else el.classList.remove('invalid');
-      });
+      this._bindValidation(el, vNode.directives['@validate']);
     }
-    // Gestione @link (SPA router base: cambia state.currentPage)
+
+    // Routing: @link e @page
     if (vNode.directives['@link']) {
       el.addEventListener('click', e => {
         e.preventDefault();
@@ -267,32 +228,16 @@ class AyishaVDOM {
         this.render();
       });
     }
-    // Gestione @page (mostra solo se state.currentPage === valore)
     if (vNode.directives['@page']) {
       if (this.state.currentPage !== vNode.directives['@page']) return null;
     }
-    // Gestione @animate (aggiunge classe animazione)
+
+    // Animazioni: @animate
     if (vNode.directives['@animate']) {
       el.classList.add(vNode.directives['@animate']);
     }
-    // Gestione @source, @map, @filter, @reduce (solo visualizzazione base)
-    if (vNode.directives['@source']) {
-      let arr = this._evalExpr(vNode.directives['@source'], ctx) || [];
-      if (vNode.directives['@map']) {
-        const fn = vNode.directives['@map'];
-        arr = arr.map(x => this._evalExpr(fn, { ...ctx, item: x }));
-      }
-      if (vNode.directives['@filter']) {
-        const fn = vNode.directives['@filter'];
-        arr = arr.filter(x => this._evalExpr(fn, { ...ctx, item: x }));
-      }
-      if (vNode.directives['@reduce']) {
-        const fn = vNode.directives['@reduce'];
-        arr = arr.reduce((acc, x) => this._evalExpr(fn, { ...ctx, acc, item: x }), 0);
-      }
-      el.textContent = JSON.stringify(arr);
-    }
-    // Gestione @component (inserimento di componenti registrati)
+
+    // Componenti: @component
     if (vNode.directives['@component']) {
       const compName = vNode.directives['@component'];
       if (this.components[compName]) {
@@ -301,71 +246,83 @@ class AyishaVDOM {
         if (compEl) el.appendChild(compEl);
       }
     }
-    // Gestione @switch/@case/@default: soluzione definitiva e robusta
+
+    // Switch-case-default: @switch, @case, @default
     if (vNode.directives['@switch']) {
-      let val = '';
-      try {
-        val = String(this._evalExpr(vNode.directives['@switch'], ctx));
-      } catch (e) {
-        val = '';
-      }
-      let matched = null;
+      const switchVal = this._evalExpr(vNode.directives['@switch'], ctx);
       let defaultNode = null;
-
-      // Analizza SOLO i figli diretti, ignora i nodi di testo
-      for (const child of (vNode.children || [])) {
-        if (child.type === 'text') continue;
-
-        // caso @case
-        if (child.directives && child.directives['@case']) {
-          let caseVal = child.directives['@case'];
-          if (/^['"].*['"]$/.test(caseVal)) {
-            caseVal = caseVal.replace(/^['"]|['"]$/g, '');
+      for (const child of vNode.children) {
+        if (child.directives) {
+          if (child.directives['@case'] != null) {
+            let caseVal = child.directives['@case'];
+            if (/^['"].*['"]$/.test(caseVal)) {
+              caseVal = caseVal.slice(1, -1);
+            }
+            if (String(caseVal) === String(switchVal)) {
+              return this._renderVNode(child, ctx);
+            }
           }
-          caseVal = String(caseVal);
-          if (matched === null && caseVal === val) {
-            matched = child;
-            break; // abbiamo trovato il match, esco dal ciclo
+          if (child.directives['@default'] != null) {
+            defaultNode = child;
           }
         }
-
-        // default: verifico solo l'esistenza della direttiva
-        if (child.directives && Object.prototype.hasOwnProperty.call(child.directives, '@default')) {
-          defaultNode = child;
-        }
       }
-
-      // Rendering
-      if (matched !== null) {
-        return this._renderVNode(matched, ctx);
-      }
-      if (defaultNode) {
-        return this._renderVNode(defaultNode, ctx);
-      }
-
-      return document.createComment('switch-no-match');
+      return defaultNode ? this._renderVNode(defaultNode, ctx) : document.createComment('noswitch');
     }
 
     return el;
   }
 
-  // Valuta espressioni: supporta variabili, funzioni, operatore ternario
+  // Helper: two-way data binding
+  _bindModel(el, key, ctx) {
+    if (el.tagName === 'SELECT') {
+      el.value = this._evalExpr(key, ctx);
+      el.addEventListener('change', e => this.state[key] = e.target.value);
+    } else if (el.type === 'checkbox') {
+      el.checked = this._evalExpr(key, ctx);
+      el.addEventListener('change', e => this.state[key] = e.target.checked);
+    } else if (el.type === 'radio') {
+      el.checked = this._evalExpr(key, ctx) == el.value;
+      el.addEventListener('change', e => { if (e.target.checked) this.state[key] = e.target.value; });
+    } else {
+      el.value = this._evalExpr(key, ctx);
+      el.addEventListener('input', e => this.state[key] = e.target.value);
+    }
+  }
+
+  // Helper: validazione input
+  _bindValidation(el, rulesStr) {
+    const rules = rulesStr.split(',').map(r => r.trim());
+    el.addEventListener('input', () => {
+      let valid = true;
+      rules.forEach(rule => {
+        if (rule === 'required' && !el.value) valid = false;
+        if (rule.startsWith('minLength')) {
+          const min = parseInt(rule.split(':')[1], 10);
+          if (el.value.length < min) valid = false;
+        }
+      });
+      el.classList.toggle('invalid', !valid);
+    });
+  }
+
+  // Eval expression JS in state+ctx
   _evalExpr(expr, ctx, event) {
     try {
-      // Usa sempre this.state come contesto principale, ctx come variabili locali
-      return new Function('state', 'ctx', 'event', `with(state){with(ctx){return (${expr})}}`)(this.state, ctx || {}, event);
+      return new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){return (${expr})}}`)(this.state, ctx, event);
     } catch (e) {
+      console.error('Eval error:', e);
       return undefined;
     }
   }
 
-  // Valuta testo: supporta {{}} per variabili e espressioni
+  // Eval text moustache
   _evalText(text, ctx) {
     return text.replace(/{{(.*?)}}/g, (_, expr) => this._evalExpr(expr.trim(), ctx));
   }
 }
 
-// Avvia automaticamente AyishaVDOM su document.body dopo il caricamento
+// Auto-mount su document.body
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => new AyishaVDOM(document.body).mount());
 } else {
