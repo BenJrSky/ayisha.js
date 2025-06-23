@@ -195,8 +195,10 @@
             <p>Email: <span @text="currentUser.email || 'N/A'"></span></p>
             <p>Website: <span @text="currentUser.website || 'N/A'"></span></p>
 
-            <p>{{currentUser.name}}</p>
+            <p>INSIDE IF ---> <span @text="currentUser.name"></span></p>
         </div>
+            <p>OUTSIDE IF ---> <span @text="currentUser.name"></span></p>
+
     </div>
     <div class="example">
         <h3>4. HTTP Requests & Data Fetching</h3>
