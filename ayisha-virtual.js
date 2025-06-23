@@ -219,20 +219,65 @@ class AyishaVDOM {
     if (vNode.directives['@fetch']) {
       const url = this._evalExpr(vNode.directives['@fetch'], ctx);
       const resultKey = vNode.directives['@result'];
-      el.textContent = 'Loading...';
-      fetch(url)
-        .then(res => res.json())
-        .then(data => {
-          if (resultKey) {
-            this.state[resultKey] = data;
-            this.render();
-          } else {
-            el.textContent = JSON.stringify(data);
-          }
-        })
-        .catch(err => {
-          el.textContent = 'Error: ' + err.message;
-        });
+      if (!url || url === 'undefined') {
+        el.textContent = 'Error: fetch URL is undefined or empty';
+      } else {
+        el.textContent = 'Loading...';
+        fetch(url)
+          .then(res => {
+            const contentType = res.headers.get('content-type') || '';
+            if (!res.ok) throw new Error('HTTP error ' + res.status);
+            if (contentType.includes('application/json')) {
+              return res.json();
+            } else {
+              return res.text().then(txt => { throw new Error('Not JSON: ' + txt.slice(0, 100)); });
+            }
+          })
+          .then(data => {
+            if (resultKey) {
+              this.state[resultKey] = data;
+              // Mostra anteprima tabellare se array di oggetti
+              if (Array.isArray(data) && data.length && typeof data[0] === 'object') {
+                const table = document.createElement('table');
+                table.style.width = '100%';
+                table.style.borderCollapse = 'collapse';
+                const thead = document.createElement('thead');
+                const headerRow = document.createElement('tr');
+                Object.keys(data[0]).forEach(key => {
+                  const th = document.createElement('th');
+                  th.textContent = key;
+                  th.style.border = '1px solid #ccc';
+                  th.style.padding = '4px';
+                  headerRow.appendChild(th);
+                });
+                thead.appendChild(headerRow);
+                table.appendChild(thead);
+                const tbody = document.createElement('tbody');
+                data.forEach(row => {
+                  const tr = document.createElement('tr');
+                  Object.values(row).forEach(val => {
+                    const td = document.createElement('td');
+                    td.textContent = typeof val === 'object' ? JSON.stringify(val) : val;
+                    td.style.border = '1px solid #ccc';
+                    td.style.padding = '4px';
+                    tr.appendChild(td);
+                  });
+                  tbody.appendChild(tr);
+                });
+                table.appendChild(tbody);
+                el.innerHTML = '';
+                el.appendChild(table);
+              } else {
+                el.textContent = JSON.stringify(data, null, 2);
+              }
+            } else {
+              el.textContent = JSON.stringify(data, null, 2);
+            }
+          })
+          .catch(err => {
+            el.textContent = 'Error: ' + err.message;
+          });
+      }
     }
     if (vNode.directives['@result'] && !vNode.directives['@fetch']) {
       const key = vNode.directives['@result'];
