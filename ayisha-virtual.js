@@ -366,6 +366,7 @@ class AyishaVDOM {
           const key = vNode.directives['@result'];
           silentSet(key, result);
         }
+        // NON aggiornare innerHTML del contenitore
       }
       if (vNode.directives['@filter']) {
         const filterFn = new Function('item', 'return (' + vNode.directives['@filter'] + ')');
@@ -374,12 +375,12 @@ class AyishaVDOM {
           const key = vNode.directives['@result'];
           silentSet(key, result);
         }
+        // NON aggiornare innerHTML del contenitore
       }
       if (vNode.directives['@reduce']) {
         let reduceFn;
         const reduceStr = vNode.directives['@reduce'];
         if (reduceStr.includes('=>')) {
-          // Supporta sintassi arrow function acc,item => acc + item
           const arrowParts = reduceStr.split('=>');
           const params = arrowParts[0].replace(/[()]/g, '').trim();
           const body = arrowParts[1].trim();
@@ -393,7 +394,10 @@ class AyishaVDOM {
           const key = vNode.directives['@result'];
           silentSet(key, result);
         }
+        // NON aggiornare innerHTML del contenitore
       }
+      // Ritorna un commento vuoto per non generare contenuto visibile
+      return document.createComment('functional directive');
     }
 
     return el;
