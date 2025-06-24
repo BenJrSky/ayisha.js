@@ -1,4 +1,4 @@
-// Nuovo file ayisha-virtual.js: struttura base virtual DOM con direttive @ e componenti annidati
+// ayisha-virtual.js - Virtual DOM engine con direttive @ e componenti
 
 class AyishaVDOM {
   constructor(root = document) {
@@ -7,10 +7,10 @@ class AyishaVDOM {
     this.watchers = {};
     this.components = {};
     this._vdom = null;
-    window.ayisha = this; // Rende ayisha globale per i blocchi <init>
+    window.ayisha = this;
   }
 
-  // Parsing: crea virtual dom (ogni nodo: {tag, attrs, children, directives, ...})
+  // Parsing DOM -> VDOM
   parse(node) {
     if (node.nodeType === 3) return { type: 'text', text: node.textContent };
     if (node.nodeType !== 1) return null;
@@ -23,32 +23,23 @@ class AyishaVDOM {
       children: [],
       key: node.getAttribute ? node.getAttribute('key') : null
     };
-    Array.from(node.attributes).forEach(attr => {
-      if (attr.name.startsWith('@')) {
-        vNode.directives[attr.name] = attr.value;
-      } else {
-        vNode.attrs[attr.name] = attr.value;
-      }
-    });
-    vNode.children = Array.from(node.childNodes)
-      .map(child => this.parse(child))
-      .filter(Boolean);
+    for (const attr of Array.from(node.attributes)) {
+      if (attr.name.startsWith('@')) vNode.directives[attr.name] = attr.value;
+      else vNode.attrs[attr.name] = attr.value;
+    }
+    vNode.children = Array.from(node.childNodes).map(child => this.parse(child)).filter(Boolean);
     return vNode;
   }
 
-  // Esegui i blocchi <init> e popola lo stato
+  // Esegui blocchi <init> per popolare lo stato
   _runInitBlocks() {
-    const inits = this.root.querySelectorAll('init');
-    inits.forEach(init => {
-      try {
-        new Function('state', init.textContent)(this.state);
-      } catch (e) {
-        console.error('Init block error:', e);
-      }
+    this.root.querySelectorAll('init').forEach(init => {
+      try { new Function('state', init.textContent)(this.state); }
+      catch (e) { console.error('Init block error:', e); }
     });
   }
 
-  // Mount: esegue init, parsing, rende reattivo e renderizza
+  // Monta l'applicazione
   mount() {
     this._runInitBlocks();
     this._vdom = this.parse(this.root);
@@ -56,37 +47,28 @@ class AyishaVDOM {
     this.render();
   }
 
-  // Registra componente custom
-  component(name, html) {
-    this.components[name] = html;
-  }
+  // Registra un componente custom
+  component(name, html) { this.components[name] = html; }
 
-  // Aggiunge watcher per proprietà di stato
+  // Aggiungi watcher su proprietà di stato
   addWatcher(prop, fn) {
     if (!this.watchers[prop]) this.watchers[prop] = [];
     this.watchers[prop].push(fn);
   }
 
-  // Crea proxy reattivo sullo stato
+  // Stato reattivo
   _makeReactive() {
     this.state = new Proxy(this.state, {
       set: (target, prop, value) => {
-        // Permetti la creazione di nuove proprietà dinamicamente
-        if (!(prop in target)) {
-          target[prop] = value;
-        } else {
-          target[prop] = value;
-        }
-        if (this.watchers[prop]) {
-          this.watchers[prop].forEach(fn => fn(value));
-        }
+        target[prop] = value;
+        if (this.watchers[prop]) this.watchers[prop].forEach(fn => fn(value));
         this.render();
         return true;
       }
     });
   }
 
-  // Render: genera DOM reale dal VDOM e lo monta
+  // Renderizza il VDOM nel DOM reale
   render() {
     // Salva focus e posizione cursore se un input è attivo
     const active = document.activeElement;
@@ -106,9 +88,8 @@ class AyishaVDOM {
     const real = this._renderVNode(this._vdom, this.state);
     this.root.innerHTML = '';
     if (real) this.root.appendChild(real);
-    // Ripristina focus e posizione cursore se possibile
+    // Ripristina focus
     if (focusInfo) {
-      // Cerca l'input corrispondente nel nuovo DOM
       let selector = '';
       if (focusInfo.id) selector = `#${focusInfo.id}`;
       else if (focusInfo.name) selector = `[name='${focusInfo.name}']`;
@@ -122,33 +103,23 @@ class AyishaVDOM {
       if (newInput) {
         newInput.focus();
         if (focusInfo.selectionStart != null && newInput.setSelectionRange) {
-          try {
-            newInput.setSelectionRange(focusInfo.selectionStart, focusInfo.selectionEnd);
-          } catch {}
+          try { newInput.setSelectionRange(focusInfo.selectionStart, focusInfo.selectionEnd); } catch {}
         }
       }
     }
   }
 
-  // Ricorsivo: genera un nodo DOM a partire da un vNode
+  // Ricorsivo: VNode -> DOM
   _renderVNode(vNode, ctx) {
     if (!vNode) return null;
-    if (vNode.type === 'text') {
-      return document.createTextNode(this._evalText(vNode.text, ctx));
-    }
+    if (vNode.type === 'text') return document.createTextNode(this._evalText(vNode.text, ctx));
 
-    // Direttive condizionali
-    if (vNode.directives['@if'] && !this._evalExpr(vNode.directives['@if'], ctx)) {
-      return null;
-    }
-    if (vNode.directives['@show'] && !this._evalExpr(vNode.directives['@show'], ctx)) {
-      return null;
-    }
-    if (vNode.directives['@hide'] && this._evalExpr(vNode.directives['@hide'], ctx)) {
-      return null;
-    }
+    // Condizionali
+    if (vNode.directives['@if'] && !this._evalExpr(vNode.directives['@if'], ctx)) return null;
+    if (vNode.directives['@show'] && !this._evalExpr(vNode.directives['@show'], ctx)) return null;
+    if (vNode.directives['@hide'] && this._evalExpr(vNode.directives['@hide'], ctx)) return null;
 
-    // Direttiva @for
+    // Ciclo @for
     if (vNode.directives['@for']) {
       const [item, arrExpr] = vNode.directives['@for'].split(' in ').map(s => s.trim());
       const arr = this._evalExpr(arrExpr, ctx) || [];
@@ -163,66 +134,47 @@ class AyishaVDOM {
       return frag;
     }
 
-    // Creazione elemento reale
+    // Crea elemento
     const el = document.createElement(vNode.tag);
-    Object.entries(vNode.attrs).forEach(([name, value]) => el.setAttribute(name, value));
+    for (const [name, value] of Object.entries(vNode.attrs)) el.setAttribute(name, value);
 
-    // Gestione @text
-    if (vNode.directives['@text']) {
-      el.textContent = this._evalExpr(vNode.directives['@text'], ctx);
-    } else {
-      vNode.children.forEach(child => {
-        const node = this._renderVNode(child, ctx);
-        if (node) el.appendChild(node);
-      });
-    }
+    // @text
+    if (vNode.directives['@text']) el.textContent = this._evalExpr(vNode.directives['@text'], ctx);
+    else vNode.children.forEach(child => { const node = this._renderVNode(child, ctx); if (node) el.appendChild(node); });
 
-    // Two-way binding: @model
-    if (vNode.directives['@model']) {
-      this._bindModel(el, vNode.directives['@model'], ctx);
-    }
+    // @model (two-way binding)
+    if (vNode.directives['@model']) this._bindModel(el, vNode.directives['@model'], ctx);
 
-    // Classi dinamiche: @class
+    // @class dinamiche
     if (vNode.directives['@class']) {
       const classes = this._evalExpr(vNode.directives['@class'], ctx) || {};
-      Object.entries(classes).forEach(([cls, cond]) => {
-        if (cond) el.classList.add(cls);
-        else el.classList.remove(cls);
-      });
+      for (const [cls, cond] of Object.entries(classes)) {
+        if (cond) el.classList.add(cls); else el.classList.remove(cls);
+      }
     }
 
-    // Stili dinamici: @style
+    // @style dinamici
     if (vNode.directives['@style']) {
       const styles = this._evalExpr(vNode.directives['@style'], ctx) || {};
-      Object.entries(styles).forEach(([prop, val]) => {
-        el.style[prop] = val;
-      });
+      for (const [prop, val] of Object.entries(styles)) el.style[prop] = val;
     }
 
-    // Eventi: @click con supporto multi-statement
+    // @click
     if (vNode.directives['@click']) {
       const expr = vNode.directives['@click'];
       el.addEventListener('click', event => {
-        try {
-          new Function('state', 'ctx', 'event', `with(state){with(ctx){${expr}}}`)(this.state, ctx, event);
-        } catch (err) {
-          console.error('Errore in @click:', err);
-        }
+        try { new Function('state', 'ctx', 'event', `with(state){with(ctx){${expr}}}`)(this.state, ctx, event); }
+        catch (err) { console.error('Errore in @click:', err); }
         this.render();
       });
     }
 
-    // Lifecycle hooks: @mounted e @init
-    if (vNode.directives['@mounted']) {
-      setTimeout(() => this._evalExpr(vNode.directives['@mounted'], ctx), 0);
-    }
-    if (vNode.directives['@init']) {
-      this._evalExpr(vNode.directives['@init'], ctx);
-    }
+    // Lifecycle: @mounted, @init
+    if (vNode.directives['@mounted']) setTimeout(() => this._evalExpr(vNode.directives['@mounted'], ctx), 0);
+    if (vNode.directives['@init']) this._evalExpr(vNode.directives['@init'], ctx);
 
-    // Fetch data: @fetch e risultato @result
+    // @fetch
     if (vNode.directives['@fetch']) {
-      // Usa un identificatore unico per l'elemento e la fetch
       const fetchId = vNode.directives['@fetch'] + (vNode.directives['@result'] || '');
       if (!this._fetched) this._fetched = {};
       if (!this._fetched[fetchId]) {
@@ -236,11 +188,8 @@ class AyishaVDOM {
           let options = { method };
           if (bodyExpr && method !== 'GET') {
             let bodyObj = {};
-            try {
-              bodyObj = this._evalExpr(bodyExpr, ctx);
-            } catch (e) {
-              try { bodyObj = JSON.parse(bodyExpr); } catch (e2) { bodyObj = {}; }
-            }
+            try { bodyObj = this._evalExpr(bodyExpr, ctx); }
+            catch (e) { try { bodyObj = JSON.parse(bodyExpr); } catch { bodyObj = {}; } }
             options.body = JSON.stringify(bodyObj);
             options.headers = { 'Content-Type': 'application/json' };
           }
@@ -249,9 +198,7 @@ class AyishaVDOM {
             .then(data => { if (resultKey) this.state[resultKey] = data; });
         };
         doFetch();
-        if (watchVar) {
-          watchVar.split(',').forEach(dep => this.addWatcher(dep.trim(), doFetch));
-        }
+        if (watchVar) watchVar.split(',').forEach(dep => this.addWatcher(dep.trim(), doFetch));
         this._fetched[fetchId] = true;
       }
     }
@@ -261,25 +208,20 @@ class AyishaVDOM {
       el.textContent = typeof val === 'object' ? JSON.stringify(val) : (val || '');
     }
 
-    // Watchers: @watch
+    // @watch
     if (vNode.directives['@watch']) {
       const [prop, fnBody] = vNode.directives['@watch'].split('=>').map(s => s.trim());
       if (fnBody) {
         this.addWatcher(prop, value => {
-          try {
-            // Permetti sia "userId => userUrl = ..." che "userId => state.userUrl = ..."
-            new Function('value', 'state', 'with(state){' + fnBody + '}')(value, this.state);
-          } catch {}
+          try { new Function('value', 'state', 'with(state){' + fnBody + '}')(value, this.state); } catch {}
         });
       }
     }
 
-    // Validation: @validate
-    if (vNode.directives['@validate']) {
-      this._bindValidation(el, vNode.directives['@validate']);
-    }
+    // @validate
+    if (vNode.directives['@validate']) this._bindValidation(el, vNode.directives['@validate']);
 
-    // Routing: @link e @page
+    // Routing: @link, @page
     if (vNode.directives['@link']) {
       el.addEventListener('click', e => {
         e.preventDefault();
@@ -291,12 +233,10 @@ class AyishaVDOM {
       if (this.state.currentPage !== vNode.directives['@page']) return null;
     }
 
-    // Animazioni: @animate
-    if (vNode.directives['@animate']) {
-      el.classList.add(vNode.directives['@animate']);
-    }
+    // @animate
+    if (vNode.directives['@animate']) el.classList.add(vNode.directives['@animate']);
 
-    // Componenti: @component
+    // @component
     if (vNode.directives['@component']) {
       const compName = vNode.directives['@component'];
       if (this.components[compName]) {
@@ -306,7 +246,7 @@ class AyishaVDOM {
       }
     }
 
-    // Switch-case-default: @switch, @case, @default
+    // Switch-case-default
     if (vNode.directives['@switch']) {
       const switchVal = this._evalExpr(vNode.directives['@switch'], ctx);
       let defaultNode = null;
@@ -314,25 +254,18 @@ class AyishaVDOM {
         if (child.directives) {
           if (child.directives['@case'] != null) {
             let caseVal = child.directives['@case'];
-            if (/^['"].*['"]$/.test(caseVal)) {
-              caseVal = caseVal.slice(1, -1);
-            }
-            if (String(caseVal) === String(switchVal)) {
-              return this._renderVNode(child, ctx);
-            }
+            if (/^['"].*['"]$/.test(caseVal)) caseVal = caseVal.slice(1, -1);
+            if (String(caseVal) === String(switchVal)) return this._renderVNode(child, ctx);
           }
-          if (child.directives['@default'] != null) {
-            defaultNode = child;
-          }
+          if (child.directives['@default'] != null) defaultNode = child;
         }
       }
       return defaultNode ? this._renderVNode(defaultNode, ctx) : document.createComment('noswitch');
     }
 
-    // Gestione @set: esegue assegnazione nello stato solo se cambia
+    // @set
     if (vNode.directives['@set']) {
       try {
-        // Supporta più assegnazioni separate da ;
         vNode.directives['@set'].split(';').forEach(assign => {
           if (!assign.trim()) return;
           const [key, ...rest] = assign.split('=');
@@ -340,70 +273,55 @@ class AyishaVDOM {
           const expr = rest.join('=').trim();
           if (varName && expr) {
             const newValue = new Function('state', 'with(state){return (' + expr + ')}')(this.state);
-            if (this.state[varName] !== newValue) {
-              this.state[varName] = newValue;
-            }
+            if (this.state[varName] !== newValue) this.state[varName] = newValue;
           }
         });
-      } catch (e) {
-        console.error('Errore in @set:', e);
-      }
+      } catch (e) { console.error('Errore in @set:', e); }
     }
 
-    // Functional programming: @map, @filter, @reduce
+    // Funzionali: @map, @filter, @reduce
     if (vNode.directives['@source']) {
       const sourceArr = this._evalExpr(vNode.directives['@source'], ctx) || [];
       const silentSet = (key, value) => {
-        // Aggiorna lo stato senza triggerare render
         if (JSON.stringify(this.state[key]) !== JSON.stringify(value)) {
           Object.defineProperty(this.state, key, { value, writable: true, configurable: true, enumerable: true });
         }
       };
+      let isFunctional = false;
       if (vNode.directives['@map']) {
+        isFunctional = true;
         const mapFn = new Function('item', 'return (' + vNode.directives['@map'] + ')');
         const result = sourceArr.map(mapFn);
-        if (vNode.directives['@result']) {
-          const key = vNode.directives['@result'];
-          silentSet(key, result);
-        }
-        // NON aggiornare innerHTML del contenitore
+        if (vNode.directives['@result']) silentSet(vNode.directives['@result'], result);
       }
       if (vNode.directives['@filter']) {
+        isFunctional = true;
         const filterFn = new Function('item', 'return (' + vNode.directives['@filter'] + ')');
         const result = sourceArr.filter(filterFn);
-        if (vNode.directives['@result']) {
-          const key = vNode.directives['@result'];
-          silentSet(key, result);
-        }
-        // NON aggiornare innerHTML del contenitore
+        if (vNode.directives['@result']) silentSet(vNode.directives['@result'], result);
       }
       if (vNode.directives['@reduce']) {
+        isFunctional = true;
         let reduceFn;
         const reduceStr = vNode.directives['@reduce'];
         if (reduceStr.includes('=>')) {
-          const arrowParts = reduceStr.split('=>');
-          const params = arrowParts[0].replace(/[()]/g, '').trim();
-          const body = arrowParts[1].trim();
-          reduceFn = new Function(params.split(',')[0].trim(), params.split(',')[1].trim(), 'return (' + body + ')');
+          const [params, body] = reduceStr.split('=>').map(s => s.trim());
+          const [a, b] = params.replace(/[()]/g, '').split(',').map(s => s.trim());
+          reduceFn = new Function(a, b, 'return (' + body + ')');
         } else {
           reduceFn = new Function('acc', 'item', 'return (' + reduceStr + ')');
         }
         const initial = vNode.directives['@initial'] ? this._evalExpr(vNode.directives['@initial'], ctx) : undefined;
         const result = initial !== undefined ? sourceArr.reduce(reduceFn, initial) : sourceArr.reduce(reduceFn);
-        if (vNode.directives['@result']) {
-          const key = vNode.directives['@result'];
-          silentSet(key, result);
-        }
-        // NON aggiornare innerHTML del contenitore
+        if (vNode.directives['@result']) silentSet(vNode.directives['@result'], result);
       }
-      // Ritorna un commento vuoto per non generare contenuto visibile
-      return document.createComment('functional directive');
+      if (isFunctional) return document.createComment('functional directive');
     }
 
     return el;
   }
 
-  // Helper: two-way data binding
+  // Two-way binding helper
   _bindModel(el, key, ctx) {
     if (el.tagName === 'SELECT') {
       el.value = this._evalExpr(key, ctx);
@@ -420,7 +338,7 @@ class AyishaVDOM {
     }
   }
 
-  // Helper: validazione input
+  // Validazione input
   _bindValidation(el, rulesStr) {
     const rules = rulesStr.split(',').map(r => r.trim());
     el.addEventListener('input', () => {
@@ -436,7 +354,7 @@ class AyishaVDOM {
     });
   }
 
-  // Eval expression JS in state+ctx
+  // Eval JS expression in state+ctx
   _evalExpr(expr, ctx, event) {
     try {
       return new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){return (${expr})}}`)(this.state, ctx, event);
