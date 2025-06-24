@@ -194,39 +194,50 @@ class AyishaVDOM {
               el.textContent = vNode.children[0].text;
             }
           } else if (dir === '@class') {
-            el.addEventListener(event, e => {
-              const classes = this._evalExpr(expr, ctx, e) || {};
-              for (const [cls, cond] of Object.entries(classes)) {
-                if (cond) el.classList.add(cls); else el.classList.remove(cls);
-              }
-            });
-          } else if (dir === '@set') {
-            el.addEventListener(event, e => {
-              try {
-                expr.split(';').forEach(assign => {
-                  if (!assign.trim()) return;
-                  const [key, ...rest] = assign.split('=');
-                  const varName = key.trim();
-                  const valExpr = rest.join('=').trim();
-                  if (varName && valExpr) {
-                    const newValue = new Function('state', 'event', 'with(state){return (' + valExpr + ')}')(this.state, e);
-                    if (this.state[varName] !== newValue) this.state[varName] = newValue;
-                  }
-                });
-              } catch (err) { console.error('Errore in @set sub-direttiva:', err); }
-            });
-          } else if (dir === '@model') {
-            // Aggiorna model solo sull'evento specificato
-            el.addEventListener(event, e => {
-              if (el.type === 'checkbox') {
-                this.state[expr] = e.target.checked;
-              } else if (el.type === 'radio') {
-                if (e.target.checked) this.state[expr] = e.target.value;
-              } else {
-                this.state[expr] = e.target.value;
-              }
-            });
+            // Sub-direttiva @class:evento
+            if (event === 'mouseenter' || event === 'mouseover' || event === 'hover') {
+              el.addEventListener('mouseenter', e => {
+                const classes = this._evalExpr(expr, ctx, e) || {};
+                for (const [cls, cond] of Object.entries(classes)) {
+                  if (cond) el.classList.add(cls);
+                }
+              });
+              el.addEventListener('mouseleave', e => {
+                const classes = this._evalExpr(expr, ctx, e) || {};
+                for (const [cls] of Object.entries(classes)) {
+                  el.classList.remove(cls);
+                }
+              });
+            } else if (event === 'focus') {
+              el.addEventListener('focus', e => {
+                const classes = this._evalExpr(expr, ctx, e) || {};
+                for (const [cls, cond] of Object.entries(classes)) {
+                  if (cond) el.classList.add(cls);
+                }
+              });
+              el.addEventListener('blur', e => {
+                const classes = this._evalExpr(expr, ctx, e) || {};
+                for (const [cls] of Object.entries(classes)) {
+                  el.classList.remove(cls);
+                }
+              });
+            } else if (event === 'click') {
+              el.addEventListener('click', e => {
+                const classes = this._evalExpr(expr, ctx, e) || {};
+                for (const [cls, cond] of Object.entries(classes)) {
+                  if (cond) el.classList.toggle(cls);
+                }
+              });
+            } else {
+              el.addEventListener(event, e => {
+                const classes = this._evalExpr(expr, ctx, e) || {};
+                for (const [cls, cond] of Object.entries(classes)) {
+                  if (cond) el.classList.add(cls); else el.classList.remove(cls);
+                }
+              });
+            }
           }
+          // ...existing code for other sub-directives...
         }
       }
     }
@@ -239,11 +250,16 @@ class AyishaVDOM {
     if (vNode.directives['@model']) this._bindModel(el, vNode.directives['@model'], ctx);
 
     // @class dinamiche
-    if (vNode.directives['@class']) {
+    // Applica le classi dinamiche solo se NON ci sono sub-direttive @class
+    if (vNode.directives['@class'] && (!vNode.subDirectives || !vNode.subDirectives['@class'])) {
+      // Calcola le classi dinamiche
       const classes = this._evalExpr(vNode.directives['@class'], ctx) || {};
-      for (const [cls, cond] of Object.entries(classes)) {
-        if (cond) el.classList.add(cls); else el.classList.remove(cls);
-      }
+      // Rimuovi tutte le classi dichiarate nella mappa
+      Object.keys(classes).forEach(cls => el.classList.remove(cls));
+      // Aggiungi solo quelle attive
+      Object.entries(classes).forEach(([cls, cond]) => {
+        if (cond) el.classList.add(cls);
+      });
     }
 
     // @style dinamici
@@ -298,7 +314,7 @@ class AyishaVDOM {
     // @result
     if (vNode.directives['@result'] && !vNode.directives['@fetch']) {
       // NON iniettare mai @result come inner text se l'elemento non è un tag che mostra dati (es: <div>, <span>, <pre>, ecc.)
-      // e mai se è presente una sub-direttiva @result
+      // e mai se è presente una sub-directtiva @result
       // Quindi: solo se non ci sono sub-directive @result su questo nodo
       let hasResultSubDirective = vNode.subDirectives && vNode.subDirectives['@result'];
       // Solo per elementi che possono mostrare testo

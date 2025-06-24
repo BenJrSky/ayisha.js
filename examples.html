@@ -79,6 +79,14 @@
         init {
             display: none !important;
         }
+
+        .red-border {
+            border: 2px solid red !important;
+        }
+
+        .green-border {
+            border: 2px solid green !important;
+        }
     </style>
 </head>
 
@@ -431,9 +439,11 @@
 
         </div>
         <h4>2. Cambiare testo solo al passaggio del mouse</h4>
-        <div @text:hover="'Testo al passaggio del mouse'" style="border:1px solid #ccc; padding:10px; width:200px;">Testo iniziale</div>
+        <div @text:hover="'Testo al passaggio del mouse'" style="border:1px solid #ccc; padding:10px; width:200px;">
+            Testo iniziale</div>
         <h4>2b. Cambiare testo solo al click</h4>
-        <div @text:click="'Testo cambiato con click!'" style="border:1px solid #ccc; padding:10px; width:200px;">Testo iniziale</div>
+        <div @text:click="'Testo cambiato con click!'" style="border:1px solid #ccc; padding:10px; width:200px;">Testo
+            iniziale</div>
         <h4>3. Applicare classi dinamiche solo al focus</h4>
         <input @class:focus="{active: true}" placeholder="Focus per classe dinamica">
         <h4>4. Aggiornare il model solo su input</h4>
@@ -442,6 +452,17 @@
         <h4>5. Eseguire un set solo su change</h4>
         <input @set:change="setValue='Cambiato!'">
         <p>Set value: <span @text="setValue"></span></p>
+        <h4>2c. Applicare bordo rosso solo al passaggio del mouse</h4>
+        <div @class="{ 'red-border': true }" style="border:1px solid #ccc; padding:10px; margin-top:10px; width:200px;">
+            Bordo Rosso</div>
+        <div @class="{ 'green-border': true }"
+            style="border:1px solid #ccc; padding:10px; margin-top:10px; width:200px;">Bordo Verde</div>
+
+        <div @class:hover="{ 'red-border': true }"
+            style="border:1px solid #ccc; padding:10px; margin-top:10px; width:200px;">Passa il mouse qui</div>
+        <div @class:click="{ 'green-border': true }"
+            style="border:1px solid #ccc; padding:10px; margin-top:10px; width:200px;">Clicca qui</div>
+
     </div>
 
 </body>
