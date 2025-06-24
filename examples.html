@@ -104,6 +104,8 @@
 
         <p>Hello, <span @text="name"></span>!</p>
         <input @model="name" placeholder="Enter your name">
+        <p>Live value: <span @text="name"></span></p>
+        <p>Mustache: {{name}}</p>
 
         <p>Count: <span @text="count"></span></p>
         <button @click="state.count++" class="primary">Increment</button>

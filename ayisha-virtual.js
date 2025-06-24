@@ -46,7 +46,7 @@ class AyishaVDOM {
         try {
           // Wrappa il codice per assegnare sempre su state
           const code = node.textContent.replace(/(^|\s)([a-zA-Z_][\w$]*)\s*=/g, (m, pre, v) => {
-            if (['if','for','while','switch','function','return','let','const','var','else','catch','case','break','continue','do','try','typeof','instanceof','in','of','await','async','new','delete','throw','this'].includes(v)) return m;
+            if (['if', 'for', 'while', 'switch', 'function', 'return', 'let', 'const', 'var', 'else', 'catch', 'case', 'break', 'continue', 'do', 'try', 'typeof', 'instanceof', 'in', 'of', 'await', 'async', 'new', 'delete', 'throw', 'this'].includes(v)) return m;
             return pre + 'state.' + v + ' =';
           });
           new Function('state', code)(this.state);
@@ -63,7 +63,7 @@ class AyishaVDOM {
               this.state[resultKey] = data;
               if (typeof this.render === 'function') this.render();
             })
-            .catch(() => {});
+            .catch(() => { });
         }
       }
       // NON aggiungere ai children del parent
@@ -175,6 +175,7 @@ class AyishaVDOM {
 
   // --- RENDER VDOM NEL DOM REALE ---
   render() {
+    this._modelBindings = [];
     // Salva focus e posizione cursore se un input è attivo
     const active = document.activeElement;
     let focusInfo = null;
@@ -222,6 +223,10 @@ class AyishaVDOM {
           newInput.setSelectionRange(focusInfo.selectionStart, focusInfo.selectionEnd);
         }
       }
+    }
+
+    if (this._modelBindings) {
+      this._modelBindings.forEach(({update}) => update());
     }
   }
 
@@ -343,12 +348,12 @@ class AyishaVDOM {
           if (dir === '@hover') {
             if (event === 'mouseenter' || event === 'mouseover' || event === 'hover') {
               el.addEventListener('mouseenter', e => {
-                try { new Function('state','ctx','event', 'with(state){with(ctx){'+expr+'}}')(this.state, ctx, e); } catch {}
+                try { new Function('state', 'ctx', 'event', 'with(state){with(ctx){' + expr + '}}')(this.state, ctx, e); } catch { }
                 this.render();
               });
             } else {
               el.addEventListener(event, e => {
-                try { new Function('state','ctx','event', 'with(state){with(ctx){'+expr+'}}')(this.state, ctx, e); } catch {}
+                try { new Function('state', 'ctx', 'event', 'with(state){with(ctx){' + expr + '}}')(this.state, ctx, e); } catch { }
                 this.render();
               });
             }
@@ -361,7 +366,7 @@ class AyishaVDOM {
                 staticText = vNode.children.filter(c => c.type === 'text').map(c => c.text).join('');
               }
               if (vNode.directives['@text']) {
-                try { el._ayishaOriginalText = this._evalExpr(vNode.directives['@text'], ctx); } catch {} 
+                try { el._ayishaOriginalText = this._evalExpr(vNode.directives['@text'], ctx); } catch { }
               } else if (staticText) {
                 el._ayishaOriginalText = staticText;
               } else {
@@ -374,7 +379,7 @@ class AyishaVDOM {
                 let val = expr;
                 if (/^(['"]).*\1$/.test(expr.trim())) val = expr.trim().slice(1, -1);
                 else {
-                  try { val = new Function('state','ctx','event', 'with(state){with(ctx){return ('+expr+')}}')(this.state, ctx, e); } catch {}
+                  try { val = new Function('state', 'ctx', 'event', 'with(state){with(ctx){return (' + expr + ')}}')(this.state, ctx, e); } catch { }
                 }
                 el.textContent = val;
               });
@@ -386,7 +391,7 @@ class AyishaVDOM {
                 let val = expr;
                 if (/^(['"]).*\1$/.test(expr.trim())) val = expr.trim().slice(1, -1);
                 else {
-                  try { val = new Function('state','ctx','event', 'with(state){with(ctx){return ('+expr+')}}')(this.state, ctx, e); } catch {}
+                  try { val = new Function('state', 'ctx', 'event', 'with(state){with(ctx){return (' + expr + ')}}')(this.state, ctx, e); } catch { }
                 }
                 el.textContent = val;
                 el._ayishaOriginalText = val;
@@ -398,15 +403,15 @@ class AyishaVDOM {
               try {
                 const classes = this._evalExpr(vNode.directives['@class'], ctx) || {};
                 el._ayishaOriginalClasses = Object.entries(classes).filter(([cls, cond]) => cond).map(([cls]) => cls);
-              } catch {}
+              } catch { }
             }
             if (event === 'hover' || event === 'mouseenter' || event === 'mouseover') {
               el.addEventListener('mouseenter', e => {
                 let val = expr;
                 if (/^\s*\{.*\}\s*$/.test(expr.trim())) {
-                  try { val = new Function('state','ctx','event', 'with(state){with(ctx){return '+expr+'}}')(this.state, ctx, e); } catch {}
+                  try { val = new Function('state', 'ctx', 'event', 'with(state){with(ctx){return ' + expr + '}}')(this.state, ctx, e); } catch { }
                 } else {
-                  try { val = new Function('state','ctx','event', 'with(state){with(ctx){return ('+expr+')}}')(this.state, ctx, e); } catch {}
+                  try { val = new Function('state', 'ctx', 'event', 'with(state){with(ctx){return (' + expr + ')}}')(this.state, ctx, e); } catch { }
                 }
                 if (typeof val === 'object' && val) {
                   Object.entries(val).forEach(([cls, cond]) => {
@@ -422,9 +427,9 @@ class AyishaVDOM {
               el.addEventListener('click', e => {
                 let val = expr;
                 if (/^\s*\{.*\}\s*$/.test(expr.trim())) {
-                  try { val = new Function('state','ctx','event', 'with(state){with(ctx){return '+expr+'}}')(this.state, ctx, e); } catch {}
+                  try { val = new Function('state', 'ctx', 'event', 'with(state){with(ctx){return ' + expr + '}}')(this.state, ctx, e); } catch { }
                 } else {
-                  try { val = new Function('state','ctx','event', 'with(state){with(ctx){return ('+expr+')}}')(this.state, ctx, e); } catch {}
+                  try { val = new Function('state', 'ctx', 'event', 'with(state){with(ctx){return (' + expr + ')}}')(this.state, ctx, e); } catch { }
                 }
                 if (typeof val === 'object' && val) {
                   Object.entries(val).forEach(([cls, cond]) => {
@@ -437,9 +442,9 @@ class AyishaVDOM {
               el.addEventListener(event, e => {
                 let val = expr;
                 if (/^\s*\{.*\}\s*$/.test(expr.trim())) {
-                  try { val = new Function('state','ctx','event', 'with(state){with(ctx){return '+expr+'}}')(this.state, ctx, e); } catch {}
+                  try { val = new Function('state', 'ctx', 'event', 'with(state){with(ctx){return ' + expr + '}}')(this.state, ctx, e); } catch { }
                 } else {
-                  try { val = new Function('state','ctx','event', 'with(state){with(ctx){return ('+expr+')}}')(this.state, ctx, e); } catch {}
+                  try { val = new Function('state', 'ctx', 'event', 'with(state){with(ctx){return (' + expr + ')}}')(this.state, ctx, e); } catch { }
                 }
                 if (typeof val === 'object' && val) {
                   Object.entries(val).forEach(([cls, cond]) => {
@@ -524,7 +529,7 @@ class AyishaVDOM {
     }
     if (vNode.directives['@result'] && !vNode.directives['@fetch']) {
       let hasResultSubDirective = vNode.subDirectives && vNode.subDirectives['@result'];
-      const canShowText = ['div','span','pre','p','code','td','th','li','b','i','strong','em','small'].includes(el.tagName.toLowerCase());
+      const canShowText = ['div', 'span', 'pre', 'p', 'code', 'td', 'th', 'li', 'b', 'i', 'strong', 'em', 'small'].includes(el.tagName.toLowerCase());
       let hasFetchSubDirective = vNode.subDirectives && vNode.subDirectives['@fetch'];
       if (!hasResultSubDirective && canShowText && !hasFetchSubDirective) {
         const key = vNode.directives['@result'];
@@ -538,7 +543,7 @@ class AyishaVDOM {
       const [prop, fnBody] = vNode.directives['@watch'].split('=>').map(s => s.trim());
       if (fnBody) {
         this.addWatcher(prop, value => {
-          try { new Function('value', 'state', 'with(state){' + fnBody + '}')(value, this.state); } catch {}
+          try { new Function('value', 'state', 'with(state){' + fnBody + '}')(value, this.state); } catch { }
         });
       }
     }
@@ -650,19 +655,39 @@ class AyishaVDOM {
   }
 
   // --- TWO-WAY BINDING ---
-  _bindModel(el, key, ctx) {
+_bindModel(el, key, ctx) {
+    if (!this._modelBindings) this._modelBindings = [];
+    const getVal = () => {
+      try {
+        return new Function('state','ctx',`with(state){with(ctx||{}){return (${key})}}`)(this.state, ctx);
+      } catch { return ''; }
+    };
+    const setVal = v => {
+      try {
+        new Function('state','ctx','value',`with(state){with(ctx||{}){${key}=value}}`)(this.state, ctx, v);
+      } catch {}
+    };
+    const update = () => {
+      if (el.tagName === 'SELECT') {
+        el.value = String(getVal() ?? '');
+      } else if (el.type === 'checkbox') {
+        el.checked = !!getVal();
+      } else if (el.type === 'radio') {
+        el.checked = getVal() == el.value;
+      } else {
+        el.value = String(getVal() ?? '');
+      }
+    };
+    this._modelBindings.push({el, update});
+    update();
     if (el.tagName === 'SELECT') {
-      el.value = this._evalExpr(key, ctx);
-      el.addEventListener('change', e => this.state[key] = e.target.value);
+      el.addEventListener('change', e => { setVal(e.target.value); this.render(); });
     } else if (el.type === 'checkbox') {
-      el.checked = this._evalExpr(key, ctx);
-      el.addEventListener('change', e => this.state[key] = e.target.checked);
+      el.addEventListener('change', e => { setVal(e.target.checked); this.render(); });
     } else if (el.type === 'radio') {
-      el.checked = this._evalExpr(key, ctx) == el.value;
-      el.addEventListener('change', e => { if (e.target.checked) this.state[key] = e.target.value; });
+      el.addEventListener('change', e => { if (e.target.checked) { setVal(e.target.value); this.render(); } });
     } else {
-      el.value = this._evalExpr(key, ctx);
-      el.addEventListener('input', e => this.state[key] = e.target.value);
+      el.addEventListener('input', e => { setVal(e.target.value); this.render(); });
     }
   }
 
@@ -683,36 +708,29 @@ class AyishaVDOM {
   }
 
   // --- EVAL ESPRESSIONI JS ---
-  _evalExpr(expr, ctx, event) {
-    try {
-      const stateProxy = new Proxy(this.state, {
-        get: (target, prop) => {
-          if (!(prop in target)) {
-            this.state[prop] = 0;
-            return this.state[prop];
-          }
-          return target[prop];
-        },
-        set: (target, prop, value) => {
-          target[prop] = value;
-          return true;
-        }
-      });
-      return new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){return (typeof ${expr} !== 'undefined' ? ${expr} : state['${expr}'])}}`)(stateProxy, ctx, event);
-    } catch (e) {
-      if (e instanceof ReferenceError) {
-        const match = /ReferenceError: ([\w$]+) is not defined/.exec(e.message);
-        if (match && match[1]) {
-          this.state[match[1]] = undefined;
-          try {
-            return new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){return (typeof ${expr} !== 'undefined' ? ${expr} : state['${expr}'])}}`)(this.state, ctx, event);
-          } catch (e2) { console.error('Eval error:', e2); return undefined; }
-        }
+// --- EVAL ESPRESSIONI JS ---
+_evalExpr(expr, ctx, event) {
+  // Gestione sicura di stringhe e numeri letterali
+  const trimmed = (expr||'').trim();
+  if (/^(['"]).*\1$/.test(trimmed)) return trimmed.slice(1, -1);
+  if (/^\d+(\.\d+)?$/.test(trimmed)) return Number(trimmed);
+  try {
+    const stateProxy = new Proxy(this.state, {
+      get: (target, prop) => {
+        if (!(prop in target)) return undefined;
+        return target[prop];
+      },
+      set: (target, prop, value) => {
+        target[prop] = value;
+        return true;
       }
-      console.error('Eval error:', e);
-      return undefined;
-    }
+    });
+    return new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){return (typeof ${expr} !== 'undefined' ? ${expr} : state['${expr}'])}}`)(stateProxy, ctx, event);
+  } catch (e) {
+    // Se ReferenceError o SyntaxError, restituisci undefined
+    return undefined;
   }
+}
 
   // --- EVAL TESTO MUSTACHE ---
   _evalText(text, ctx) {
