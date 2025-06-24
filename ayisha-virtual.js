@@ -132,17 +132,31 @@ class AyishaVDOM {
 
     // Ciclo @for
     if (vNode.directives['@for']) {
-      const [item, arrExpr] = vNode.directives['@for'].split(' in ').map(s => s.trim());
-      const arr = this._evalExpr(arrExpr, ctx) || [];
-      const frag = document.createDocumentFragment();
-      arr.forEach(val => {
-        const subCtx = { ...ctx, [item]: val };
-        vNode.children.forEach(child => {
-          const node = this._renderVNode(child, subCtx);
-          if (node) frag.appendChild(node);
+      // Supporta sintassi: item in items
+      const forMatch = vNode.directives['@for'].match(/^(\w+) in (.+)$/);
+      if (forMatch) {
+        const itemVar = forMatch[1];
+        const arr = this._evalExpr(forMatch[2], ctx) || [];
+        const frag = document.createDocumentFragment();
+        arr.forEach(val => {
+          const subCtx = { ...ctx };
+          subCtx[itemVar] = val;
+          // Renderizza i children (non il vNode stesso!)
+          if (vNode.children && vNode.children.length) {
+            vNode.children.forEach(child => {
+              const node = this._renderVNode(child, subCtx);
+              if (node) frag.appendChild(node);
+            });
+          } else {
+            // Se non ci sono children, renderizza il vNode stesso SENZA la direttiva @for
+            const clonedVNode = { ...vNode, directives: { ...vNode.directives } };
+            delete clonedVNode.directives['@for'];
+            const node = this._renderVNode(clonedVNode, subCtx);
+            if (node) frag.appendChild(node);
+          }
         });
-      });
-      return frag;
+        return frag;
+      }
     }
 
     // Crea elemento
@@ -156,11 +170,18 @@ class AyishaVDOM {
           const expr = vNode.subDirectives[dir][event];
           if (dir === '@fetch') {
             el.addEventListener(event, e => {
-              const urlTemplate = expr;
-              const resultKey = vNode.directives['@result'];
+              let url;
+              if (/^https?:\/\//.test(expr.trim())) {
+                url = expr.trim();
+              } else {
+                url = this._evalExpr(expr, ctx, e);
+              }
+              if (!url) return;
+              url = String(url);
+              // Usa resultKey se presente, altrimenti 'result'
+              const resultKey = vNode.directives['@result'] || 'result';
               const method = (vNode.directives['@method'] || 'GET').toUpperCase();
               const bodyExpr = vNode.directives['@body'];
-              let url = this._evalExpr(urlTemplate, ctx, e);
               let options = { method };
               if (bodyExpr && method !== 'GET') {
                 let bodyObj = {};
@@ -170,23 +191,29 @@ class AyishaVDOM {
                 options.headers = { 'Content-Type': 'application/json' };
               }
               fetch(url, options)
-                .then(res => res.json())
+                .then(res => {
+                  if (res.headers.get('content-type')?.includes('application/json')) return res.json();
+                  return res.text();
+                })
                 .then(data => { if (resultKey) this.state[resultKey] = data; });
             });
           } else if (dir === '@text') {
-            // Salva il testo originale per il ripristino
             let originalText = null;
             if (event === 'mouseenter' || event === 'mouseover' || event === 'hover') {
               el.addEventListener('mouseenter', e => {
                 if (originalText === null) originalText = el.textContent;
-                el.textContent = this._evalExpr(expr, ctx, e);
+                el.textContent = this._evalExpr(expr, ctx, e) + '';
               });
               el.addEventListener('mouseleave', e => {
                 if (originalText !== null) el.textContent = originalText;
               });
+            } else if (event === 'click') {
+              el.addEventListener('click', e => {
+                el.textContent = this._evalExpr(expr, ctx, e) + '';
+              });
             } else {
               el.addEventListener(event, e => {
-                el.textContent = this._evalExpr(expr, ctx, e);
+                el.textContent = this._evalExpr(expr, ctx, e) + '';
               });
             }
             // Imposta il testo iniziale se presente
@@ -194,7 +221,6 @@ class AyishaVDOM {
               el.textContent = vNode.children[0].text;
             }
           } else if (dir === '@class') {
-            // Sub-direttiva @class:evento
             if (event === 'mouseenter' || event === 'mouseover' || event === 'hover') {
               el.addEventListener('mouseenter', e => {
                 const classes = this._evalExpr(expr, ctx, e) || {};
@@ -288,7 +314,8 @@ class AyishaVDOM {
       if (!this._fetched) this._fetched = {};
       if (!this._fetched[fetchId]) {
         const urlTemplate = vNode.directives['@fetch'];
-        const resultKey = vNode.directives['@result'];
+        // Usa resultKey se presente, altrimenti 'result'
+        const resultKey = vNode.directives['@result'] || 'result';
         const watchVar = vNode.directives['@watch'];
         const method = (vNode.directives['@method'] || 'GET').toUpperCase();
         const bodyExpr = vNode.directives['@body'];
@@ -319,7 +346,9 @@ class AyishaVDOM {
       let hasResultSubDirective = vNode.subDirectives && vNode.subDirectives['@result'];
       // Solo per elementi che possono mostrare testo
       const canShowText = ['div','span','pre','p','code','td','th','li','b','i','strong','em','small'].includes(el.tagName.toLowerCase());
-      if (!hasResultSubDirective && canShowText) {
+      // --- PATCH: NON modificare il textContent se il nodo ha ANCHE una sub-direttiva @fetch (es: @fetch:click) ---
+      let hasFetchSubDirective = vNode.subDirectives && vNode.subDirectives['@fetch'];
+      if (!hasResultSubDirective && canShowText && !hasFetchSubDirective) {
         const key = vNode.directives['@result'];
         const val = this.state[key];
         el.textContent = typeof val === 'object' ? JSON.stringify(val) : (val || '');
@@ -410,13 +439,15 @@ class AyishaVDOM {
         isFunctional = true;
         const mapFn = new Function('item', 'return (' + vNode.directives['@map'] + ')');
         const result = sourceArr.map(mapFn);
-        if (vNode.directives['@result']) silentSet(vNode.directives['@result'], result);
+        const resultKey = vNode.directives['@result'] || 'result';
+        silentSet(resultKey, result);
       }
       if (vNode.directives['@filter']) {
         isFunctional = true;
         const filterFn = new Function('item', 'return (' + vNode.directives['@filter'] + ')');
         const result = sourceArr.filter(filterFn);
-        if (vNode.directives['@result']) silentSet(vNode.directives['@result'], result);
+        const resultKey = vNode.directives['@result'] || 'result';
+        silentSet(resultKey, result);
       }
       if (vNode.directives['@reduce']) {
         isFunctional = true;
@@ -431,7 +462,8 @@ class AyishaVDOM {
         }
         const initial = vNode.directives['@initial'] ? this._evalExpr(vNode.directives['@initial'], ctx) : undefined;
         const result = initial !== undefined ? sourceArr.reduce(reduceFn, initial) : sourceArr.reduce(reduceFn);
-        if (vNode.directives['@result']) silentSet(vNode.directives['@result'], result);
+        const resultKey = vNode.directives['@result'] || 'result';
+        silentSet(resultKey, result);
       }
       if (isFunctional) return document.createComment('functional directive');
     }
@@ -475,8 +507,34 @@ class AyishaVDOM {
   // Eval JS expression in state+ctx
   _evalExpr(expr, ctx, event) {
     try {
-      return new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){return (${expr})}}`)(this.state, ctx, event);
+      // Proxy per fallback automatico delle variabili non dichiarate
+      const stateProxy = new Proxy(this.state, {
+        get: (target, prop) => {
+          if (!(prop in target)) {
+            // Se la variabile non esiste, la crea come proprietà reattiva
+            this.state[prop] = undefined;
+            return this.state[prop];
+          }
+          return target[prop];
+        },
+        set: (target, prop, value) => {
+          target[prop] = value;
+          return true;
+        }
+      });
+      // Esegue l'espressione in un contesto che include sia state che ctx
+      return new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){return (typeof ${expr} !== 'undefined' ? ${expr} : state['${expr}'])}}`)(stateProxy, ctx, event);
     } catch (e) {
+      // Se ReferenceError, crea la variabile nello state e riprova una volta
+      if (e instanceof ReferenceError) {
+        const match = /ReferenceError: ([\w$]+) is not defined/.exec(e.message);
+        if (match && match[1]) {
+          this.state[match[1]] = undefined;
+          try {
+            return new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){return (typeof ${expr} !== 'undefined' ? ${expr} : state['${expr}'])}}`)(this.state, ctx, event);
+          } catch (e2) { console.error('Eval error:', e2); return undefined; }
+        }
+      }
       console.error('Eval error:', e);
       return undefined;
     }

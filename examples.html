@@ -420,49 +420,69 @@
         </style>
     </div>
 
-    <!-- Sub-direttive: esempi pratici -->
+    <!-- Sub-direttive: esempi pratici per un blog -->
     <div class="example">
-        <h3>13. Sub-direttive (@direttiva:evento)</h3>
+        <h3>13. Sub-direttive (@direttiva:evento) - Blog Demo</h3>
         <init>
-            state.myData = null;
-            state.hoverText = 'Testo iniziale';
-            state.active = false;
-            state.modelValue = '';
-            state.setValue = '';
+            state.posts = [
+                { id: 1, title: 'Hello World', content: 'Welcome to my blog!', likes: 0, editing: false },
+                { id: 2, title: 'Second Post', content: 'Another post here.', likes: 0, editing: false }
+            ];
+            state.newTitle = '';
+            state.newContent = '';
+            state.selectedPost = null;
+            state.filter = '';
+            state.editContent = '';
+            state.editTitle = '';
+            state.fetchResult = null;
         </init>
-        <h4>1. Eseguire un fetch solo al click</h4>
-        <button @fetch:click="'https://jsonplaceholder.typicode.com/todos/3'" @result="myData">Carica dati</button>
-        <div>
-            <b>Risultato fetch:</b>
-            <pre @text="JSON.stringify(myData, null, 2)"></pre>
-            <pre>{{myData}}</pre>
+        <h4>Aggiungi un nuovo post</h4>
+        <input @model="newTitle" placeholder="Titolo">
+        <input @model="newContent" placeholder="Contenuto">
+        <button @click="state.posts.push({id: Date.now(), title: state.newTitle, content: state.newContent, likes: 0, editing: false}); state.newTitle=''; state.newContent='';">Aggiungi Post</button>
 
+        <h4>Filtra post per titolo</h4>
+        <input @model="filter" placeholder="Filtra per titolo">
+
+        <ul>
+            <li @for="post in posts.filter(p => !filter || p.title.toLowerCase().includes(filter.toLowerCase()))" @key="post.id">
+                <b @text="post.title"></b>
+                <p @text="post.content"></p>
+                <span>Likes: <span @text="post.likes"></span></span>
+                <button @click="post.likes++">Like</button>
+                <button @click="post.editing = !post.editing">Modifica</button>
+                <button @click="state.posts = state.posts.filter(p => p.id !== post.id)">Elimina</button>
+                <div @if="post.editing">
+                    <input @model="editTitle" :value="post.title" @focus="editTitle=post.title">
+                    <input @model="editContent" :value="post.content" @focus="editContent=post.content">
+                    <button @click="post.title=editTitle; post.content=editContent; post.editing=false">Salva</button>
+                </div>
+            </li>
+        </ul>
+
+        <h4>Sub-direttive: tutte le combinazioni</h4>
+        <button @fetch:click="'https://jsonplaceholder.typicode.com/posts/1'" @result="fetchResult">Carica post remoto (fetch solo su click)</button>
+        <pre @text="JSON.stringify(fetchResult, null, 2)"></pre>
+
+        <input @model:input="filter" placeholder="Filtra solo su input">
+        <input @model:change="filter" placeholder="Filtra solo su change">
+
+        <input @set:change="filter='reset'">
+        <button @set:click="filter=''">Reset filtro</button>
+
+        <div @text:hover="'Passa il mouse per vedere questo testo'" style="border:1px solid #ccc; padding:10px; width:300px;">Testo statico</div>
+        <div @text:click="'Hai cliccato!'" style="border:1px solid #ccc; padding:10px; width:300px;">Clicca qui</div>
+
+        <input @class:focus="{ 'red-border': true }" placeholder="Focus per bordo rosso">
+        <input @class:input="{ 'green-border': true }" placeholder="Input per bordo verde">
+        <div @class:hover="{ 'red-border': true }" style="border:1px solid #ccc; padding:10px; width:300px;">Hover per bordo rosso</div>
+        <div @class:click="{ 'green-border': true }" style="border:1px solid #ccc; padding:10px; width:300px;">Click per bordo verde</div>
+
+        <input @model="selectedPost">
+        <button @set:click="selectedPost=null">Deseleziona</button>
+        <div @if="selectedPost">
+            <h4>Post selezionato: <span @text="selectedPost"></span></h4>
         </div>
-        <h4>2. Cambiare testo solo al passaggio del mouse</h4>
-        <div @text:hover="'Testo al passaggio del mouse'" style="border:1px solid #ccc; padding:10px; width:200px;">
-            Testo iniziale</div>
-        <h4>2b. Cambiare testo solo al click</h4>
-        <div @text:click="'Testo cambiato con click!'" style="border:1px solid #ccc; padding:10px; width:200px;">Testo
-            iniziale</div>
-        <h4>3. Applicare classi dinamiche solo al focus</h4>
-        <input @class:focus="{active: true}" placeholder="Focus per classe dinamica">
-        <h4>4. Aggiornare il model solo su input</h4>
-        <input @model:input="modelValue" placeholder="Aggiorna solo su input">
-        <p>Model value: <span @text="modelValue"></span></p>
-        <h4>5. Eseguire un set solo su change</h4>
-        <input @set:change="setValue='Cambiato!'">
-        <p>Set value: <span @text="setValue"></span></p>
-        <h4>2c. Applicare bordo rosso solo al passaggio del mouse</h4>
-        <div @class="{ 'red-border': true }" style="border:1px solid #ccc; padding:10px; margin-top:10px; width:200px;">
-            Bordo Rosso</div>
-        <div @class="{ 'green-border': true }"
-            style="border:1px solid #ccc; padding:10px; margin-top:10px; width:200px;">Bordo Verde</div>
-
-        <div @class:hover="{ 'red-border': true }"
-            style="border:1px solid #ccc; padding:10px; margin-top:10px; width:200px;">Passa il mouse qui</div>
-        <div @class:click="{ 'green-border': true }"
-            style="border:1px solid #ccc; padding:10px; margin-top:10px; width:200px;">Clicca qui</div>
-
     </div>
 
 </body>
