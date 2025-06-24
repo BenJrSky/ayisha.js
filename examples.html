@@ -137,9 +137,12 @@
 
         <div @switch="userType">
             <div @case="guest">Welcome, Guest! Please log in.</div>
-            <div @case="user">Hello, User! You have access.<p @if="name=='World'">Ciao Mondo</p></div>
+            <div @case="user">Hello, User! You have access.<p @if="name=='World'">Ciao Mondo</p>
+            </div>
             <div @case="admin" class="bg-red">Hi, Admin! You have full control.</div>
-            <div @default><p>Unknown user type</p></div>
+            <div @default>
+                <p>Unknown user type</p>
+            </div>
         </div>
     </div>
 
@@ -195,12 +198,12 @@
         <div @fetch="https://jsonplaceholder.typicode.com/users" @result="users"></div>
 
         <input type="number" @model="userId" min="1" max="10">
-        
+
 
         <div @watch="userId=>userUrl=`https://jsonplaceholder.typicode.com/users/${userId}`">
             {{userUrl || ''}}
         </div>
-        
+
         <button @click="userId++" class="primary">Incrementa userId</button>
 
         <!-- Debug info -->
@@ -268,7 +271,7 @@
             state.numbers = [1,2,3,4,5,6,7,8,9,10];
         </init>
 
-        
+
         <!-- Map: square each number -->
         <div @source="numbers" @map="item * item" @result="squares"></div>
         <!-- Filter: only even numbers -->
@@ -428,7 +431,9 @@
 
         </div>
         <h4>2. Cambiare testo solo al passaggio del mouse</h4>
-        <div @text:hover="'Testo al passaggio del mouse'" style="border:1px solid #ccc; padding:10px; width:200px;">{{hoverText}}</div>
+        <div @text:hover="'Testo al passaggio del mouse'" style="border:1px solid #ccc; padding:10px; width:200px;">Testo iniziale</div>
+        <h4>2b. Cambiare testo solo al click</h4>
+        <div @text:click="'Testo cambiato con click!'" style="border:1px solid #ccc; padding:10px; width:200px;">Testo iniziale</div>
         <h4>3. Applicare classi dinamiche solo al focus</h4>
         <input @class:focus="{active: true}" placeholder="Focus per classe dinamica">
         <h4>4. Aggiornare il model solo su input</h4>

@@ -154,7 +154,6 @@ class AyishaVDOM {
       for (const dir in vNode.subDirectives) {
         for (const event in vNode.subDirectives[dir]) {
           const expr = vNode.subDirectives[dir][event];
-          // Supporta solo direttive note (@fetch, @text, @class, @set, @model, ecc.)
           if (dir === '@fetch') {
             el.addEventListener(event, e => {
               const urlTemplate = expr;
@@ -175,9 +174,25 @@ class AyishaVDOM {
                 .then(data => { if (resultKey) this.state[resultKey] = data; });
             });
           } else if (dir === '@text') {
-            el.addEventListener(event, e => {
-              el.textContent = this._evalExpr(expr, ctx, e);
-            });
+            // Salva il testo originale per il ripristino
+            let originalText = null;
+            if (event === 'mouseenter' || event === 'mouseover' || event === 'hover') {
+              el.addEventListener('mouseenter', e => {
+                if (originalText === null) originalText = el.textContent;
+                el.textContent = this._evalExpr(expr, ctx, e);
+              });
+              el.addEventListener('mouseleave', e => {
+                if (originalText !== null) el.textContent = originalText;
+              });
+            } else {
+              el.addEventListener(event, e => {
+                el.textContent = this._evalExpr(expr, ctx, e);
+              });
+            }
+            // Imposta il testo iniziale se presente
+            if (el.textContent === '' && vNode.children && vNode.children.length === 1 && vNode.children[0].type === 'text') {
+              el.textContent = vNode.children[0].text;
+            }
           } else if (dir === '@class') {
             el.addEventListener(event, e => {
               const classes = this._evalExpr(expr, ctx, e) || {};
@@ -217,8 +232,8 @@ class AyishaVDOM {
     }
 
     // @text
-    if (vNode.directives['@text']) el.textContent = this._evalExpr(vNode.directives['@text'], ctx);
-    else vNode.children.forEach(child => { const node = this._renderVNode(child, ctx); if (node) el.appendChild(node); });
+    if (vNode.directives['@text'] && (!vNode.subDirectives || !vNode.subDirectives['@text'])) el.textContent = this._evalExpr(vNode.directives['@text'], ctx);
+    else if (!vNode.subDirectives || !vNode.subDirectives['@text']) vNode.children.forEach(child => { const node = this._renderVNode(child, ctx); if (node) el.appendChild(node); });
 
     // @model (two-way binding)
     if (vNode.directives['@model']) this._bindModel(el, vNode.directives['@model'], ctx);
