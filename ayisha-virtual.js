@@ -16,8 +16,8 @@ class AyishaVDOM {
     if (node.nodeType !== 1) return null;
     const tag = node.tagName.toLowerCase();
     if (tag === 'script' || tag === 'style') return null;
-    if (tag === 'ayisha-directive' || tag === 'a-dir' || tag === 'x') {
-      // Processa direttive ma NON aggiungere ai children del parent
+    if (tag === 'ayisha-directive' || tag === 'a-dir' || tag === 'x' || tag === 'init') {
+      // Processa direttive o codice ma NON aggiungere ai children del parent
       const vNode = {
         tag,
         attrs: {},
@@ -40,6 +40,17 @@ class AyishaVDOM {
         } else {
           vNode.attrs[attr.name] = attr.value;
         }
+      }
+      // Esegui codice init subito
+      if (tag === 'init' && node.textContent) {
+        try {
+          // Wrappa il codice per assegnare sempre su state
+          const code = node.textContent.replace(/(^|\s)([a-zA-Z_][\w$]*)\s*=/g, (m, pre, v) => {
+            if (['if','for','while','switch','function','return','let','const','var','else','catch','case','break','continue','do','try','typeof','instanceof','in','of','await','async','new','delete','throw','this'].includes(v)) return m;
+            return pre + 'state.' + v + ' =';
+          });
+          new Function('state', code)(this.state);
+        } catch (e) { console.error('Init block error:', e); }
       }
       // Esegui direttive subito (per fetch iniziali)
       if (vNode.directives['@fetch']) {
@@ -98,7 +109,47 @@ class AyishaVDOM {
     this._runInitBlocks();
     this._vdom = this.parse(this.root);
     this._makeReactive();
+    // Watcher su currentPage per sincronizzare la URL
+    const self = this;
+    let _currentPage = this.state.currentPage;
+    Object.defineProperty(this.state, 'currentPage', {
+      get() { return _currentPage; },
+      set(v) {
+        if (_currentPage !== v) {
+          _currentPage = v;
+          if (location.pathname.replace(/^\//, '') !== v) {
+            history.pushState({}, '', '/' + v);
+          }
+          self.render();
+        }
+      }
+    });
     this.render();
+    // Delego click per @link e intercetto anche @click="currentPage='...'"
+    this.root.addEventListener('click', e => {
+      let el = e.target;
+      while (el && el !== this.root) {
+        if (el.hasAttribute && el.hasAttribute('@link')) {
+          e.preventDefault();
+          const page = el.getAttribute('@link');
+          if (page) {
+            this.state.currentPage = page;
+          }
+          return;
+        }
+        // Intercetta anche @click="currentPage='...'"
+        if (el.hasAttribute && el.hasAttribute('@click')) {
+          const clickVal = el.getAttribute('@click');
+          const match = clickVal.match(/^\s*currentPage\s*=\s*['"]([\w-]+)['"]/);
+          if (match) {
+            const page = match[1];
+            this.state.currentPage = page;
+            return;
+          }
+        }
+        el = el.parentNode;
+      }
+    }, true);
   }
 
   // --- COMPONENTI CUSTOM ---
@@ -666,6 +717,68 @@ class AyishaVDOM {
   // --- EVAL TESTO MUSTACHE ---
   _evalText(text, ctx) {
     return text.replace(/{{(.*?)}}/g, (_, expr) => this._evalExpr(expr.trim(), ctx));
+  }
+
+  // --- GESTIONE ROUTING CON HISTORY E @link ---
+  _setupRouting() {
+    // All'avvio: sincronizza currentPage con URL o forza /posts
+    let pageFromUrl = location.pathname.replace(/^\//, '') || '';
+    if (!pageFromUrl || pageFromUrl === 'index.html') {
+      history.replaceState({}, '', '/posts');
+      pageFromUrl = 'posts';
+    }
+    this.state.currentPage = pageFromUrl;
+    window.addEventListener('popstate', () => {
+      const page = location.pathname.replace(/^\//, '') || 'posts';
+      this.state.currentPage = page;
+      this.render();
+    });
+  }
+
+  mount() {
+    this._vdom = this.parse(this.root);
+    this._setupRouting();
+    // Watcher su currentPage per sincronizzare la URL
+    const self = this;
+    let _currentPage = this.state.currentPage;
+    Object.defineProperty(this.state, 'currentPage', {
+      get() { return _currentPage; },
+      set(v) {
+        if (_currentPage !== v) {
+          _currentPage = v;
+          if (location.pathname.replace(/^\//, '') !== v) {
+            history.pushState({}, '', '/' + v);
+          }
+          self.render();
+        }
+      }
+    });
+    this.render();
+    // Delego click per @link e intercetto anche @click="currentPage='...'"
+    this.root.addEventListener('click', e => {
+      let el = e.target;
+      while (el && el !== this.root) {
+        if (el.hasAttribute && el.hasAttribute('@link')) {
+          e.preventDefault();
+          const page = el.getAttribute('@link');
+          if (page) {
+            this.state.currentPage = page;
+          }
+          return;
+        }
+        // Intercetta anche @click="currentPage='...'"
+        if (el.hasAttribute && el.hasAttribute('@click')) {
+          const clickVal = el.getAttribute('@click');
+          const match = clickVal.match(/^\s*currentPage\s*=\s*['"]([\w-]+)['"]/);
+          if (match) {
+            const page = match[1];
+            this.state.currentPage = page;
+            return;
+          }
+        }
+        el = el.parentNode;
+      }
+    }, true);
   }
 }
 

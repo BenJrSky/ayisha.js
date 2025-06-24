@@ -194,6 +194,32 @@
       font-size: 1.05rem;
       line-height: 1.5;
     }
+    .main-nav {
+      background: #fff;
+      padding: 1rem 0;
+      box-shadow: 0 2px 8px #647dee11;
+      border-radius: 12px;
+      margin-bottom: 2rem;
+    }
+    .nav-btn {
+      background: transparent;
+      border: none;
+      color: #647dee;
+      font-size: 1.1rem;
+      cursor: pointer;
+      position: relative;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      transition: color 0.15s;
+      font-weight: 500;
+    }
+    .nav-btn.active {
+      color: #7f53ac;
+      font-weight: 700;
+    }
+    .nav-btn:hover {
+      color: #7f53ac;
+    }
     @media (max-width: 900px) {
       .container { padding: 1.2rem 0.2rem; }
       .post-list { grid-template-columns: 1fr; flex-direction: column; }
@@ -203,48 +229,57 @@
   </style>
 </head>
 <body>
-  <header>
-    <h1>Ayisha Blog Demo</h1>
-    <p>Post e commenti demo, stile moderno, dati da <a href="https://jsonplaceholder.typicode.com/" style="color:#fff;text-decoration:underline;">jsonplaceholder</a></p>
-  </header>
-  <div class="hero">
-    <div class="hero-title">Benvenuto nel Blog Demo</div>
-    <div class="hero-desc">Scopri post, dettagli e commenti con un design moderno e colorato. Powered by AyishaVDOM.</div>
-  </div>
-  <div class="container">
-    <div>
-      <h2 style="color:#647dee;margin-bottom:1.5rem;">Ultimi Post</h2>
-      <div class="post-list">
-        <div @for="post in posts" class="post-card" @click="state.currentPostId=post.id;state.currentPage='detail'">
-          <img class="post-avatar" :src="'https://i.pravatar.cc/64?img='+(post.userId%10+1)" alt="avatar" />
-          <div class="post-info">
-            <div class="post-title">{{post.title}}</div>
-            <div class="post-meta">Autore #{{post.userId}} &middot; ID: {{post.id}}</div>
-            <div class="post-body">{{post.body.slice(0, 120)}}...</div>
+    <nav class="main-nav" style="display:flex;gap:1.2rem;align-items:center;justify-content:center;padding:1.2rem 0 0.5rem 0;">
+      <button class="nav-btn" @link="posts" :class="state.currentPage==='posts'?'active':''">Post</button>
+      <button class="nav-btn" @link="detail" :class="state.currentPage==='detail'?'active':''">Detail</button>
+    </nav>
+    <header>
+      <h1>Ayisha Blog Demo {{user}}</h1>
+      <p>Post e commenti demo, stile moderno, dati da <a href="https://jsonplaceholder.typicode.com/" style="color:#fff;text-decoration:underline;">jsonplaceholder</a></p>
+    </header>
+    <div class="hero">
+      <div class="hero-title">Benvenuto nel Blog Demo</div>
+      <div class="hero-desc">Scopri post, dettagli e commenti con un design moderno e colorato. Powered by AyishaVDOM.</div>
+    </div>
+    <div class="container">
+      <div @page="posts">
+        <h2 style="color:#647dee;margin-bottom:1.5rem;">Ultimi Post</h2>
+        <div class="post-list">
+          <div @for="post in posts" class="post-card" @click="state.currentPostId=post.id;state.currentPage='detail'">
+            <img class="post-avatar" :src="'https://i.pravatar.cc/64?img='+(post.userId%10+1)" alt="avatar" />
+            <div class="post-info">
+              <div class="post-title">{{post.title}}</div>
+              <div class="post-meta">Autore #{{post.userId}} &middot; ID: {{post.id}}</div>
+              <div class="post-body">{{post.body.slice(0, 120)}}...</div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    <div @page="detail">
-      <button class="back-btn" @click="state.currentPage='list'">&larr; Torna ai post</button>
-      <div class="post-detail" @fetch="https://jsonplaceholder.typicode.com/posts/{currentPostId}" @result="postDetail">
-        <h2 class="post-title">{{postDetail.title}}</h2>
-        <div class="post-meta">Autore #{{postDetail.userId}} &middot; ID: {{postDetail.id}}</div>
-        <div class="post-body">{{postDetail.body}}</div>
-      </div>
-      <div class="comments" @fetch="https://jsonplaceholder.typicode.com/posts/{currentPostId}/comments" @result="comments">
-        <h3 style="color:#647dee;margin-bottom:1rem;">Commenti</h3>
-        <div @for="c in comments" class="comment">
-          <img class="comment-avatar" src="'https://i.pravatar.cc/38?img='+(c.id%10+1)" alt="avatar" />
-          <div class="comment-content">
-            <div class="comment-name">{{c.name}}</div>
-            <div class="comment-email">{{c.email}}</div>
-            <div class="comment-body">{{c.body}}</div>
+      <div @page="detail">
+        <button class="back-btn" @click="currentPage='posts'">&larr; Torna ai post</button>
+        <div class="post-detail" @fetch="https://jsonplaceholder.typicode.com/posts/{currentPostId}" @result="postDetail">
+          <h2 class="post-title">{{postDetail.title}}</h2>
+          <div class="post-meta">Autore #{{postDetail.userId}} &middot; ID: {{postDetail.id}}</div>
+          <div class="post-body">{{postDetail.body}}</div>
+        </div>
+        <div class="comments" @fetch="https://jsonplaceholder.typicode.com/posts/{currentPostId}/comments" @result="comments">
+          <h3 style="color:#647dee;margin-bottom:1rem;">Commenti</h3>
+          <div @for="c in comments" class="comment">
+            <img class="comment-avatar" src="'https://i.pravatar.cc/38?img='+(c.id%10+1)" alt="avatar" />
+            <div class="comment-content">
+              <div class="comment-name">{{c.name}}</div>
+              <div class="comment-email">{{c.email}}</div>
+              <div class="comment-body">{{c.body}}</div>
+            </div>
           </div>
         </div>
       </div>
+      <x @fetch="https://jsonplaceholder.typicode.com/posts?_limit=12" @result="posts"></x>
+      <init>
+        currentPage = 'posts';
+        user = 'Ben';
+      </init>
     </div>
-    <x @fetch="https://jsonplaceholder.typicode.com/posts?_limit=12" @result="posts"></x>
   </div>
   <script src="./ayisha-virtual.js"></script>
 </body>
