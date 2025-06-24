@@ -10,7 +10,7 @@ class AyishaVDOM {
     window.ayisha = this;
   }
 
-  // Parsing DOM -> VDOM
+  // --- PARSING DOM -> VDOM ---
   parse(node) {
     if (node.nodeType === 3) return { type: 'text', text: node.textContent };
     if (node.nodeType !== 1) return null;
@@ -20,13 +20,12 @@ class AyishaVDOM {
       tag,
       attrs: {},
       directives: {},
-      subDirectives: {}, // <--- AGGIUNTA
+      subDirectives: {},
       children: [],
       key: node.getAttribute ? node.getAttribute('key') : null
     };
     for (const attr of Array.from(node.attributes)) {
       if (attr.name.startsWith('@')) {
-        // Gestione sub-direttive: @direttiva:evento
         const subDirMatch = attr.name.match(/^(@[\w-]+):([\w-]+)$/);
         if (subDirMatch) {
           const dir = subDirMatch[1];
@@ -44,7 +43,7 @@ class AyishaVDOM {
     return vNode;
   }
 
-  // Esegui blocchi <init> per popolare lo stato
+  // --- INIZIALIZZAZIONE STATO ---
   _runInitBlocks() {
     this.root.querySelectorAll('init').forEach(init => {
       try { new Function('state', init.textContent)(this.state); }
@@ -52,7 +51,7 @@ class AyishaVDOM {
     });
   }
 
-  // Monta l'applicazione
+  // --- MOUNT APP ---
   mount() {
     this._runInitBlocks();
     this._vdom = this.parse(this.root);
@@ -60,16 +59,16 @@ class AyishaVDOM {
     this.render();
   }
 
-  // Registra un componente custom
+  // --- COMPONENTI CUSTOM ---
   component(name, html) { this.components[name] = html; }
 
-  // Aggiungi watcher su proprietà di stato
+  // --- WATCHER SU PROPRIETÀ DI STATO ---
   addWatcher(prop, fn) {
     if (!this.watchers[prop]) this.watchers[prop] = [];
     this.watchers[prop].push(fn);
   }
 
-  // Stato reattivo
+  // --- STATO REATTIVO ---
   _makeReactive() {
     this.state = new Proxy(this.state, {
       set: (target, prop, value) => {
@@ -81,7 +80,7 @@ class AyishaVDOM {
     });
   }
 
-  // Renderizza il VDOM nel DOM reale
+  // --- RENDER VDOM NEL DOM REALE ---
   render() {
     // Salva focus e posizione cursore se un input è attivo
     const active = document.activeElement;
@@ -122,7 +121,7 @@ class AyishaVDOM {
     }
   }
 
-  // Ricorsivo: VNode -> DOM
+  // --- VNODE -> DOM (RICORSIVO) ---
   _renderVNode(vNode, ctx) {
     if (!vNode) return null;
     if (vNode.type === 'text') return document.createTextNode(this._evalText(vNode.text, ctx));
@@ -135,10 +134,15 @@ class AyishaVDOM {
     // Ciclo @for
     if (vNode.directives['@for']) {
       // Supporta sintassi: item in items
-      const forMatch = vNode.directives['@for'].match(/^(\w+) in (.+)$/);
+      const forMatch = vNode.directives['@for'].match(/^([\w$]+) in (.+)$/);
       if (forMatch) {
         const itemVar = forMatch[1];
-        const arr = this._evalExpr(forMatch[2], ctx) || [];
+        let arr = this._evalExpr(forMatch[2], ctx);
+        if (!Array.isArray(arr)) {
+          if (arr == null) arr = [];
+          else if (typeof arr === 'object') arr = Object.values(arr);
+          else arr = [];
+        }
         const frag = document.createDocumentFragment();
         arr.forEach(val => {
           const subCtx = { ...ctx };
@@ -165,29 +169,22 @@ class AyishaVDOM {
     const el = document.createElement(vNode.tag);
     for (const [name, value] of Object.entries(vNode.attrs)) el.setAttribute(name, value);
 
-    // Gestione direttiva principale @hover (identica a @click ma su mouseenter)
+    // --- DIRETTIVE PRINCIPALI ---
     if (vNode.directives['@hover']) {
       const expr = vNode.directives['@hover'];
       el.addEventListener('mouseenter', event => {
-        try {
-          new Function('state', 'ctx', 'event', `with(state){with(ctx){${expr}}}`)(this.state, ctx, event);
-        } catch (err) {
-          console.error('Errore in @hover:', err);
-        }
+        try { new Function('state', 'ctx', 'event', `with(state){with(ctx){${expr}}}`)(this.state, ctx, event); }
+        catch (err) { console.error('Errore in @hover:', err); }
         this.render();
       });
     }
-    // Gestione direttiva principale @fetch:hover (aggiunta sempre, anche se c'è @hover)
     if (vNode.directives['@fetch'] && vNode.attrs && vNode.attrs['@fetch:hover']) {
       const expr = vNode.attrs['@fetch:hover'];
       el.addEventListener('mouseenter', e => {
         setTimeout(() => {
           let url;
-          if (/^https?:\/\//.test(expr.trim())) {
-            url = expr.trim();
-          } else {
-            url = this._evalExpr(expr, ctx, e);
-          }
+          if (/^https?:\/\//.test(expr.trim())) url = expr.trim();
+          else url = this._evalExpr(expr, ctx, e);
           if (!url) return;
           url = String(url);
           const resultKey = vNode.directives['@result'] || 'result';
@@ -202,34 +199,24 @@ class AyishaVDOM {
             options.headers = { 'Content-Type': 'application/json' };
           }
           fetch(url, options)
-            .then(res => {
-              if (res.headers.get('content-type')?.includes('application/json')) return res.json();
-              return res.text();
-            })
+            .then(res => res.headers.get('content-type')?.includes('application/json') ? res.json() : res.text())
             .then(data => { if (resultKey) this.state[resultKey] = data; });
         }, 0);
       });
     }
 
-    // Sub-direttive: aggiungi event listener per ogni direttiva:evento
+    // --- SOTTO-DIRETTIVE (EVENTI) ---
     if (vNode.subDirectives) {
       for (const dir in vNode.subDirectives) {
         for (let event in vNode.subDirectives[dir]) {
-          // Correggi 'hover' in 'mouseenter' per compatibilità JS
           const realEvent = (event === 'hover') ? 'mouseenter' : event;
           const expr = vNode.subDirectives[dir][event];
-          // Gestione fetch:click e simili (custom)
           if (dir === '@fetch') {
             el.addEventListener(realEvent, e => {
               setTimeout(() => {
                 let url = expr.trim();
-                // Interpolazione variabili tipo {index} nell'URL per tutte le sub-direttive @fetch
                 url = url.replace(/\{([^}]+)\}/g, (m, key) => {
-                  try {
-                    return this._evalExpr(key, ctx, e);
-                  } catch {
-                    return '';
-                  }
+                  try { return this._evalExpr(key, ctx, e); } catch { return ''; }
                 });
                 if (!url) return;
                 url = String(url);
@@ -245,25 +232,19 @@ class AyishaVDOM {
                   options.headers = { 'Content-Type': 'application/json' };
                 }
                 fetch(url, options)
-                  .then(res => {
-                    if (res.headers.get('content-type')?.includes('application/json')) return res.json();
-                    return res.text();
-                  })
+                  .then(res => res.headers.get('content-type')?.includes('application/json') ? res.json() : res.text())
                   .then(data => { if (resultKey) this.state[resultKey] = data; });
               }, 0);
             });
             continue;
           }
-          // Gestione sub-direttive @hover
           if (dir === '@hover') {
-            // Se l'evento è mouseenter/mouseover/hover, esegui expr su mouseenter
             if (event === 'mouseenter' || event === 'mouseover' || event === 'hover') {
               el.addEventListener('mouseenter', e => {
                 try { new Function('state','ctx','event', 'with(state){with(ctx){'+expr+'}}')(this.state, ctx, e); } catch {}
                 this.render();
               });
             } else {
-              // Altri eventi custom
               el.addEventListener(event, e => {
                 try { new Function('state','ctx','event', 'with(state){with(ctx){'+expr+'}}')(this.state, ctx, e); } catch {}
                 this.render();
@@ -271,11 +252,8 @@ class AyishaVDOM {
             }
             continue;
           }
-          // Gestione sub-direttive @text e @class con eventi
           if (dir === '@text') {
-            // Salva il testo originale solo una volta
             if (!el._ayishaOriginalText) {
-              // Prendi tutto il testo statico dei figli (anche se ci sono più nodi di testo)
               let staticText = '';
               if (vNode.children && vNode.children.length) {
                 staticText = vNode.children.filter(c => c.type === 'text').map(c => c.text).join('');
@@ -292,9 +270,8 @@ class AyishaVDOM {
             if (event === 'mouseenter' || event === 'mouseover' || event === 'hover') {
               el.addEventListener('mouseenter', e => {
                 let val = expr;
-                if (/^(['"]).*\1$/.test(expr.trim())) {
-                  val = expr.trim().slice(1, -1);
-                } else {
+                if (/^(['"]).*\1$/.test(expr.trim())) val = expr.trim().slice(1, -1);
+                else {
                   try { val = new Function('state','ctx','event', 'with(state){with(ctx){return ('+expr+')}}')(this.state, ctx, e); } catch {}
                 }
                 el.textContent = val;
@@ -305,13 +282,12 @@ class AyishaVDOM {
             } else if (event === 'click') {
               el.addEventListener('click', e => {
                 let val = expr;
-                if (/^(['"]).*\1$/.test(expr.trim())) {
-                  val = expr.trim().slice(1, -1);
-                } else {
+                if (/^(['"]).*\1$/.test(expr.trim())) val = expr.trim().slice(1, -1);
+                else {
                   try { val = new Function('state','ctx','event', 'with(state){with(ctx){return ('+expr+')}}')(this.state, ctx, e); } catch {}
                 }
                 el.textContent = val;
-                el._ayishaOriginalText = val; // aggiorna il nuovo "stato base" dopo il click
+                el._ayishaOriginalText = val;
               });
             }
           } else if (dir === '@class') {
@@ -353,7 +329,6 @@ class AyishaVDOM {
                     if (cond) el.classList.add(cls); else el.classList.remove(cls);
                   });
                 }
-                // aggiorna il nuovo "stato base" delle classi dopo il click
                 el._ayishaOriginalClasses = Array.from(el.classList);
               });
             } else {
@@ -376,7 +351,7 @@ class AyishaVDOM {
       }
     }
 
-    // @text
+    // --- DIRETTIVE DI BASE ---
     if (vNode.directives['@text'] && (!vNode.subDirectives || !vNode.subDirectives['@text'])) el.textContent = this._evalExpr(vNode.directives['@text'], ctx);
     else if (!vNode.subDirectives || !vNode.subDirectives['@text']) vNode.children.forEach(child => { const node = this._renderVNode(child, ctx); if (node) el.appendChild(node); });
 
@@ -412,17 +387,16 @@ class AyishaVDOM {
       });
     }
 
-    // Lifecycle: @mounted, @init
+    // --- LIFECYCLE ---
     if (vNode.directives['@mounted']) setTimeout(() => this._evalExpr(vNode.directives['@mounted'], ctx), 0);
     if (vNode.directives['@init']) this._evalExpr(vNode.directives['@init'], ctx);
 
-    // @fetch
+    // --- FETCH ---
     if (vNode.directives['@fetch']) {
       const fetchId = vNode.directives['@fetch'] + (vNode.directives['@result'] || '');
       if (!this._fetched) this._fetched = {};
       if (!this._fetched[fetchId]) {
         const urlTemplate = vNode.directives['@fetch'];
-        // Usa resultKey se presente, altrimenti 'result'
         const resultKey = vNode.directives['@result'] || 'result';
         const watchVar = vNode.directives['@watch'];
         const method = (vNode.directives['@method'] || 'GET').toUpperCase();
@@ -446,15 +420,9 @@ class AyishaVDOM {
         this._fetched[fetchId] = true;
       }
     }
-    // @result
     if (vNode.directives['@result'] && !vNode.directives['@fetch']) {
-      // NON iniettare mai @result come inner text se l'elemento non è un tag che mostra dati (es: <div>, <span>, <pre>, ecc.)
-      // e mai se è presente una sub-directtiva @result
-      // Quindi: solo se non ci sono sub-directive @result su questo nodo
       let hasResultSubDirective = vNode.subDirectives && vNode.subDirectives['@result'];
-      // Solo per elementi che possono mostrare testo
       const canShowText = ['div','span','pre','p','code','td','th','li','b','i','strong','em','small'].includes(el.tagName.toLowerCase());
-      // --- PATCH: NON modificare il textContent se il nodo ha ANCHE una sub-direttiva @fetch (es: @fetch:click) ---
       let hasFetchSubDirective = vNode.subDirectives && vNode.subDirectives['@fetch'];
       if (!hasResultSubDirective && canShowText && !hasFetchSubDirective) {
         const key = vNode.directives['@result'];
@@ -463,7 +431,7 @@ class AyishaVDOM {
       }
     }
 
-    // @watch
+    // --- WATCH ---
     if (vNode.directives['@watch']) {
       const [prop, fnBody] = vNode.directives['@watch'].split('=>').map(s => s.trim());
       if (fnBody) {
@@ -473,10 +441,10 @@ class AyishaVDOM {
       }
     }
 
-    // @validate
+    // --- VALIDAZIONE ---
     if (vNode.directives['@validate']) this._bindValidation(el, vNode.directives['@validate']);
 
-    // Routing: @link, @page
+    // --- ROUTING ---
     if (vNode.directives['@link']) {
       el.addEventListener('click', e => {
         e.preventDefault();
@@ -488,10 +456,10 @@ class AyishaVDOM {
       if (this.state.currentPage !== vNode.directives['@page']) return null;
     }
 
-    // @animate
+    // --- ANIMATE ---
     if (vNode.directives['@animate']) el.classList.add(vNode.directives['@animate']);
 
-    // @component
+    // --- COMPONENTI ---
     if (vNode.directives['@component']) {
       const compName = vNode.directives['@component'];
       if (this.components[compName]) {
@@ -501,7 +469,7 @@ class AyishaVDOM {
       }
     }
 
-    // Switch-case-default
+    // --- SWITCH/CASE/DEFAULT ---
     if (vNode.directives['@switch']) {
       const switchVal = this._evalExpr(vNode.directives['@switch'], ctx);
       let defaultNode = null;
@@ -518,7 +486,7 @@ class AyishaVDOM {
       return defaultNode ? this._renderVNode(defaultNode, ctx) : document.createComment('noswitch');
     }
 
-    // @set
+    // --- SET ---
     if (vNode.directives['@set']) {
       try {
         vNode.directives['@set'].split(';').forEach(assign => {
@@ -534,7 +502,7 @@ class AyishaVDOM {
       } catch (e) { console.error('Errore in @set:', e); }
     }
 
-    // Funzionali: @map, @filter, @reduce
+    // --- FUNZIONALI: MAP/FILTER/REDUCE ---
     if (vNode.directives['@source']) {
       const sourceArr = this._evalExpr(vNode.directives['@source'], ctx) || [];
       const silentSet = (key, value) => {
@@ -579,7 +547,7 @@ class AyishaVDOM {
     return el;
   }
 
-  // Two-way binding helper
+  // --- TWO-WAY BINDING ---
   _bindModel(el, key, ctx) {
     if (el.tagName === 'SELECT') {
       el.value = this._evalExpr(key, ctx);
@@ -596,7 +564,7 @@ class AyishaVDOM {
     }
   }
 
-  // Validazione input
+  // --- VALIDAZIONE INPUT ---
   _bindValidation(el, rulesStr) {
     const rules = rulesStr.split(',').map(r => r.trim());
     el.addEventListener('input', () => {
@@ -612,14 +580,12 @@ class AyishaVDOM {
     });
   }
 
-  // Eval JS expression in state+ctx
+  // --- EVAL ESPRESSIONI JS ---
   _evalExpr(expr, ctx, event) {
     try {
-      // Proxy per fallback automatico delle variabili non dichiarate
       const stateProxy = new Proxy(this.state, {
         get: (target, prop) => {
           if (!(prop in target)) {
-            // Se la variabile non esiste, la crea come proprietà reattiva e la inizializza a 0
             this.state[prop] = 0;
             return this.state[prop];
           }
@@ -630,10 +596,8 @@ class AyishaVDOM {
           return true;
         }
       });
-      // Esegue l'espressione in un contesto che include sia state che ctx
       return new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){return (typeof ${expr} !== 'undefined' ? ${expr} : state['${expr}'])}}`)(stateProxy, ctx, event);
     } catch (e) {
-      // Se ReferenceError, crea la variabile nello state e riprova una volta
       if (e instanceof ReferenceError) {
         const match = /ReferenceError: ([\w$]+) is not defined/.exec(e.message);
         if (match && match[1]) {
@@ -648,13 +612,13 @@ class AyishaVDOM {
     }
   }
 
-  // Eval text moustache
+  // --- EVAL TESTO MUSTACHE ---
   _evalText(text, ctx) {
     return text.replace(/{{(.*?)}}/g, (_, expr) => this._evalExpr(expr.trim(), ctx));
   }
 }
 
-// Auto-mount su document.body
+// --- AUTO-MOUNT SU document.body ---
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => new AyishaVDOM(document.body).mount());
 } else {
