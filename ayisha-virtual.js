@@ -15,10 +15,9 @@ class AyishaVDOM {
     if (node.nodeType === 3) return { type: 'text', text: node.textContent };
     if (node.nodeType !== 1) return null;
     const tag = node.tagName.toLowerCase();
-    // Se il tag è tra quelli da ignorare completamente (script, style), esci subito
     if (tag === 'script' || tag === 'style') return null;
-    // Se il tag è uno "nascosto" (ayisha-directive, a-dir, x), processa solo le direttive ma non renderizzare nulla
     if (tag === 'ayisha-directive' || tag === 'a-dir' || tag === 'x') {
+      // Processa direttive ma NON aggiungere ai children del parent
       const vNode = {
         tag,
         attrs: {},
@@ -42,8 +41,22 @@ class AyishaVDOM {
           vNode.attrs[attr.name] = attr.value;
         }
       }
-      // Non processare children, restituisci solo le direttive
-      return vNode;
+      // Esegui direttive subito (per fetch iniziali)
+      if (vNode.directives['@fetch']) {
+        let url = vNode.directives['@fetch'];
+        if (url) {
+          fetch(url)
+            .then(r => r.json())
+            .then(data => {
+              const resultKey = vNode.directives['@result'] || 'result';
+              this.state[resultKey] = data;
+              if (typeof this.render === 'function') this.render();
+            })
+            .catch(() => {});
+        }
+      }
+      // NON aggiungere ai children del parent
+      return null;
     }
     const vNode = {
       tag,

@@ -235,7 +235,7 @@
       <div class="comments" @fetch="https://jsonplaceholder.typicode.com/posts/{currentPostId}/comments" @result="comments">
         <h3 style="color:#647dee;margin-bottom:1rem;">Commenti</h3>
         <div @for="c in comments" class="comment">
-          <img class="comment-avatar" :src="'https://i.pravatar.cc/38?img='+(c.id%10+1)" alt="avatar" />
+          <img class="comment-avatar" src="'https://i.pravatar.cc/38?img='+(c.id%10+1)" alt="avatar" />
           <div class="comment-content">
             <div class="comment-name">{{c.name}}</div>
             <div class="comment-email">{{c.email}}</div>
