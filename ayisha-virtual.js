@@ -15,7 +15,36 @@ class AyishaVDOM {
     if (node.nodeType === 3) return { type: 'text', text: node.textContent };
     if (node.nodeType !== 1) return null;
     const tag = node.tagName.toLowerCase();
+    // Se il tag è tra quelli da ignorare completamente (script, style), esci subito
     if (tag === 'script' || tag === 'style') return null;
+    // Se il tag è uno "nascosto" (ayisha-directive, a-dir, x), processa solo le direttive ma non renderizzare nulla
+    if (tag === 'ayisha-directive' || tag === 'a-dir' || tag === 'x') {
+      const vNode = {
+        tag,
+        attrs: {},
+        directives: {},
+        subDirectives: {},
+        children: [],
+        key: node.getAttribute ? node.getAttribute('key') : null
+      };
+      for (const attr of Array.from(node.attributes)) {
+        if (attr.name.startsWith('@')) {
+          const subDirMatch = attr.name.match(/^(@[\w-]+):([\w-]+)$/);
+          if (subDirMatch) {
+            const dir = subDirMatch[1];
+            const event = subDirMatch[2];
+            if (!vNode.subDirectives[dir]) vNode.subDirectives[dir] = {};
+            vNode.subDirectives[dir][event] = attr.value;
+          } else {
+            vNode.directives[attr.name] = attr.value;
+          }
+        } else {
+          vNode.attrs[attr.name] = attr.value;
+        }
+      }
+      // Non processare children, restituisci solo le direttive
+      return vNode;
+    }
     const vNode = {
       tag,
       attrs: {},
@@ -144,23 +173,21 @@ class AyishaVDOM {
           else arr = [];
         }
         const frag = document.createDocumentFragment();
-        arr.forEach(val => {
+        for (const val of arr) {
           const subCtx = { ...ctx };
           subCtx[itemVar] = val;
-          // Renderizza i children (non il vNode stesso!)
           if (vNode.children && vNode.children.length) {
             vNode.children.forEach(child => {
               const node = this._renderVNode(child, subCtx);
               if (node) frag.appendChild(node);
             });
           } else {
-            // Se non ci sono children, renderizza il vNode stesso SENZA la direttiva @for
             const clonedVNode = { ...vNode, directives: { ...vNode.directives } };
             delete clonedVNode.directives['@for'];
             const node = this._renderVNode(clonedVNode, subCtx);
             if (node) frag.appendChild(node);
           }
-        });
+        }
         return frag;
       }
     }

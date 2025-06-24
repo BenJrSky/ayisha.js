@@ -130,7 +130,7 @@
         </div>
       </div>
     </div>
-
+    
     <div @page="detail">
       <button class="back-btn" @click="state.currentPage='list'">&larr; Torna ai post</button>
       <div class="post-detail" @fetch="https://jsonplaceholder.typicode.com/posts/{currentPostId}" @result="postDetail">
@@ -147,7 +147,8 @@
       </div>
     </div>
 
-    <div class="comments" @fetch="https://jsonplaceholder.typicode.com/posts?_limit=12" @result="posts"></div>
+    <x @fetch="https://jsonplaceholder.typicode.com/posts?_limit=12" @result="posts"></x> 
+
 
   </div>
   <script src="./ayisha-virtual.js"></script>
