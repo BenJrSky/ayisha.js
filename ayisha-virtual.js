@@ -20,12 +20,23 @@ class AyishaVDOM {
       tag,
       attrs: {},
       directives: {},
+      subDirectives: {}, // <--- AGGIUNTA
       children: [],
       key: node.getAttribute ? node.getAttribute('key') : null
     };
     for (const attr of Array.from(node.attributes)) {
-      if (attr.name.startsWith('@')) vNode.directives[attr.name] = attr.value;
-      else vNode.attrs[attr.name] = attr.value;
+      if (attr.name.startsWith('@')) {
+        // Gestione sub-direttive: @direttiva:evento
+        const match = attr.name.match(/^(@[\w-]+):([\w-]+)/);
+        if (match) {
+          const dir = match[1];
+          const event = match[2];
+          if (!vNode.subDirectives[dir]) vNode.subDirectives[dir] = {};
+          vNode.subDirectives[dir][event] = attr.value;
+        } else {
+          vNode.directives[attr.name] = attr.value;
+        }
+      } else vNode.attrs[attr.name] = attr.value;
     }
     vNode.children = Array.from(node.childNodes).map(child => this.parse(child)).filter(Boolean);
     return vNode;
@@ -138,6 +149,73 @@ class AyishaVDOM {
     const el = document.createElement(vNode.tag);
     for (const [name, value] of Object.entries(vNode.attrs)) el.setAttribute(name, value);
 
+    // Sub-direttive: aggiungi event listener per ogni direttiva:evento
+    if (vNode.subDirectives) {
+      for (const dir in vNode.subDirectives) {
+        for (const event in vNode.subDirectives[dir]) {
+          const expr = vNode.subDirectives[dir][event];
+          // Supporta solo direttive note (@fetch, @text, @class, @set, @model, ecc.)
+          if (dir === '@fetch') {
+            el.addEventListener(event, e => {
+              const urlTemplate = expr;
+              const resultKey = vNode.directives['@result'];
+              const method = (vNode.directives['@method'] || 'GET').toUpperCase();
+              const bodyExpr = vNode.directives['@body'];
+              let url = this._evalExpr(urlTemplate, ctx, e);
+              let options = { method };
+              if (bodyExpr && method !== 'GET') {
+                let bodyObj = {};
+                try { bodyObj = this._evalExpr(bodyExpr, ctx, e); }
+                catch (err) { try { bodyObj = JSON.parse(bodyExpr); } catch { bodyObj = {}; } }
+                options.body = JSON.stringify(bodyObj);
+                options.headers = { 'Content-Type': 'application/json' };
+              }
+              fetch(url, options)
+                .then(res => res.json())
+                .then(data => { if (resultKey) this.state[resultKey] = data; });
+            });
+          } else if (dir === '@text') {
+            el.addEventListener(event, e => {
+              el.textContent = this._evalExpr(expr, ctx, e);
+            });
+          } else if (dir === '@class') {
+            el.addEventListener(event, e => {
+              const classes = this._evalExpr(expr, ctx, e) || {};
+              for (const [cls, cond] of Object.entries(classes)) {
+                if (cond) el.classList.add(cls); else el.classList.remove(cls);
+              }
+            });
+          } else if (dir === '@set') {
+            el.addEventListener(event, e => {
+              try {
+                expr.split(';').forEach(assign => {
+                  if (!assign.trim()) return;
+                  const [key, ...rest] = assign.split('=');
+                  const varName = key.trim();
+                  const valExpr = rest.join('=').trim();
+                  if (varName && valExpr) {
+                    const newValue = new Function('state', 'event', 'with(state){return (' + valExpr + ')}')(this.state, e);
+                    if (this.state[varName] !== newValue) this.state[varName] = newValue;
+                  }
+                });
+              } catch (err) { console.error('Errore in @set sub-direttiva:', err); }
+            });
+          } else if (dir === '@model') {
+            // Aggiorna model solo sull'evento specificato
+            el.addEventListener(event, e => {
+              if (el.type === 'checkbox') {
+                this.state[expr] = e.target.checked;
+              } else if (el.type === 'radio') {
+                if (e.target.checked) this.state[expr] = e.target.value;
+              } else {
+                this.state[expr] = e.target.value;
+              }
+            });
+          }
+        }
+      }
+    }
+
     // @text
     if (vNode.directives['@text']) el.textContent = this._evalExpr(vNode.directives['@text'], ctx);
     else vNode.children.forEach(child => { const node = this._renderVNode(child, ctx); if (node) el.appendChild(node); });
@@ -202,10 +280,19 @@ class AyishaVDOM {
         this._fetched[fetchId] = true;
       }
     }
+    // @result
     if (vNode.directives['@result'] && !vNode.directives['@fetch']) {
-      const key = vNode.directives['@result'];
-      const val = this.state[key];
-      el.textContent = typeof val === 'object' ? JSON.stringify(val) : (val || '');
+      // NON iniettare mai @result come inner text se l'elemento non è un tag che mostra dati (es: <div>, <span>, <pre>, ecc.)
+      // e mai se è presente una sub-direttiva @result
+      // Quindi: solo se non ci sono sub-directive @result su questo nodo
+      let hasResultSubDirective = vNode.subDirectives && vNode.subDirectives['@result'];
+      // Solo per elementi che possono mostrare testo
+      const canShowText = ['div','span','pre','p','code','td','th','li','b','i','strong','em','small'].includes(el.tagName.toLowerCase());
+      if (!hasResultSubDirective && canShowText) {
+        const key = vNode.directives['@result'];
+        const val = this.state[key];
+        el.textContent = typeof val === 'object' ? JSON.stringify(val) : (val || '');
+      }
     }
 
     // @watch

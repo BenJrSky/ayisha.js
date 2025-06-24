@@ -409,6 +409,35 @@
         </style>
     </div>
 
+    <!-- Sub-direttive: esempi pratici -->
+    <div class="example">
+        <h3>13. Sub-direttive (@direttiva:evento)</h3>
+        <init>
+            state.myData = null;
+            state.hoverText = 'Testo iniziale';
+            state.active = false;
+            state.modelValue = '';
+            state.setValue = '';
+        </init>
+        <h4>1. Eseguire un fetch solo al click</h4>
+        <button @fetch:click="'https://jsonplaceholder.typicode.com/todos/3'" @result="myData">Carica dati</button>
+        <div>
+            <b>Risultato fetch:</b>
+            <pre @text="JSON.stringify(myData, null, 2)"></pre>
+            <pre>{{myData}}</pre>
+
+        </div>
+        <h4>2. Cambiare testo solo al passaggio del mouse</h4>
+        <div @text:hover="'Testo al passaggio del mouse'" style="border:1px solid #ccc; padding:10px; width:200px;">{{hoverText}}</div>
+        <h4>3. Applicare classi dinamiche solo al focus</h4>
+        <input @class:focus="{active: true}" placeholder="Focus per classe dinamica">
+        <h4>4. Aggiornare il model solo su input</h4>
+        <input @model:input="modelValue" placeholder="Aggiorna solo su input">
+        <p>Model value: <span @text="modelValue"></span></p>
+        <h4>5. Eseguire un set solo su change</h4>
+        <input @set:change="setValue='Cambiato!'">
+        <p>Set value: <span @text="setValue"></span></p>
+    </div>
 
 </body>
 
