@@ -1,0 +1,58 @@
+Sub-direttive in Ayisha.js
+===========================
+
+Le sub-direttive (o direttive con evento) permettono di eseguire una direttiva solo su un determinato evento DOM, usando la sintassi @direttiva:evento="...". Sono utili per controllare con precisione quando una direttiva deve essere eseguita, senza alterare la logica delle direttive normali.
+
+Sintassi
+-------
+<elemento @direttiva:evento="espressione"></elemento>
+
+- @direttiva è la direttiva Ayisha (es: @fetch, @text, @class, @set, ecc.)
+- evento è il nome dell’evento DOM (es: click, input, change, mouseenter, focus, ecc.)
+- espressione è il codice o valore da valutare quando l’evento si verifica
+
+Esempi pratici
+--------------
+1. Eseguire un fetch solo al click
+<button @fetch:click="'https://api.example.com/data'" @result="myData">Carica dati</button>
+
+2. Cambiare testo solo al passaggio del mouse
+<div @text:hover="'Testo al passaggio del mouse'">Testo iniziale</div>
+
+3. Applicare classi dinamiche solo al focus
+<input @class:focus="{active: true}">
+
+4. Aggiornare il model solo su input
+<input @model:input="myVar">
+
+5. Eseguire un set solo su change
+<input @set:change="foo=bar">
+
+Come funzionano
+---------------
+- Se usi la direttiva senza sub-direttiva (es: @fetch="..."), la logica viene eseguita subito o secondo la logica standard della direttiva.
+- Se usi la sub-direttiva (es: @fetch:click="..."), la logica viene eseguita solo sull’evento specificato.
+- Puoi usare qualsiasi evento DOM valido per l’elemento (click, input, change, mouseenter, mouseleave, focus, blur, ecc.).
+- Le sub-direttive non sostituiscono le direttive normali, ma si aggiungono come event listener aggiuntivi.
+
+Vantaggi
+--------
+- Maggiore controllo su quando eseguire una direttiva.
+- Template più espressivi e leggibili.
+- Nessuna perdita di funzionalità: le direttive normali continuano a funzionare come sempre.
+
+Esempio riassuntivo
+-------------------
+<button
+  @fetch:click="'https://api.example.com/user/' + userId"
+  @result="userData"
+>
+  Carica utente
+</button>
+
+<input @model:input="search" placeholder="Cerca...">
+<div @text:mouseenter="'Mouse sopra!'">Passa qui sopra</div>
+
+In sintesi:
+-----------
+Le sub-direttive ti permettono di eseguire la logica di una direttiva solo su un evento specifico, senza rompere la compatibilità con le direttive normali. Basta aggiungere :evento dopo la direttiva per ottenere il comportamento desiderato.
