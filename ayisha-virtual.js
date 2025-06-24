@@ -168,102 +168,85 @@ class AyishaVDOM {
       for (const dir in vNode.subDirectives) {
         for (const event in vNode.subDirectives[dir]) {
           const expr = vNode.subDirectives[dir][event];
-          if (dir === '@fetch') {
-            el.addEventListener(event, e => {
-              let url;
-              if (/^https?:\/\//.test(expr.trim())) {
-                url = expr.trim();
-              } else {
-                url = this._evalExpr(expr, ctx, e);
-              }
-              if (!url) return;
-              url = String(url);
-              // Usa resultKey se presente, altrimenti 'result'
-              const resultKey = vNode.directives['@result'] || 'result';
-              const method = (vNode.directives['@method'] || 'GET').toUpperCase();
-              const bodyExpr = vNode.directives['@body'];
-              let options = { method };
-              if (bodyExpr && method !== 'GET') {
-                let bodyObj = {};
-                try { bodyObj = this._evalExpr(bodyExpr, ctx, e); }
-                catch (err) { try { bodyObj = JSON.parse(bodyExpr); } catch { bodyObj = {}; } }
-                options.body = JSON.stringify(bodyObj);
-                options.headers = { 'Content-Type': 'application/json' };
-              }
-              fetch(url, options)
-                .then(res => {
-                  if (res.headers.get('content-type')?.includes('application/json')) return res.json();
-                  return res.text();
-                })
-                .then(data => { if (resultKey) this.state[resultKey] = data; });
-            });
-          } else if (dir === '@text') {
-            let originalText = null;
+          if (dir === '@text') {
+            // Salva sempre il valore "ufficiale" della direttiva principale (o del DOM originale)
+            let mainText;
+            if (vNode.directives['@text']) {
+              try { mainText = this._evalExpr(vNode.directives['@text'], ctx); } catch {} 
+            } else if (vNode.children && vNode.children[0] && vNode.children[0].type === 'text') {
+              mainText = vNode.children[0].text;
+            } else {
+              mainText = el.textContent;
+            }
+            // Imposta il testo iniziale solo se non c'è @text
+            if (!vNode.directives['@text']) el.textContent = mainText;
             if (event === 'mouseenter' || event === 'mouseover' || event === 'hover') {
               el.addEventListener('mouseenter', e => {
-                if (originalText === null) originalText = el.textContent;
-                el.textContent = this._evalExpr(expr, ctx, e) + '';
+                let val = expr;
+                if (/^(['"]).*\1$/.test(expr.trim())) {
+                  val = expr.trim().slice(1, -1);
+                } else {
+                  try { val = new Function('state','ctx','event', 'with(state){with(ctx){return ('+expr+')}}')(this.state, ctx, e); } catch {}
+                }
+                el.textContent = val;
               });
               el.addEventListener('mouseleave', e => {
-                if (originalText !== null) el.textContent = originalText;
+                el.textContent = mainText;
               });
             } else if (event === 'click') {
               el.addEventListener('click', e => {
-                el.textContent = this._evalExpr(expr, ctx, e) + '';
+                let val = expr;
+                if (/^(['"]).*\1$/.test(expr.trim())) {
+                  val = expr.trim().slice(1, -1);
+                } else {
+                  try { val = new Function('state','ctx','event', 'with(state){with(ctx){return ('+expr+')}}')(this.state, ctx, e); } catch {}
+                }
+                el.textContent = val;
               });
-            } else {
-              el.addEventListener(event, e => {
-                el.textContent = this._evalExpr(expr, ctx, e) + '';
-              });
-            }
-            // Imposta il testo iniziale se presente
-            if (el.textContent === '' && vNode.children && vNode.children.length === 1 && vNode.children[0].type === 'text') {
-              el.textContent = vNode.children[0].text;
             }
           } else if (dir === '@class') {
-            if (event === 'mouseenter' || event === 'mouseover' || event === 'hover') {
+            let mainClasses = Array.from(el.classList);
+            if (vNode.directives['@class']) {
+              try {
+                const classes = this._evalExpr(vNode.directives['@class'], ctx) || {};
+                mainClasses = Object.entries(classes).filter(([cls, cond]) => cond).map(([cls]) => cls);
+              } catch {}
+            }
+            if (event === 'hover' || event === 'mouseenter' || event === 'mouseover') {
               el.addEventListener('mouseenter', e => {
-                const classes = this._evalExpr(expr, ctx, e) || {};
-                for (const [cls, cond] of Object.entries(classes)) {
-                  if (cond) el.classList.add(cls);
+                let val = expr;
+                if (/^\s*\{.*\}\s*$/.test(expr.trim())) {
+                  try { val = new Function('state','ctx','event', 'with(state){with(ctx){return '+expr+'}}')(this.state, ctx, e); } catch {}
+                } else {
+                  try { val = new Function('state','ctx','event', 'with(state){with(ctx){return ('+expr+')}}')(this.state, ctx, e); } catch {}
+                }
+                if (typeof val === 'object' && val) {
+                  Object.entries(val).forEach(([cls, cond]) => {
+                    if (cond) el.classList.add(cls); else el.classList.remove(cls);
+                  });
                 }
               });
               el.addEventListener('mouseleave', e => {
-                const classes = this._evalExpr(expr, ctx, e) || {};
-                for (const [cls] of Object.entries(classes)) {
-                  el.classList.remove(cls);
-                }
-              });
-            } else if (event === 'focus') {
-              el.addEventListener('focus', e => {
-                const classes = this._evalExpr(expr, ctx, e) || {};
-                for (const [cls, cond] of Object.entries(classes)) {
-                  if (cond) el.classList.add(cls);
-                }
-              });
-              el.addEventListener('blur', e => {
-                const classes = this._evalExpr(expr, ctx, e) || {};
-                for (const [cls] of Object.entries(classes)) {
-                  el.classList.remove(cls);
-                }
+                el.className = '';
+                mainClasses.forEach(cls => el.classList.add(cls));
               });
             } else if (event === 'click') {
               el.addEventListener('click', e => {
-                const classes = this._evalExpr(expr, ctx, e) || {};
-                for (const [cls, cond] of Object.entries(classes)) {
-                  if (cond) el.classList.toggle(cls);
+                let val = expr;
+                if (/^\s*\{.*\}\s*$/.test(expr.trim())) {
+                  try { val = new Function('state','ctx','event', 'with(state){with(ctx){return '+expr+'}}')(this.state, ctx, e); } catch {}
+                } else {
+                  try { val = new Function('state','ctx','event', 'with(state){with(ctx){return ('+expr+')}}')(this.state, ctx, e); } catch {}
                 }
-              });
-            } else {
-              el.addEventListener(event, e => {
-                const classes = this._evalExpr(expr, ctx, e) || {};
-                for (const [cls, cond] of Object.entries(classes)) {
-                  if (cond) el.classList.add(cls); else el.classList.remove(cls);
+                if (typeof val === 'object' && val) {
+                  Object.entries(val).forEach(([cls, cond]) => {
+                    if (cond) el.classList.add(cls); else el.classList.remove(cls);
+                  });
                 }
+                // NIENTE ripristino su click: la modifica resta
               });
             }
           }
-          // ...existing code for other sub-directives...
         }
       }
     }

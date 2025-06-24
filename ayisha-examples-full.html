@@ -101,9 +101,9 @@
     <div class="example">
         <h3>5. HTTP Fetch base</h3>
         <init>state.todo = null;</init>
-        <button @click="task=5">TASK 5</button>
-        <button @fetch="https://jsonplaceholder.typicode.com/todos/{task}" @watch="task">Carica
-            TASK</button>
+        <button @click="task=5">SET TASK 5</button>
+        <div @fetch="https://jsonplaceholder.typicode.com/todos/{task}" @watch="task">Carica
+            TASK</div>
         <pre @text="JSON.stringify(result, null, 2)"></pre>
         {{task}}
     </div>
@@ -182,9 +182,9 @@
             <button @set:click="selectedPost=null">Deseleziona</button>
         </div>
         <h4>Sub-direttive: tutte le combinazioni pratiche</h4>
-        <button @fetch:click="'https://jsonplaceholder.typicode.com/posts/1'" @result="fetchResult">Carica post remoto
+        <button @fetch:click="https://jsonplaceholder.typicode.com/posts/1" @result="post">Carica post remoto
             (fetch solo su click)</button>
-        <pre @text="JSON.stringify(fetchResult, null, 2)"></pre>
+        <pre @text="JSON.stringify(post, null, 2)"></pre>
         <input @model:input="filter" placeholder="Filtra solo su input">
         <input @model:change="filter" placeholder="Filtra solo su change">
         <input @set:change="filter='reset'" placeholder="Setta filtro su change">
