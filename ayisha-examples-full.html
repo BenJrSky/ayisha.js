@@ -50,6 +50,20 @@
 <body>
     <h1>Esempi Ayisha.js dal semplice al blog</h1>
 
+            <button @hover="index++" >add index</button>
+            <button @hover="index=1" >index=1</button>
+            <button @hover="post={}" >post={}</button>
+
+
+
+
+         <h4>Sub-direttive: tutte le combinazioni pratiche</h4>
+        <button @fetch:hover="https://jsonplaceholder.typicode.com/posts/{index}" @result="post">Carica post con hover</button>
+        <button @fetch:click="https://jsonplaceholder.typicode.com/posts/{index}" @result="post">Carica post con click</button>
+
+        <pre @text="JSON.stringify(post, null, 2)"></pre>
+        <h3>INDEX --_> {{index}}</h3>
+
     <!-- 1. Reactivity base -->
     <div class="example">
         <h3>1. Reactivity base</h3>
@@ -185,6 +199,8 @@
         <button @fetch:click="https://jsonplaceholder.typicode.com/posts/1" @result="post">Carica post remoto
             (fetch solo su click)</button>
         <pre @text="JSON.stringify(post, null, 2)"></pre>
+
+        {{post}}
         <input @model:input="filter" placeholder="Filtra solo su input">
         <input @model:change="filter" placeholder="Filtra solo su change">
         <input @set:change="filter='reset'" placeholder="Setta filtro su change">
@@ -199,6 +215,12 @@
         <div @class:click="{ 'green-border': true }" style="border:1px solid #ccc; padding:10px; width:300px;">Click per
             bordo verde</div>
     </div>
+
+
+
+      
+
+
 </body>
 
 </html>
