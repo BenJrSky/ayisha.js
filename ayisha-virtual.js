@@ -350,6 +350,52 @@ class AyishaVDOM {
       }
     }
 
+    // Functional programming: @map, @filter, @reduce
+    if (vNode.directives['@source']) {
+      const sourceArr = this._evalExpr(vNode.directives['@source'], ctx) || [];
+      const silentSet = (key, value) => {
+        // Aggiorna lo stato senza triggerare render
+        if (JSON.stringify(this.state[key]) !== JSON.stringify(value)) {
+          Object.defineProperty(this.state, key, { value, writable: true, configurable: true, enumerable: true });
+        }
+      };
+      if (vNode.directives['@map']) {
+        const mapFn = new Function('item', 'return (' + vNode.directives['@map'] + ')');
+        const result = sourceArr.map(mapFn);
+        if (vNode.directives['@result']) {
+          const key = vNode.directives['@result'];
+          silentSet(key, result);
+        }
+      }
+      if (vNode.directives['@filter']) {
+        const filterFn = new Function('item', 'return (' + vNode.directives['@filter'] + ')');
+        const result = sourceArr.filter(filterFn);
+        if (vNode.directives['@result']) {
+          const key = vNode.directives['@result'];
+          silentSet(key, result);
+        }
+      }
+      if (vNode.directives['@reduce']) {
+        let reduceFn;
+        const reduceStr = vNode.directives['@reduce'];
+        if (reduceStr.includes('=>')) {
+          // Supporta sintassi arrow function acc,item => acc + item
+          const arrowParts = reduceStr.split('=>');
+          const params = arrowParts[0].replace(/[()]/g, '').trim();
+          const body = arrowParts[1].trim();
+          reduceFn = new Function(params.split(',')[0].trim(), params.split(',')[1].trim(), 'return (' + body + ')');
+        } else {
+          reduceFn = new Function('acc', 'item', 'return (' + reduceStr + ')');
+        }
+        const initial = vNode.directives['@initial'] ? this._evalExpr(vNode.directives['@initial'], ctx) : undefined;
+        const result = initial !== undefined ? sourceArr.reduce(reduceFn, initial) : sourceArr.reduce(reduceFn);
+        if (vNode.directives['@result']) {
+          const key = vNode.directives['@result'];
+          silentSet(key, result);
+        }
+      }
+    }
+
     return el;
   }
 

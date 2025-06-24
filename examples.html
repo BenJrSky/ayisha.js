@@ -265,20 +265,17 @@
     <div class="example">
         <h3>6. Functional Programming</h3>
         <init>
-            state.numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-            state.squares = [];
-            state.evenNumbers = [];
-            state.sum = 0;
+            state.numbers = [1,2,3,4,5,6,7,8,9,10];
         </init>
 
+        
         <!-- Map: square each number -->
         <div @source="numbers" @map="item * item" @result="squares"></div>
-
         <!-- Filter: only even numbers -->
         <div @source="numbers" @filter="item % 2 === 0" @result="evenNumbers"></div>
-
         <!-- Reduce: sum all numbers -->
         <div @source="numbers" @reduce="acc,item => acc + item" @initial="0" @result="sum"></div>
+
 
         <p>Original: <span @text="numbers.join(', ')"></span></p>
         <p>Squared: <span @text="squares.join(', ')"></span></p>
