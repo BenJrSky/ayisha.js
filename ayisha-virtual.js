@@ -127,24 +127,35 @@ class AyishaVDOM {
       };
     }
     const real = this._renderVNode(this._vdom, this.state);
-    this.root.innerHTML = '';
-    if (real) this.root.appendChild(real);
+    // Sostituisci solo il contenuto di body, non il nodo body stesso
+    if (this.root === document.body) {
+      document.body.innerHTML = '';
+      if (real) {
+        // Se il VDOM root è un body, inserisci solo i suoi figli
+        if (real.tagName && real.tagName.toLowerCase() === 'body') {
+          while (real.firstChild) document.body.appendChild(real.firstChild);
+        } else {
+          document.body.appendChild(real);
+        }
+      }
+    } else {
+      this.root.innerHTML = '';
+      if (real) this.root.appendChild(real);
+    }
     // Ripristina focus
     if (focusInfo) {
       let selector = '';
       if (focusInfo.id) selector = `#${focusInfo.id}`;
       else if (focusInfo.name) selector = `[name='${focusInfo.name}']`;
-      else if (focusInfo.class) selector = `.${focusInfo.class.split(' ')[0]}`;
       let newInput = selector ? this.root.querySelector(selector) : null;
-      // Se non trovato, cerca per tipo e valore
       if (!newInput && focusInfo.type) {
         const candidates = Array.from(this.root.querySelectorAll(focusInfo.type === 'textarea' ? 'textarea' : 'input'));
         newInput = candidates.find(i => i.value === focusInfo.value);
       }
       if (newInput) {
         newInput.focus();
-        if (focusInfo.selectionStart != null && newInput.setSelectionRange) {
-          try { newInput.setSelectionRange(focusInfo.selectionStart, focusInfo.selectionEnd); } catch {}
+        if (focusInfo.selectionStart != null && focusInfo.selectionEnd != null) {
+          newInput.setSelectionRange(focusInfo.selectionStart, focusInfo.selectionEnd);
         }
       }
     }
@@ -647,7 +658,9 @@ class AyishaVDOM {
 
 // --- AUTO-MOUNT SU document.body ---
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => new AyishaVDOM(document.body).mount());
+  document.addEventListener('DOMContentLoaded', () => {
+    new AyishaVDOM(document.body).mount();
+  });
 } else {
   new AyishaVDOM(document.body).mount();
 }

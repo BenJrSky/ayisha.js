@@ -16,101 +16,189 @@
     header {
       background: linear-gradient(90deg, #7f53ac 0%, #647dee 100%);
       color: #fff;
-      padding: 2rem 1rem 1.2rem 1rem;
+      padding: 3.5rem 1rem 2.5rem 1rem;
       text-align: center;
       box-shadow: 0 2px 12px #7f53ac22;
       letter-spacing: 1px;
+      border-bottom-left-radius: 40px;
+      border-bottom-right-radius: 40px;
+      position: relative;
+    }
+    .hero {
+      max-width: 700px;
+      margin: 0 auto 2.5rem auto;
+      background: #fff;
+      border-radius: 22px;
+      box-shadow: 0 4px 32px #647dee22;
+      padding: 2.5rem 2rem 2.5rem 2rem;
+      position: relative;
+      top: -60px;
+      z-index: 2;
+    }
+    .hero-title {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: #7f53ac;
+      margin-bottom: 0.7rem;
+      letter-spacing: 1px;
+    }
+    .hero-desc {
+      color: #647dee;
+      font-size: 1.15rem;
+      margin-bottom: 0.5rem;
     }
     .container {
-      max-width: 800px;
-      margin: 2rem auto;
+      max-width: 900px;
+      margin: 0 auto 2rem auto;
       background: #fff;
       border-radius: 18px;
       box-shadow: 0 4px 32px #647dee22;
-      padding: 2rem 1.5rem 2.5rem 1.5rem;
+      padding: 2.5rem 2rem 2.5rem 2rem;
+      position: relative;
+      top: -40px;
+      z-index: 1;
     }
     .post-list {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2.2rem;
+      margin-bottom: 2.5rem;
     }
     .post-card {
-      background: linear-gradient(120deg, #f9fafc 60%, #e0e7ff 100%);
-      border-radius: 14px;
-      box-shadow: 0 2px 12px #647dee11;
-      padding: 1.2rem 1rem 1.5rem 1rem;
-      transition: transform 0.15s, box-shadow 0.15s;
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 4px 24px #647dee11;
+      padding: 1.5rem 2rem 1.5rem 1.5rem;
+      transition: transform 0.18s, box-shadow 0.18s, border 0.18s;
       cursor: pointer;
-      border: 2px solid transparent;
+      border: 2px solid #e0e7ff;
+      min-height: 120px;
+      position: relative;
+      gap: 1.5rem;
     }
     .post-card:hover {
-      transform: translateY(-4px) scale(1.03);
-      box-shadow: 0 6px 24px #7f53ac33;
-      border-color: #7f53ac44;
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 8px 32px #7f53ac33;
+      border-color: #7f53ac;
       background: linear-gradient(120deg, #e0e7ff 60%, #f9fafc 100%);
     }
+    .post-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-right: 1.2rem;
+      box-shadow: 0 2px 8px #647dee22;
+      border: 2px solid #e0e7ff;
+      flex-shrink: 0;
+    }
+    .post-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
     .post-title {
-      font-size: 1.2rem;
-      font-weight: 700;
+      font-size: 1.3rem;
+      font-weight: 800;
       color: #7f53ac;
+      margin-bottom: 0.3rem;
+      margin-top: 0.1rem;
+      line-height: 1.2;
+    }
+    .post-meta {
+      font-size: 1rem;
+      color: #647dee;
       margin-bottom: 0.5rem;
+      font-weight: 500;
     }
     .post-body {
       color: #22223b;
-      font-size: 1rem;
-      margin-bottom: 0.5rem;
+      font-size: 1.08rem;
+      margin-bottom: 0.2rem;
+      line-height: 1.5;
     }
     .post-detail {
-      margin-bottom: 2rem;
+      margin-bottom: 2.5rem;
+      background: #f9fafc;
+      border-radius: 16px;
+      box-shadow: 0 2px 12px #647dee11;
+      padding: 2rem 1.5rem 2rem 1.5rem;
     }
     .back-btn {
       background: #647dee;
       color: #fff;
       border: none;
       border-radius: 8px;
-      padding: 0.5rem 1.2rem;
-      font-size: 1rem;
+      padding: 0.7rem 1.5rem;
+      font-size: 1.08rem;
       cursor: pointer;
-      margin-bottom: 1.5rem;
+      margin-bottom: 2rem;
       transition: background 0.15s;
+      font-weight: 700;
+      box-shadow: 0 2px 8px #647dee22;
     }
     .back-btn:hover {
       background: #7f53ac;
     }
     .comments {
-      margin-top: 2rem;
+      margin-top: 2.5rem;
       background: #f3f0ff;
-      border-radius: 10px;
-      padding: 1.2rem 1rem;
+      border-radius: 16px;
+      padding: 2rem 1.5rem;
       box-shadow: 0 2px 8px #7f53ac11;
     }
     .comment {
-      margin-bottom: 1.2rem;
-      padding-bottom: 0.8rem;
-      border-bottom: 1px solid #e0e7ff;
+      display: flex;
+      align-items: flex-start;
+      gap: 1.1rem;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px #647dee11;
+      margin-bottom: 1.3rem;
+      padding: 1.1rem 1rem 1.1rem 0.8rem;
+      border: 1px solid #e0e7ff;
     }
     .comment:last-child {
-      border-bottom: none;
       margin-bottom: 0;
-      padding-bottom: 0;
+    }
+    .comment-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-top: 0.2rem;
+      box-shadow: 0 2px 8px #647dee22;
+      border: 2px solid #e0e7ff;
+      flex-shrink: 0;
+    }
+    .comment-content {
+      flex: 1;
     }
     .comment-name {
       font-weight: 700;
       color: #7f53ac;
-      font-size: 1.05rem;
+      font-size: 1.08rem;
+      margin-bottom: 0.1rem;
     }
     .comment-email {
       color: #647dee;
-      font-size: 0.95rem;
+      font-size: 0.98rem;
       margin-bottom: 0.2rem;
     }
     .comment-body {
       color: #22223b;
-      font-size: 1rem;
+      font-size: 1.05rem;
+      line-height: 1.5;
     }
-    @media (max-width: 600px) {
-      .container { padding: 1rem 0.3rem; }
-      .post-list { grid-template-columns: 1fr; }
+    @media (max-width: 900px) {
+      .container { padding: 1.2rem 0.2rem; }
+      .post-list { grid-template-columns: 1fr; flex-direction: column; }
+      .post-card { flex-direction: column; align-items: stretch; }
+      .post-avatar { margin: 0 auto 1rem auto; }
     }
   </style>
 </head>
@@ -119,37 +207,44 @@
     <h1>Ayisha Blog Demo</h1>
     <p>Post e commenti demo, stile moderno, dati da <a href="https://jsonplaceholder.typicode.com/" style="color:#fff;text-decoration:underline;">jsonplaceholder</a></p>
   </header>
-  <div class="container" id="app">
-    <!-- AyishaVDOM mount point -->
+  <div class="hero">
+    <div class="hero-title">Benvenuto nel Blog Demo</div>
+    <div class="hero-desc">Scopri post, dettagli e commenti con un design moderno e colorato. Powered by AyishaVDOM.</div>
+  </div>
+  <div class="container">
     <div>
       <h2 style="color:#647dee;margin-bottom:1.5rem;">Ultimi Post</h2>
       <div class="post-list">
         <div @for="post in posts" class="post-card" @click="state.currentPostId=post.id;state.currentPage='detail'">
-          <div class="post-title">{{post.title}}</div>
-          <div class="post-body">{{post.body.slice(0, 80)}}...</div>
+          <img class="post-avatar" :src="'https://i.pravatar.cc/64?img='+(post.userId%10+1)" alt="avatar" />
+          <div class="post-info">
+            <div class="post-title">{{post.title}}</div>
+            <div class="post-meta">Autore #{{post.userId}} &middot; ID: {{post.id}}</div>
+            <div class="post-body">{{post.body.slice(0, 120)}}...</div>
+          </div>
         </div>
       </div>
     </div>
-    
     <div @page="detail">
       <button class="back-btn" @click="state.currentPage='list'">&larr; Torna ai post</button>
       <div class="post-detail" @fetch="https://jsonplaceholder.typicode.com/posts/{currentPostId}" @result="postDetail">
         <h2 class="post-title">{{postDetail.title}}</h2>
+        <div class="post-meta">Autore #{{postDetail.userId}} &middot; ID: {{postDetail.id}}</div>
         <div class="post-body">{{postDetail.body}}</div>
       </div>
       <div class="comments" @fetch="https://jsonplaceholder.typicode.com/posts/{currentPostId}/comments" @result="comments">
         <h3 style="color:#647dee;margin-bottom:1rem;">Commenti</h3>
         <div @for="c in comments" class="comment">
-          <div class="comment-name">{{c.name}}</div>
-          <div class="comment-email">{{c.email}}</div>
-          <div class="comment-body">{{c.body}}</div>
+          <img class="comment-avatar" :src="'https://i.pravatar.cc/38?img='+(c.id%10+1)" alt="avatar" />
+          <div class="comment-content">
+            <div class="comment-name">{{c.name}}</div>
+            <div class="comment-email">{{c.email}}</div>
+            <div class="comment-body">{{c.body}}</div>
+          </div>
         </div>
       </div>
     </div>
-
-    <x @fetch="https://jsonplaceholder.typicode.com/posts?_limit=12" @result="posts"></x> 
-
-
+    <x @fetch="https://jsonplaceholder.typicode.com/posts?_limit=12" @result="posts"></x>
   </div>
   <script src="./ayisha-virtual.js"></script>
 </body>
