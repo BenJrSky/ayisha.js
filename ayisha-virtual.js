@@ -18,7 +18,10 @@ class AyishaVDOM {
     if (node.nodeType === 3) return { type: 'text', text: node.textContent };
     if (node.nodeType !== 1) return null;
     const tag = node.tagName.toLowerCase();
-    if (tag === 'init') { this._initBlocks.push(node.textContent); return null; }
+    if (tag === 'init') {
+      this._initBlocks.push(node.textContent);
+      return null;
+    }
     const vNode = { tag, attrs: {}, directives: {}, subDirectives: {}, children: [] };
     for (const attr of Array.from(node.attributes)) {
       if (attr.name.startsWith('@')) {
@@ -76,7 +79,7 @@ class AyishaVDOM {
     if (/^\d+(\.\d+)?$/.test(t)) return Number(t);
     try {
       const sp = new Proxy(this.state, { get: (o, k) => o[k], set: (o, k, v) => { o[k] = v; return true; } });
-      return new Function('state','ctx','event', `with(state){with(ctx||{}){return(${expr})}}`)(sp, ctx, event);
+      return new Function('state','ctx','event', `with(state){with(ctx||{}){return (${expr})}}`)(sp, ctx, event);
     } catch {
       return undefined;
     }
@@ -136,7 +139,6 @@ class AyishaVDOM {
 
   // Render VDOM -> real DOM
   render() {
-    // preserve focus
     const active = document.activeElement;
     let focusInfo = null;
     if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
@@ -175,11 +177,9 @@ class AyishaVDOM {
   _renderVNode(vNode, ctx) {
     if (!vNode) return null;
     if (vNode.type === 'text') return document.createTextNode(this._evalText(vNode.text, ctx));
-    // @if/@show/@hide
     if (vNode.directives['@if'] && !this._evalExpr(vNode.directives['@if'], ctx)) return null;
     if (vNode.directives['@show'] && !this._evalExpr(vNode.directives['@show'], ctx)) return null;
     if (vNode.directives['@hide'] && this._evalExpr(vNode.directives['@hide'], ctx)) return null;
-    // @for
     if (vNode.directives['@for']) {
       const m = vNode.directives['@for'].match(/(\w+) in (.+)/);
       if (m) {
@@ -197,7 +197,6 @@ class AyishaVDOM {
         return frag;
       }
     }
-    // @switch/@case/@default
     if (vNode.directives['@switch']) {
       const swVal = this._evalExpr(vNode.directives['@switch'], ctx);
       let defNode = null;
@@ -212,7 +211,6 @@ class AyishaVDOM {
       }
       return defNode ? this._renderVNode(defNode, ctx) : document.createComment('noswitch');
     }
-    // Functional directives: @source, @map, @filter, @reduce
     if (vNode.directives['@source']) {
       const arr = this._evalExpr(vNode.directives['@source'], ctx) || [];
       const silentSet = (key, val) => {
@@ -248,12 +246,17 @@ class AyishaVDOM {
       }
       if (used) return document.createComment('functional');
     }
-    // Create element
     const el = document.createElement(vNode.tag);
+    // Primary @hover directive
+    if (vNode.directives['@hover']) {
+      const exprHover = vNode.directives['@hover'];
+      el.addEventListener('mouseenter', event => {
+        try { new Function('state','ctx','event', `with(state){with(ctx){${exprHover}}}`)(this.state, ctx, event); } catch(e) { console.error('Error in @hover:', e); }
+        this.render();
+      });
+    }
     Object.entries(vNode.attrs).forEach(([k, v]) => el.setAttribute(k, v));
-    // Render children
     vNode.children.forEach(c => { const n = this._renderVNode(c, ctx); if (n) el.appendChild(n); });
-    // Sub-directives
     for (const [dir, evs] of Object.entries(vNode.subDirectives)) {
       for (const [evt, expr] of Object.entries(evs)) {
         if (dir === '@class') {
@@ -271,24 +274,44 @@ class AyishaVDOM {
           el.addEventListener('mouseenter', e => { new Function('state','ctx','event', `with(state){with(ctx){${expr}}}`)(this.state, ctx, e); this.render(); });
           el.addEventListener('mouseleave', e => this.render());
         } else if (dir === '@fetch') {
-          el.addEventListener(evt === 'hover' ? 'mouseenter' : evt, e => {
-            setTimeout(() => {
-              try {
-                let url = expr.replace(/\{([^}]+)\}/g, (_, key) => this._evalExpr(key, ctx, e));
-                const rk = vNode.directives['@result'] || 'result';
-                const fid = url + rk;
-                if (!this._fetched[fid]) { fetch(url).then(r=>r.ok? r.json(): Promise.reject(r.status)).then(d=>{ this.state[rk]=d; }).catch(err=>console.error(err)); this._fetched[fid] = true; }
-              } catch(err) { console.error(err); }
-            }, 0);
+          const eventName = (evt === 'hover' ? 'mouseenter' : evt);
+          el.addEventListener(eventName, e => {
+            const url = this._evalExpr(expr, ctx, e);
+            if (!url) return;
+            const rk = vNode.directives['@result'] || 'result';
+            const fid = `${expr}_${rk}`;
+            if (!this._fetched[fid]) {
+              fetch(url)
+                .then(res => res.ok ? res.json() : Promise.reject(res.status))
+                .then(data => { this.state[rk] = data; })
+                .catch(err => console.error('@fetch error:', err));
+              this._fetched[fid] = true;
+            }
           });
         }
       }
     }
-    // Base directives
     if (vNode.directives['@text'] && !vNode.subDirectives['@text']) el.textContent = this._evalExpr(vNode.directives['@text'], ctx);
     if (vNode.directives['@fetch'] && !vNode.subDirectives['@fetch']) {
-      const tpl = vNode.directives['@fetch']; const rk = vNode.directives['@result'] || 'result'; const fid = tpl + rk;
-      if (!this._fetched[fid]) { const fn=()=>{ try { let url=tpl.replace(/\{([^}]+)\}/g,(_,k)=>this._evalExpr(k,ctx)); fetch(url).then(r=>r.ok? r.json(): Promise.reject(r.status)).then(d=>{ this.state[rk]=d; }).catch(err=>console.error(err)); } catch(err){ console.error(err);} }; fn(); if(vNode.directives['@watch']) vNode.directives['@watch'].split(',').forEach(dep=>this.addWatcher(dep.trim(),fn)); this._fetched[fid]=true; }
+      const tpl = vNode.directives['@fetch'];
+      const rk = vNode.directives['@result'] || 'result';
+      const fid = `${tpl}_${rk}`;
+      if (!this._fetched[fid]) {
+        const doFetch = () => {
+          try {
+            const url = tpl.replace(/\{([^}]+)\}/g, (_, k) => this._evalExpr(k, ctx));
+            fetch(url)
+              .then(res => res.ok ? res.json() : Promise.reject(res.status))
+              .then(data => { this.state[rk] = data; })
+              .catch(err => console.error('@fetch error:', err));
+          } catch (err) {
+            console.error('@fetch setup error:', err);
+          }
+        };
+        doFetch();
+        if (vNode.directives['@watch']) vNode.directives['@watch'].split(',').forEach(dep => this.addWatcher(dep.trim(), doFetch));
+        this._fetched[fid] = true;
+      }
     }
     if (vNode.directives['@model']) this._bindModel(el, vNode.directives['@model'], ctx);
     if (vNode.directives['@class'] && !vNode.subDirectives['@class']) {
@@ -300,11 +323,23 @@ class AyishaVDOM {
       Object.entries(so).forEach(([p, val]) => el.style[p] = val);
     }
     if (vNode.directives['@click']) el.addEventListener('click', e => { new Function('state','ctx','event', `with(state){with(ctx){${vNode.directives['@click']}}}`)(this.state, ctx, e); this.render(); });
+    // Base @hover directive (primary)
+    if (vNode.directives['@hover']) {
+      el.addEventListener('mouseenter', e => { try { new Function('state','ctx','event', `with(state){with(ctx){${vNode.directives['@hover']}}}`)(this.state, ctx, e); } catch(err){ console.error('Error in @hover:',err);} this.render(); });
+    }
     if (vNode.directives['@validate']) this._bindValidation(el, vNode.directives['@validate']);
     if (vNode.directives['@link']) { el.setAttribute('href', vNode.directives['@link']); el.addEventListener('click', e => { e.preventDefault(); this.state.currentPage = vNode.directives['@link']; }); }
     if (vNode.directives['@page'] && this.state.currentPage !== vNode.directives['@page']) return null;
     if (vNode.directives['@animate']) el.classList.add(vNode.directives['@animate']);
-    if (vNode.directives['@component']) { const name = vNode.directives['@component']; if (this.components[name]) { const frag = document.createRange().createContextualFragment(this.components[name]); const cv = this.parse(frag); const ce = this._renderVNode(cv, ctx); if (ce) el.appendChild(ce);} }
+    if (vNode.directives['@component']) {
+      const name = vNode.directives['@component'];
+      if (this.components[name]) {
+        const frag = document.createRange().createContextualFragment(this.components[name]);
+        const cv = this.parse(frag);
+        const ce = this._renderVNode(cv, ctx);
+        if (ce) el.appendChild(ce);
+      }
+    }
     return el;
   }
 
@@ -314,10 +349,10 @@ class AyishaVDOM {
     this._runInitBlocks();
     this._setupRouting();
     const self = this; let cp = this.state.currentPage;
-    Object.defineProperty(this.state, 'currentPage', { get(){ return cp; }, set(v){ if(cp!==v){ cp=v; history.pushState({},'', '/' + v); self.render(); }} });
+    Object.defineProperty(this.state, 'currentPage', { get(){ return cp; }, set(v){ if(cp!==v){ cp=v; history.pushState({}, '', '/' + v); self.render(); }} });
     this.render();
     this.root.addEventListener('click', e => { let el = e.target; while(el && el!==this.root){ if(el.hasAttribute('@link')){ e.preventDefault(); this.state.currentPage = el.getAttribute('@link'); return;} el = el.parentNode;} }, true);
   }
 }
 
-if (document.readyState==='loading') { document.addEventListener('DOMContentLoaded',()=>new AyishaVDOM(document.body).mount()); } else { new AyishaVDOM(document.body).mount(); }
+if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', () => new AyishaVDOM(document.body).mount()); } else { new AyishaVDOM(document.body).mount(); }

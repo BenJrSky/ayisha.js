@@ -486,7 +486,7 @@
         <div @class:click="{ 'green-border': true }" style="border:1px solid #ccc; padding:10px; width:300px;">Click per bordo verde</div>
 
         <input @model="selectedPost">
-        <button @set:click="selectedPost=null">Deseleziona</button>
+        <button @click="selectedPost='null'">Deseleziona</button>
         <div @if="selectedPost">
             <h4>Post selezionato: <span @text="selectedPost"></span></h4>
         </div>
