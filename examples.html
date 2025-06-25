@@ -112,9 +112,15 @@
         <button @click="state.count--" class="secondary">Decrement</button>
     </div>
 
+    <init>
+  count = 5;
+  name = 'Ben';
+  userType = 'user';
+</init>
+
 
     <div @if="count==5">
-        <h2>Ciao <p @if="name=='Ben'">Ben<a @if="userType=='user'">, ora funziona!</a></p></h2>
+        <div>Ciao <div @if="name=='Ben'">Ben<div @if="userType=='user'">, ora funziona!</div></div></div>
     </div>
 
     <!-- Conditional Rendering -->
