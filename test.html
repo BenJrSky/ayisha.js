@@ -1,431 +1,135 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ayisha.js Test Suite</title>
-    <script src="ayisha-new.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
-        .test-suite { border: 1px solid #ddd; margin: 20px 0; padding: 20px; border-radius: 8px; }
-        .test-case { margin: 10px 0; padding: 10px; border-radius: 4px; }
-        .test-pass { background: #d4edda; border: 1px solid #c3e6cb; }
-        .test-fail { background: #f8d7da; border: 1px solid #f5c6cb; }
-        .test-results { margin-top: 20px; }
-        .summary { font-weight: bold; padding: 15px; border-radius: 4px; }
-        .summary.pass { background: #d4edda; }
-        .summary.fail { background: #f8d7da; }
-        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
-    </style>
+  <meta charset="UTF-8">
+  <title>Ayisha VDOM Test</title>
+  <style>
+    .test-block { border:1px solid #ccc; margin:1em 0; padding:1em; border-radius:6px; }
+    .test-title { font-weight:bold; margin-bottom:0.5em; }
+    .success { color:green; }
+    .fail { color:red; }
+    .invalid { border:1px solid red; }
+    .highlight { background:yellow; }
+    .animated { transition: background 0.5s; background: #e0ffe0; }
+  </style>
 </head>
 <body>
-    <h1>🧪 Ayisha.js Test Suite</h1>
-    <p>Comprehensive testing of framework features</p>
+<init>
+state.counter = 0;
+state.show = true;
+state.items = [1,2,3];
+state.inputValue = '';
+state.validInput = '';
+state.dynamicClass = false;
+state.dynamicStyle = false;
+state.fetchUrl = 'https://jsonplaceholder.typicode.com/todos/1';
+state.result = null;
+state.page1 = 'page1';
+state.page2 = 'page2';
+state.currentPage = '';
+state.componentMsg = 'Ciao da componente!';
+</init>
 
-    <div id="test-results"></div>
+<div class="test-block">
+  <div class="test-title">@if, @show, @hide</div>
+  <button @click="show=!show">Toggle</button>
+  <span @if="show" class="success">@if funziona!</span>
+  <span @show="show" class="success">@show funziona!</span>
+  <span @hide="show" class="fail">@hide funziona (non dovresti vedere questo)!</span>
+</div>
 
-    <script>
-        class AyishaTestSuite {
-            constructor() {
-                this.tests = [];
-                this.results = [];
-                this.currentSuite = null;
-            }
+<div class="test-block">
+  <div class="test-title">@for</div>
+  <ul>
+    <li @for="item in items">Elemento: {{item}}</li>
+  </ul>
+</div>
 
-            describe(suiteName, testFn) {
-                this.currentSuite = suiteName;
-                console.group(`Testing: ${suiteName}`);
-                testFn();
-                console.groupEnd();
-            }
+<div class="test-block">
+  <div class="test-title">@model (two-way binding)</div>
+  <input @model="inputValue" placeholder="Scrivi qui...">
+  <span>Valore: <b>{{inputValue}}</b></span>
+</div>
 
-            it(testName, testFn) {
-                try {
-                    testFn();
-                    this.results.push({
-                        suite: this.currentSuite,
-                        name: testName,
-                        status: 'pass',
-                        error: null
-                    });
-                    console.log(`✅ ${testName}`);
-                } catch (error) {
-                    this.results.push({
-                        suite: this.currentSuite,
-                        name: testName,
-                        status: 'fail',
-                        error: error.message
-                    });
-                    console.error(`❌ ${testName}:`, error.message);
-                }
-            }
+<div class="test-block">
+  <div class="test-title">@validate</div>
+  <input @model="validInput" @validate="required,minLength:3" placeholder="Min 3 caratteri"/>
+  <span :class="{success: validInput.length&gt;=3, fail: validInput.length&lt;3}">
+    {{validInput.length&gt;=3 ? 'Valido!' : 'Non valido!'}}
+  </span>
+</div>
 
-            expect(actual) {
-                return {
-                    toBe: (expected) => {
-                        if (actual !== expected) {
-                            throw new Error(`Expected ${expected}, got ${actual}`);
-                        }
-                    },
-                    toEqual: (expected) => {
-                        if (JSON.stringify(actual) !== JSON.stringify(expected)) {
-                            throw new Error(`Expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
-                        }
-                    },
-                    toBeTruthy: () => {
-                        if (!actual) {
-                            throw new Error(`Expected truthy value, got ${actual}`);
-                        }
-                    },
-                    toBeFalsy: () => {
-                        if (actual) {
-                            throw new Error(`Expected falsy value, got ${actual}`);
-                        }
-                    },
-                    toContain: (expected) => {
-                        if (!actual.includes(expected)) {
-                            throw new Error(`Expected to contain ${expected}, got ${actual}`);
-                        }
-                    },
-                    toBeInstanceOf: (expected) => {
-                        if (!(actual instanceof expected)) {
-                            throw new Error(`Expected instance of ${expected.name}, got ${actual.constructor.name}`);
-                        }
-                    }
-                };
-            }
+<div class="test-block">
+  <div class="test-title">@class dinamica</div>
+  <button @click="dynamicClass=!dynamicClass">Toggle evidenzia</button>
+  <span @class="{highlight: dynamicClass}">Clicca il bottone!</span>
+</div>
 
-            renderResults() {
-                const container = document.getElementById('test-results');
-                const passed = this.results.filter(r => r.status === 'pass').length;
-                const failed = this.results.filter(r => r.status === 'fail').length;
-                const total = this.results.length;
+<div class="test-block">
+  <div class="test-title">@style dinamico</div>
+  <button @click="dynamicStyle=!dynamicStyle">Toggle stile</button>
+  <span @style="{color: dynamicStyle ? 'blue' : 'black', fontWeight: dynamicStyle ? 'bold' : 'normal'}">Testo stilizzato</span>
+</div>
 
-                let html = `
-                    <div class="summary ${failed === 0 ? 'pass' : 'fail'}">
-                        Test Results: ${passed}/${total} passed (${failed} failed)
-                    </div>
-                `;
+<div class="test-block">
+  <div class="test-title">@click, @hover</div>
+  <button @click="counter++">Incrementa</button>
+  <span @hover="counter+=10">Counter: {{counter}} (passa sopra per +10)</span>
+</div>
 
-                const suites = [...new Set(this.results.map(r => r.suite))];
-                
-                suites.forEach(suite => {
-                    const suiteResults = this.results.filter(r => r.suite === suite);
-                    const suitePassed = suiteResults.filter(r => r.status === 'pass').length;
-                    const suiteFailed = suiteResults.filter(r => r.status === 'fail').length;
+<div class="test-block">
+  <div class="test-title">@fetch</div>
+  <button @fetch:click="fetchUrl" @result="result">Fetch Todo</button>
+  <div>@fetch risultato: <span>{{result ? result.title : 'Nessun dato'}}</span></div>
+</div>
 
-                    html += `
-                        <div class="test-suite">
-                            <h3>${suite} (${suitePassed}/${suiteResults.length} passed)</h3>
-                    `;
+<div class="test-block">
+  <div class="test-title">@switch, @case, @default</div>
+  <button @click="counter=1">Set 1</button>
+  <button @click="counter=2">Set 2</button>
+  <button @click="counter=3">Set 3</button>
+  <div @switch="counter">
+    <span @case="1">Uno</span>
+    <span @case="2">Due</span>
+    <span @default>Altro</span>
+  </div>
+</div>
 
-                    suiteResults.forEach(result => {
-                        html += `
-                            <div class="test-case test-${result.status}">
-                                ${result.status === 'pass' ? '✅' : '❌'} ${result.name}
-                                ${result.error ? `<br><small>Error: ${result.error}</small>` : ''}
-                            </div>
-                        `;
-                    });
+<div class="test-block">
+  <div class="test-title">@source, @map, @filter, @reduce</div>
+  <div @source="items" @map="item*2" @result="mapped"></div>
+  <div @source="items" @filter="item&gt;1" @result="filtered"></div>
+  <div @source="items" @reduce="acc+item" @initial="0" @result="reduced"></div>
+  <div>Mapped: {{mapped}}</div>
+  <div>Filtered: {{filtered}}</div>
+  <div>Reduced: {{reduced}}</div>
+</div>
 
-                    html += '</div>';
-                });
+<div class="test-block">
+  <div class="test-title">@animate</div>
+  <button @click="dynamicClass=!dynamicClass">Toggle animazione</button>
+  <span @class:click="{animated: dynamicClass}">Animami!</span>
+</div>
 
-                container.innerHTML = html;
-            }
+<div class="test-block">
+  <div class="test-title">Routing: @link, @page</div>
+  <a @link="page1">Vai a Pagina 1</a> |
+  <a @link="page2">Vai a Pagina 2</a>
+  <div @page="page1" class="success">Sei su Pagina 1</div>
+  <div @page="page2" class="success">Sei su Pagina 2</div>
+</div>
 
-            run() {
-                this.runTests();
-                this.renderResults();
-            }
+<div class="test-block">
+  <div class="test-title">Componenti: @component</div>
+  <div @component="hello"></div>
+</div>
 
-            runTests() {
-                // Core Framework Tests
-                this.describe('Core Framework', () => {
-                    this.it('should create Ayisha instance', () => {
-                        this.expect(window.ayisha).toBeTruthy();
-                        this.expect(window.ayisha).toBeInstanceOf(window.Ayisha);
-                    });
+<script>
+window.addEventListener('DOMContentLoaded', function() {
+  ayisha.component('hello', '<div class="success">Componente funzionante! Messaggio: {{componentMsg}}</div>');
+});
+</script>
 
-                    this.it('should have reactive state', () => {
-                        const testInstance = new window.Ayisha();
-                        testInstance.setState({ test: 'value' });
-                        this.expect(testInstance.getState().test).toBe('value');
-                    });
-
-                    this.it('should compile and cache functions', () => {
-                        const testInstance = new window.Ayisha();
-                        const fn1 = testInstance.compile('x', 'return x * 2');
-                        const fn2 = testInstance.compile('x', 'return x * 2'); // Should return cached
-                        this.expect(fn1).toBe(fn2);
-                        this.expect(fn1(5)).toBe(10);
-                    });
-                });
-
-                // State Management Tests
-                this.describe('State Management', () => {
-                    this.it('should trigger watchers on state change', () => {
-                        const testInstance = new window.Ayisha();
-                        let triggered = false;
-                        
-                        testInstance.addWatcher('test', () => { triggered = true; });
-                        testInstance.state.test = 'new value';
-                        
-                        this.expect(triggered).toBeTruthy();
-                    });
-
-                    this.it('should support nested property lookup', () => {
-                        const testInstance = new window.Ayisha();
-                        const obj = { user: { name: 'John', profile: { age: 30 } } };
-                        
-                        this.expect(testInstance.lookup(obj, 'user.name')).toBe('John');
-                        this.expect(testInstance.lookup(obj, 'user.profile.age')).toBe(30);
-                    });
-
-                    this.it('should evaluate expressions in state context', () => {
-                        const testInstance = new window.Ayisha();
-                        testInstance.setState({ name: 'John', age: 30 });
-                        
-                        this.expect(testInstance.evaluate('name')).toBe('John');
-                        this.expect(testInstance.evaluate('age > 18')).toBeTruthy();
-                    });
-                });
-
-                // Component System Tests
-                this.describe('Component System', () => {
-                    this.it('should register components', () => {
-                        const testInstance = new window.Ayisha();
-                        testInstance.component('test-comp', { template: '<div>Test</div>' });
-                        
-                        this.expect(testInstance.components.has('test-comp')).toBeTruthy();
-                    });
-
-                    this.it('should handle function components', () => {
-                        const testInstance = new window.Ayisha();
-                        testInstance.component('func-comp', (props) => `<div>${props.name}</div>`);
-                        
-                        const comp = testInstance.components.get('func-comp');
-                        this.expect(comp.render).toBeTruthy();
-                    });
-                });
-
-                // Validation System Tests
-                this.describe('Validation System', () => {
-                    this.it('should register custom validators', () => {
-                        const testInstance = new window.Ayisha();
-                        testInstance.validate('custom', (value) => ({ valid: value === 'test', message: 'Must be test' }));
-                        
-                        this.expect(testInstance.validators.has('custom')).toBeTruthy();
-                    });
-
-                    this.it('should validate required fields', () => {
-                        const testInstance = new window.Ayisha();
-                        const validator = testInstance.validators.get('required');
-                        
-                        this.expect(validator('').valid).toBeFalsy();
-                        this.expect(validator('value').valid).toBeTruthy();
-                        this.expect(validator(null).valid).toBeFalsy();
-                    });
-
-                    this.it('should validate email format', () => {
-                        const testInstance = new window.Ayisha();
-                        const validator = testInstance.validators.get('email');
-                        
-                        this.expect(validator('test@example.com').valid).toBeTruthy();
-                        this.expect(validator('invalid-email').valid).toBeFalsy();
-                        this.expect(validator('').valid).toBeTruthy(); // Empty is valid for email
-                    });
-                });
-
-                // Animation System Tests
-                this.describe('Animation System', () => {
-                    this.it('should register animations', () => {
-                        const testInstance = new window.Ayisha();
-                        testInstance.animate('custom-fade', { from: { opacity: 0 }, to: { opacity: 1 } });
-                        
-                        this.expect(testInstance.animations.has('custom-fade')).toBeTruthy();
-                    });
-
-                    this.it('should have built-in animations', () => {
-                        const testInstance = new window.Ayisha();
-                        
-                        this.expect(testInstance.animations.has('fadeIn')).toBeTruthy();
-                        this.expect(testInstance.animations.has('fadeOut')).toBeTruthy();
-                        this.expect(testInstance.animations.has('slideDown')).toBeTruthy();
-                        this.expect(testInstance.animations.has('slideUp')).toBeTruthy();
-                    });
-                });
-
-                // Plugin System Tests
-                this.describe('Plugin System', () => {
-                    this.it('should install function plugins', () => {
-                        const testInstance = new window.Ayisha();
-                        let installed = false;
-                        
-                        const plugin = function() { installed = true; };
-                        plugin.name = 'test-plugin';
-                        
-                        testInstance.use(plugin);
-                        
-                        this.expect(installed).toBeTruthy();
-                        this.expect(testInstance.plugins.has('test-plugin')).toBeTruthy();
-                    });
-
-                    this.it('should install object plugins', () => {
-                        const testInstance = new window.Ayisha();
-                        let installed = false;
-                        
-                        const plugin = {
-                            name: 'object-plugin',
-                            install() { installed = true; }
-                        };
-                        
-                        testInstance.use(plugin);
-                        
-                        this.expect(installed).toBeTruthy();
-                        this.expect(testInstance.plugins.has('object-plugin')).toBeTruthy();
-                    });
-
-                    this.it('should create plugins with createPlugin method', () => {
-                        const testInstance = new window.Ayisha();
-                        
-                        const plugin = testInstance.createPlugin('created-plugin', {
-                            state: { pluginValue: 'test' },
-                            methods: {
-                                pluginMethod() { return 'plugin-result'; }
-                            }
-                        });
-                        
-                        this.expect(plugin.name).toBe('created-plugin');
-                        this.expect(plugin.install).toBeTruthy();
-                    });
-                });
-
-                // Advanced Features Tests
-                this.describe('Advanced Features', () => {
-                    this.it('should create reactive forms', () => {
-                        const testInstance = new window.Ayisha();
-                        const form = testInstance.createForm({
-                            name: [{ type: 'required' }],
-                            email: [{ type: 'email' }]
-                        });
-                        
-                        this.expect(form.data).toBeTruthy();
-                        this.expect(form.errors).toBeTruthy();
-                        this.expect(form.validate).toBeTruthy();
-                    });
-
-                    this.it('should create stores', () => {
-                        const testInstance = new window.Ayisha();
-                        const store = testInstance.createStore({ count: 0 });
-                        
-                        this.expect(store.state).toBeTruthy();
-                        this.expect(store.commit).toBeTruthy();
-                        this.expect(store.dispatch).toBeTruthy();
-                    });
-
-                    this.it('should create routers', () => {
-                        const testInstance = new window.Ayisha();
-                        const router = testInstance.createRouter([
-                            { path: '/test', component: '<div>Test</div>' }
-                        ]);
-                        
-                        this.expect(router.routes).toBeTruthy();
-                        this.expect(router.navigate).toBeTruthy();
-                        this.expect(router.routes.has('/test')).toBeTruthy();
-                    });
-                });
-
-                // Error Handling Tests
-                this.describe('Error Handling', () => {
-                    this.it('should handle custom error handlers', () => {
-                        const testInstance = new window.Ayisha();
-                        let errorHandled = false;
-                        
-                        testInstance.onError(() => { errorHandled = true; });
-                        testInstance._handleError(new Error('test error'));
-                        
-                        this.expect(errorHandled).toBeTruthy();
-                    });
-
-                    this.it('should support error recovery strategies', () => {
-                        const testInstance = new window.Ayisha();
-                        let fallbackCalled = false;
-                        
-                        testInstance.onError(() => 'fallback');
-                        testInstance._handleErrorWithRecovery(new Error('test'), {
-                            fallback: () => { fallbackCalled = true; }
-                        });
-                        
-                        // Note: This test might need adjustment based on implementation
-                        this.expect(true).toBeTruthy(); // Placeholder
-                    });
-                });
-
-                // Testing Utilities Tests
-                this.describe('Testing Utilities', () => {
-                    this.it('should create test instances', () => {
-                        const test = window.ayisha.createTestInstance('<div id="test">Test</div>');
-                        
-                        this.expect(test.instance).toBeTruthy();
-                        this.expect(test.container).toBeTruthy();
-                        this.expect(test.cleanup).toBeTruthy();
-                        
-                        const element = test.findByAttribute('id');
-                        this.expect(element).toBeTruthy();
-                        this.expect(element.textContent).toBe('Test');
-                        
-                        test.cleanup();
-                    });
-
-                    this.it('should handle test instance state', () => {
-                        const test = window.ayisha.createTestInstance('<span @text="message"></span>');
-                        
-                        test.setState({ message: 'Hello Test' });
-                        this.expect(test.getState().message).toBe('Hello Test');
-                        
-                        test.cleanup();
-                    });
-                });
-
-                // Performance Tests
-                this.describe('Performance', () => {
-                    this.it('should cache compiled functions', () => {
-                        const testInstance = new window.Ayisha();
-                        const startSize = testInstance._fnCache.size;
-                        
-                        testInstance.compile('x', 'return x');
-                        testInstance.compile('x', 'return x'); // Should use cache
-                        
-                        this.expect(testInstance._fnCache.size).toBe(startSize + 1);
-                    });
-
-                    this.it('should handle memory cleanup', () => {
-                        const testInstance = new window.Ayisha();
-                        testInstance.setState({ test: 'value' });
-                        testInstance.addWatcher('test', () => {});
-                        
-                        const watcherCount = Object.keys(testInstance.watchers).length;
-                        testInstance.destroy();
-                        
-                        this.expect(testInstance._fnCache.size).toBe(0);
-                        this.expect(Object.keys(testInstance.watchers).length).toBe(0);
-                    });
-                });
-            }
-        }
-
-        // Wait for DOM and Ayisha to be ready
-        document.addEventListener('DOMContentLoaded', () => {
-            // Give Ayisha time to initialize
-            setTimeout(() => {
-                const testSuite = new AyishaTestSuite();
-                testSuite.run();
-                
-                console.log('%c🧪 Ayisha.js Test Suite Complete', 'font-size: 18px; font-weight: bold; color: #28a745;');
-                console.log('Check the page for detailed results');
-            }, 500);
-        });
-    </script>
+<script src="./ayisha-virtual.js"></script>
 </body>
 </html>
