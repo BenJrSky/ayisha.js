@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ayisha Component Demo</title>
+  <script src="../ayisha-virtual.js"></script>
+  <style>
+    body { font-family: 'Montserrat', Arial, sans-serif; background: #f8fafc; margin: 0; color: #222; }
+    .container { max-width: 900px; margin: 2rem auto; background: #fff; border-radius: 18px; box-shadow: 0 4px 32px #647dee22; padding: 2.5rem 2rem; }
+    h1 { color: #7f53ac; text-align: center; margin-top: 2rem; }
+    .section { margin: 2.5rem 0; }
+    .carousel { display: flex; align-items: center; gap: 1em; margin: 2em 0; }
+    .footer { background: #222; color: #fff; text-align: center; padding: 1em; margin-top: 2em; }
+    .navbar { background: #222; color: #fff; padding: 1em; }
+    .navbar ul { list-style: none; display: flex; gap: 1em; margin: 0; padding: 0; }
+    .navbar a { color: #fff; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <component @src="nav.html"></component>
+  <div class="container">
+    <h1>Demo Componenti Dinamici Ayisha</h1>
+    <div class="section">
+      <h2>Carousel</h2>
+      <component @src="carousel.html"></component>
+    </div>
+    <div class="section">
+      <h2>Contenuto di esempio</h2>
+      <p>Questa pagina mostra come includere componenti dinamici annidati tramite <code>&lt;component @src=&quot;...&quot;&gt;</code> con AyishaVDOM.</p>
+      <p>Puoi annidare componenti, direttive e sub-direttive senza limiti.</p>
+    </div>
+  </div>
+  <component @src="footer.html"></component>
+  <init>
+state.slides = [
+  {img:'https://placehold.co/300x150?text=Slide+1', caption:'First Slide'},
+  {img:'https://placehold.co/300x150?text=Slide+2', caption:'Second Slide'},
+  {img:'https://placehold.co/300x150?text=Slide+3', caption:'Third Slide'}
+];
+state.currentSlide = 0;
+</init>
+</body>
+</html>

@@ -14,6 +14,9 @@
       this._vdom = null;
       this._modelBindings = [];
       this._fetched = {};
+      this._componentCache = {}; // Cache per i componenti caricati
+      this._loadingComponents = new Set(); // Traccia i componenti in caricamento
+      this._isRendering = false; // Flag per evitare loop infiniti
       window.ayisha = this;
     }
 
@@ -79,6 +82,44 @@
       this.components[name] = html;
     }
 
+    // Metodo per caricare un componente da URL
+    async _loadExternalComponent(url) {
+      // Controlla se il componente è già in cache
+      if (this._componentCache[url]) {
+        return this._componentCache[url];
+      }
+
+      // Evita richieste duplicate per lo stesso URL
+      if (this._loadingComponents.has(url)) {
+        // Attende che la richiesta in corso si completi
+        while (this._loadingComponents.has(url)) {
+          await new Promise(resolve => setTimeout(resolve, 10));
+        }
+        return this._componentCache[url];
+      }
+
+      this._loadingComponents.add(url);
+
+      try {
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const html = await response.text();
+        
+        // Salva in cache
+        this._componentCache[url] = html;
+        
+        return html;
+      } catch (error) {
+        console.error(`Errore nel caricamento del componente da ${url}:`, error);
+        return null;
+      } finally {
+        this._loadingComponents.delete(url);
+      }
+    }
+
     _evalExpr(expr, ctx = {}, event) {
       const t = expr.trim();
       if (/^['"].*['"]$/.test(t)) return t.slice(1, -1);
@@ -142,6 +183,10 @@
     }
 
     render() {
+      // Evita rendering ricorsivo
+      if (this._isRendering) return;
+      this._isRendering = true;
+      
       const active = document.activeElement;
       let focusInfo = null;
       if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
@@ -172,6 +217,8 @@
         }
       }
       this._modelBindings.forEach(b => b.update());
+      
+      this._isRendering = false;
     }
 
     _renderVNode(vNode, ctx) {
@@ -251,6 +298,104 @@
           setState(vNode.directives['@result'] || 'result', result);
         }
         if (used) return document.createComment('functional');
+      }
+
+      // Gestione speciale per il tag component con @src
+      if (vNode.tag === 'component' && vNode.directives['@src']) {
+        // Migliore gestione dell'URL del componente
+        let srcUrl = null;
+        
+        // Prima prova a valutare l'espressione
+        try {
+          srcUrl = this._evalExpr(vNode.directives['@src'], ctx);
+        } catch (e) {
+          console.warn('Errore nella valutazione di @src:', e);
+        }
+        
+        // Se l'URL è ancora undefined o null, prova ad interpretarlo come stringa letterale
+        if (!srcUrl) {
+          const rawSrc = vNode.directives['@src'].trim();
+          // Se è una stringa quotata, rimuovi le quote
+          if (/^['"].*['"]$/.test(rawSrc)) {
+            srcUrl = rawSrc.slice(1, -1);
+          } else {
+            // Altrimenti usa il valore così com'è
+            srcUrl = rawSrc;
+          }
+        }
+        
+        // Controlla che l'URL sia valido
+        if (!srcUrl || srcUrl === 'undefined' || srcUrl === 'null') {
+          console.error('URL del componente non valido:', vNode.directives['@src']);
+          const errorEl = document.createElement('div');
+          errorEl.className = 'component-error';
+          errorEl.textContent = `Errore: URL componente non valido (${vNode.directives['@src']})`;
+          return errorEl;
+        }
+        
+        // Se il componente è caricato, lo renderizza
+        if (this._componentCache[srcUrl]) {
+          const componentHtml = this._componentCache[srcUrl];
+          
+          // Crea un fragment dal HTML del componente
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = componentHtml;
+          
+          // Parsa il contenuto del componente come nuovo vDOM
+          const componentVNode = this.parse(tempDiv);
+          
+          // Renderizza il componente nel contesto corrente
+          if (componentVNode && componentVNode.children) {
+            const frag = document.createDocumentFragment();
+            componentVNode.children.forEach(child => {
+              const node = this._renderVNode(child, ctx);
+              if (node) frag.appendChild(node);
+            });
+            return frag;
+          }
+        }
+        
+        // Se il componente non è ancora caricato e non è in caricamento, avvia il caricamento
+        if (!this._componentCache[srcUrl] && !this._loadingComponents.has(srcUrl)) {
+          this._loadingComponents.add(srcUrl);
+          
+          // Avvia il caricamento asincrono
+          fetch(srcUrl)
+            .then(res => {
+              if (!res.ok) {
+                throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+              }
+              return res.text();
+            })
+            .then(html => {
+              this._componentCache[srcUrl] = html;
+              this._loadingComponents.delete(srcUrl);
+              // Re-render solo se non stiamo già renderizzando
+              if (!this._isRendering) {
+                requestAnimationFrame(() => this.render());
+              }
+            })
+            .catch(err => {
+              console.error(`Errore caricamento componente ${srcUrl}:`, err);
+              this._componentCache[srcUrl] = `<div class="component-error">Errore: ${err.message}</div>`;
+              this._loadingComponents.delete(srcUrl);
+              if (!this._isRendering) {
+                requestAnimationFrame(() => this.render());
+              }
+            });
+        }
+        
+        // Restituisce un placeholder con informazioni più dettagliate
+        const placeholder = document.createElement('div');
+        placeholder.className = 'component-loading';
+        if (this._loadingComponents.has(srcUrl)) {
+          placeholder.textContent = `Caricamento componente: ${srcUrl}`;
+        } else if (this._componentCache[srcUrl] && this._componentCache[srcUrl].includes('component-error')) {
+          placeholder.innerHTML = this._componentCache[srcUrl];
+        } else {
+          placeholder.textContent = `In attesa del componente: ${srcUrl}`;
+        }
+        return placeholder;
       }
 
       const el = document.createElement(vNode.tag);
