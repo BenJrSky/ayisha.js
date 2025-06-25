@@ -18,12 +18,15 @@
   </style>
 </head>
 <body>
+
   <component @src="nav.html"></component>
+
+
   <div class="container">
     <h1>Demo Componenti Dinamici Ayisha</h1>
     <div class="section">
       <h2>Carousel</h2>
-      <component @src="carousel.html"></component>
+      <component @src="carousel.html"/>
     </div>
     <div class="section">
       <h2>Contenuto di esempio</h2>
@@ -31,7 +34,7 @@
       <p>Puoi annidare componenti, direttive e sub-direttive senza limiti.</p>
     </div>
   </div>
-  <component @src="footer.html"></component>
+  <component @src="footer.html" />
   <init>
 state.slides = [
   {img:'https://placehold.co/300x150?text=Slide+1', caption:'First Slide'},

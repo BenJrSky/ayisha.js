@@ -21,6 +21,16 @@
     }
 
     parse(node) {
+      if (!node) return null;
+      // Handle DocumentFragment (for HTML fragments)
+      if (node.nodeType === 11) { // DocumentFragment
+        const fragVNode = { tag: 'fragment', attrs: {}, directives: {}, subDirectives: {}, children: [] };
+        node.childNodes.forEach(child => {
+          const cn = this.parse(child);
+          if (cn) fragVNode.children.push(cn);
+        });
+        return fragVNode;
+      }
       if (node.nodeType === 3) {
         return { type: 'text', text: node.textContent };
       }
@@ -45,10 +55,13 @@
           vNode.attrs[attr.name] = attr.value;
         }
       }
-      node.childNodes.forEach(child => {
-        const cn = this.parse(child);
-        if (cn) vNode.children.push(cn);
-      });
+      // Always try to parse children (self-closing tags will just have none)
+      if (node.childNodes && node.childNodes.length > 0) {
+        node.childNodes.forEach(child => {
+          const cn = this.parse(child);
+          if (cn) vNode.children.push(cn);
+        });
+      }
       return vNode;
     }
 
@@ -142,6 +155,35 @@
       });
     }
 
+    // Helper to evaluate dynamic expressions in attribute values
+    _evalAttrValue(val, ctx) {
+      // Replace {{...}} expressions
+      let result = val.replace(/{{(.*?)}}/g, (_, e) => {
+        const r = this._evalExpr(e.trim(), ctx);
+        return r != null ? r : '';
+      });
+      // Replace [{...}] expressions (for array/object access)
+      result = result.replace(/\[\{(.*?)\}\]/g, (_, e) => {
+        const r = this._evalExpr(e.trim(), ctx);
+        return r != null ? r : '';
+      });
+      // Replace {...} expressions (for direct JS-like access)
+      // If the whole value is a single {...}, evaluate as a full JS expression
+      if (/^\{([^{}]+)\}$/.test(result.trim())) {
+        const expr = result.trim().slice(1, -1);
+        const r = this._evalExpr(expr, ctx);
+        return r != null ? r : '';
+      }
+      // Otherwise, replace {...} inside the string
+      result = result.replace(/\{([^{}]+)\}/g, (match, e) => {
+        // Avoid replacing inside {{...}}
+        if (/^\{\{.*\}\}$/.test(match)) return match;
+        const r = this._evalExpr(e.trim(), ctx);
+        return r != null ? r : '';
+      });
+      return result;
+    }
+
     _bindModel(el, key, ctx) {
       const update = () => {
         const val = this._evalExpr(key, ctx);
@@ -203,10 +245,27 @@
       const real = this._renderVNode(this._vdom, this.state);
       if (this.root === document.body) {
         document.body.innerHTML = '';
-        if (real) document.body.appendChild(real);
+        if (real) {
+          if (real.tagName === undefined && real.childNodes) {
+            // If it's a fragment, append all children
+            Array.from(real.childNodes).forEach(child => document.body.appendChild(child));
+          } else if (real instanceof DocumentFragment) {
+            document.body.appendChild(real);
+          } else {
+            document.body.appendChild(real);
+          }
+        }
       } else {
         this.root.innerHTML = '';
-        if (real) this.root.appendChild(real);
+        if (real) {
+          if (real.tagName === undefined && real.childNodes) {
+            Array.from(real.childNodes).forEach(child => this.root.appendChild(child));
+          } else if (real instanceof DocumentFragment) {
+            this.root.appendChild(real);
+          } else {
+            this.root.appendChild(real);
+          }
+        }
       }
       if (focusInfo) {
         let node = this.root;
@@ -224,6 +283,14 @@
     _renderVNode(vNode, ctx) {
       if (!vNode) return null;
       if (vNode.type === 'text') return document.createTextNode(this._evalText(vNode.text, ctx));
+      if (vNode.tag === 'fragment') {
+        const frag = document.createDocumentFragment();
+        vNode.children.forEach(child => {
+          const node = this._renderVNode(child, ctx);
+          if (node) frag.appendChild(node);
+        });
+        return frag;
+      }
       if (vNode.directives['@if'] && !this._evalExpr(vNode.directives['@if'], ctx)) return null;
       if (vNode.directives['@show'] && !this._evalExpr(vNode.directives['@show'], ctx)) return null;
       if (vNode.directives['@hide'] && this._evalExpr(vNode.directives['@hide'], ctx)) return null;
@@ -399,7 +466,10 @@
       }
 
       const el = document.createElement(vNode.tag);
-      Object.entries(vNode.attrs).forEach(([k, v]) => el.setAttribute(k, v));
+      // Evaluate dynamic attribute values
+      Object.entries(vNode.attrs).forEach(([k, v]) => {
+        el.setAttribute(k, this._evalAttrValue(v, ctx));
+      });
 
       // unified fetch helper
       const setupFetch = (expr, rk, event) => {
@@ -554,7 +624,19 @@
     }
 
     mount() {
-      this._vdom = this.parse(this.root);
+      // Se il root ha più figli, crea un fragment vNode ESCLUDENDO <init>
+      if (this.root.childNodes.length > 1) {
+        const fragVNode = { tag: 'fragment', attrs: {}, directives: {}, subDirectives: {}, children: [] };
+        this.root.childNodes.forEach(child => {
+          // Escludi nodi <init>
+          if (child.nodeType === 1 && child.tagName && child.tagName.toLowerCase() === 'init') return;
+          const cn = this.parse(child);
+          if (cn) fragVNode.children.push(cn);
+        });
+        this._vdom = fragVNode;
+      } else {
+        this._vdom = this.parse(this.root);
+      }
       this._makeReactive();
       this._runInitBlocks();
       this._setupRouting();
