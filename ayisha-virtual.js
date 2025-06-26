@@ -604,10 +604,58 @@
         const rk = vNode.directives['@result'] || 'result';
         setupFetch(expr, rk); // fetch solo se url cambia
         if (vNode.directives['@watch']) {
-          vNode.directives['@watch'].split(',').forEach(dep => {
-            this.addWatcher(dep.trim(), () => setupFetch(expr, rk, undefined, true));
+          vNode.directives['@watch'].split(',').forEach(watchExpr => {
+            watchExpr = watchExpr.trim();
+            // Support both "prop" and "prop=>code" or "prop: code"
+            let match = watchExpr.match(/^(\w+)\s*=>\s*(.+)$/) || watchExpr.match(/^(\w+)\s*:\s*(.+)$/);
+            if (match) {
+              const prop = match[1];
+              const code = match[2];
+              this.addWatcher(prop, function(newVal) {
+                // Expose state as local variables
+                const state = window.ayisha.state;
+                try {
+                  new Function('state','newVal', `
+                    with(state){ 
+                      const {${Object.keys(state).join(',')}} = state;
+                      ${code}
+                    }
+                  `)(state, newVal);
+                } catch (e) {
+                  console.error('Watcher error:', e, code);
+                }
+              });
+            } else {
+              // Simple watcher: just refetch
+              this.addWatcher(watchExpr, () => setupFetch(expr, rk, undefined, true));
+            }
           });
         }
+      }
+
+      // generic @watch support (not only for fetch)
+      if (vNode.directives['@watch'] && !vNode.directives['@fetch']) {
+        vNode.directives['@watch'].split(',').forEach(watchExpr => {
+          watchExpr = watchExpr.trim();
+          let match = watchExpr.match(/^(\w+)\s*=>\s*(.+)$/) || watchExpr.match(/^(\w+)\s*:\s*(.+)$/);
+          if (match) {
+            const prop = match[1];
+            const code = match[2];
+            this.addWatcher(prop, function(newVal) {
+              const state = window.ayisha.state;
+              try {
+                new Function('state','newVal', `
+                  with(state){ 
+                    const {${Object.keys(state).join(',')}} = state;
+                    ${code}
+                  }
+                `)(state, newVal);
+              } catch (e) {
+                console.error('Watcher error:', e, code);
+              }
+            });
+          }
+        });
       }
 
       if (vNode.directives['@text'] && !vNode.subDirectives['@text']) {
