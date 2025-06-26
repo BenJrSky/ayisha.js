@@ -660,21 +660,26 @@
       } else {
         this._vdom = this.parse(this.root);
       }
-      this._makeReactive();
-      this._runInitBlocks();
-      this._setupRouting();
-      const self = this;
-      let cp = this.state.currentPage;
+      // --- SPOSTATO PRIMA DEL PROXY ---
+      // Setup routing e currentPage PRIMA del Proxy
+      let cp = null;
       Object.defineProperty(this.state, 'currentPage', {
         get() { return cp; },
-        set(v) {
+        set: (v) => {
           if (cp !== v) {
             cp = v;
             history.pushState({}, '', '/' + v);
-            self.render();
+            // Notifica i watcher di currentPage
+            (this.watchers['currentPage'] || []).forEach(fn => fn(v));
+            this.render();
           }
-        }
+        },
+        configurable: true,
+        enumerable: true
       });
+      this._setupRouting();
+      this._makeReactive();
+      this._runInitBlocks();
       this.render();
       this.root.addEventListener('click', e => {
         let el = e.target;
