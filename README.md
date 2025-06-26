@@ -224,6 +224,164 @@ La direttiva `@watch` permette di reagire a cambiamenti di stato o espressioni, 
 
 ---
 
+## Real-World & Advanced Examples
+
+### 1. Annidamento di direttive e componenti
+```html
+<div>
+  <init>
+    state.user = { id: 1, name: 'Alice', posts: [
+      { id: 1, title: 'Hello', content: 'First post!' },
+      { id: 2, title: 'Ayisha.js', content: 'Reactive and simple.' }
+    ] };
+    state.selectedPost = null;
+  </init>
+  <h2 @text="user.name"></h2>
+  <ul>
+    <li @for="post in user.posts" @key="post.id">
+      <b @text="post.title"></b>
+      <button @click="selectedPost = post">Show</button>
+    </li>
+  </ul>
+  <div @if="selectedPost">
+    <h3 @text="selectedPost.title"></h3>
+    <p @text="selectedPost.content"></p>
+    <button @click="selectedPost = null">Close</button>
+  </div>
+</div>
+```
+
+### 2. Esempio misto: @watch, @click, @fetch, annidati
+```html
+<div>
+  <init>
+    state.userId = 1;
+    state.user = null;
+    state.log = [];
+  </init>
+  <button @click="userId++">Next User</button>
+  <button @click="userId = Math.max(1, userId-1)">Prev User</button>
+  <div @fetch="`https://jsonplaceholder.typicode.com/users/${userId}`" @result="user" @watch="userId">
+    <h3 @if="user" @text="user.name"></h3>
+    <p @if="user" @text="user.email"></p>
+    <p @if="!user">Loading...</p>
+  </div>
+  <div @watch="userId: log.push('UserId changed to ' + userId)"></div>
+  <h4>Log:</h4>
+  <ul>
+    <li @for="entry in log" @text="entry"></li>
+  </ul>
+</div>
+```
+
+### 3. Annidamento di fetch, for, if, e sub-direttive
+```html
+<div>
+  <init>
+    state.filter = '';
+  </init>
+  <input @model="filter" placeholder="Filter posts">
+  <div @fetch="'https://jsonplaceholder.typicode.com/posts'" @result="posts">
+    <ul>
+      <li @for="post in posts.filter(p => !filter || p.title.includes(filter))" @key="post.id">
+        <b @text="post.title"></b>
+        <button @click="post.show = !post.show">Toggle</button>
+        <div @if="post.show">
+          <p @text="post.body"></p>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div>
+```
+
+### 4. Componenti dinamici annidati e passaggio di stato
+```html
+<component @src="components/user.html" :userId="userId"></component>
+<init>
+  state.userId = 1;
+</init>
+<!-- components/user.html -->
+<div>
+  <div @fetch="`https://jsonplaceholder.typicode.com/users/${userId}`" @result="user">
+    <h2 @if="user" @text="user.name"></h2>
+    <component @src="components/posts.html" :userId="userId"></component>
+  </div>
+</div>
+<!-- components/posts.html -->
+<div>
+  <div @fetch="`https://jsonplaceholder.typicode.com/posts?userId=${userId}`" @result="posts">
+    <ul>
+      <li @for="post in posts" @key="post.id">
+        <b @text="post.title"></b>
+      </li>
+    </ul>
+  </div>
+</div>
+```
+
+### 5. Validazione, animazioni, sub-direttive e gestione errori
+```html
+<form>
+  <input @model="email" @validate="required,email" placeholder="Email" @focus="error=''">
+  <input @model="password" @validate="required,minLength:6" type="password" placeholder="Password">
+  <button @click="submit()" @animate="bounce">Login</button>
+  <p @if="error" @class="{red:true}">{{error}}</p>
+  <init>
+    state.error = '';
+    function submit() {
+      if (!email || !password) {
+        error = 'Please fill all fields.';
+      } else {
+        error = '';
+        // login logic
+      }
+    }
+  </init>
+</form>
+```
+
+### 6. Esempio completo: dashboard con tutto
+```html
+<div>
+  <init>
+    state.page = 'home';
+    state.userId = 1;
+    state.log = [];
+  </init>
+  <nav>
+    <a @click="page='home'">Home</a>
+    <a @click="page='users'">Users</a>
+    <a @click="page='posts'">Posts</a>
+  </nav>
+  <div @switch="page">
+    <div @case="'home'">
+      <h2>Welcome!</h2>
+    </div>
+    <div @case="'users'">
+      <button @click="userId++">Next User</button>
+      <div @fetch="`https://jsonplaceholder.typicode.com/users/${userId}`" @result="user" @watch="userId">
+        <h3 @if="user" @text="user.name"></h3>
+        <p @if="user" @text="user.email"></p>
+      </div>
+    </div>
+    <div @case="'posts'">
+      <component @src="components/posts.html" :userId="userId"></component>
+    </div>
+    <div @default>
+      <p>Page not found</p>
+    </div>
+  </div>
+  <div @watch="page: log.push('Page changed to ' + page)"></div>
+  <h4>Log:</h4>
+  <ul>
+    <li @for="entry in log" @text="entry"></li>
+  </ul>
+</div>
+```
+
+---
+
 ## Best Practices & Shortcuts
 
 | Sintassi         | Descrizione                                    |
