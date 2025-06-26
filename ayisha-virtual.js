@@ -420,25 +420,18 @@
         
         // Controlla che l'URL sia valido
         if (!srcUrl || srcUrl === 'undefined' || srcUrl === 'null') {
-          console.error('URL del componente non valido:', vNode.directives['@src']);
           const errorEl = document.createElement('div');
           errorEl.className = 'component-error';
           errorEl.textContent = `Errore: URL componente non valido (${vNode.directives['@src']})`;
           return errorEl;
         }
-        
-        // Se il componente è caricato, lo renderizza
+        // If already loaded, render it
         if (this._componentCache[srcUrl]) {
           const componentHtml = this._componentCache[srcUrl];
-          
-          // Crea un fragment dal HTML del componente
           const tempDiv = document.createElement('div');
           tempDiv.innerHTML = componentHtml;
-          
-          // Parsa il contenuto del componente come nuovo vDOM
+          // Always parse children, even if self-closing (for both <component .../> and <component ...></component>)
           const componentVNode = this.parse(tempDiv);
-          
-          // Renderizza il componente nel contesto corrente
           if (componentVNode && componentVNode.children) {
             const frag = document.createDocumentFragment();
             componentVNode.children.forEach(child => {
@@ -448,38 +441,26 @@
             return frag;
           }
         }
-        
-        // Se il componente non è ancora caricato e non è in caricamento, avvia il caricamento
+        // If not loaded, fetch and re-render
         if (!this._componentCache[srcUrl] && !this._loadingComponents.has(srcUrl)) {
           this._loadingComponents.add(srcUrl);
-          
-          // Avvia il caricamento asincrono
           fetch(srcUrl)
             .then(res => {
-              if (!res.ok) {
-                throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-              }
+              if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
               return res.text();
             })
             .then(html => {
               this._componentCache[srcUrl] = html;
               this._loadingComponents.delete(srcUrl);
-              // Re-render solo se non stiamo già renderizzando
-              if (!this._isRendering) {
-                requestAnimationFrame(() => this.render());
-              }
+              if (!this._isRendering) requestAnimationFrame(() => this.render());
             })
             .catch(err => {
-              console.error(`Errore caricamento componente ${srcUrl}:`, err);
               this._componentCache[srcUrl] = `<div class="component-error">Errore: ${err.message}</div>`;
               this._loadingComponents.delete(srcUrl);
-              if (!this._isRendering) {
-                requestAnimationFrame(() => this.render());
-              }
+              if (!this._isRendering) requestAnimationFrame(() => this.render());
             });
         }
-        
-        // Restituisce un placeholder con informazioni più dettagliate
+        // Placeholder
         const placeholder = document.createElement('div');
         placeholder.className = 'component-loading';
         if (this._loadingComponents.has(srcUrl)) {
