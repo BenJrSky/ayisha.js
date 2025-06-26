@@ -1,6 +1,6 @@
-# AyishaVDOM.js
+# Ayisha.js
 
-A modern, ultra-lightweight, reactive Virtual DOM engine for the web. AyishaVDOM is designed to be a drop-in alternative to heavy frameworks like Vue, React, Alpine, or Svelte, offering a declarative, expressive, and extensible approach to building dynamic web interfaces with zero build step and instant learning curve.
+A modern, ultra-lightweight, reactive Virtual DOM engine for the web. Ayisha.js is designed to be a drop-in alternative to heavy frameworks like Vue, React, Alpine, or Svelte, offering a declarative, expressive, and extensible approach to building dynamic web interfaces with zero build step and instant learning curve.
 
 ---
 
@@ -14,7 +14,7 @@ A modern, ultra-lightweight, reactive Virtual DOM engine for the web. AyishaVDOM
 
 ---
 
-## Why AyishaVDOM?
+## Why Ayisha.js?
 
 - **No build step:** Just include the script and go. Perfect for rapid prototyping, static sites, or full SPAs.
 - **Tiny footprint:** Under 10KB minified, no dependencies.
@@ -127,16 +127,16 @@ A modern, ultra-lightweight, reactive Virtual DOM engine for the web. AyishaVDOM
 
 ## Comparison with Other Frameworks
 
-| Feature         | AyishaVDOM | Vue | React | Alpine | Svelte |
-|-----------------|------------|-----|-------|--------|--------|
-| No build step   | ✅         | ❌  | ❌    | ✅     | ❌     |
-| File size       | <10KB      | 30KB+| 40KB+| 10KB   | 15KB+  |
-| Directives      | ✅         | ✅  | ❌    | ✅     | ❌     |
-| SPA Routing     | ✅         | ✅  | ✅    | ❌     | ✅     |
-| Components      | ✅         | ✅  | ✅    | ❌     | ✅     |
-| Two-way binding | ✅         | ✅  | ❌    | ✅     | ✅     |
-| Error banners   | ✅         | ❌  | ❌    | ❌     | ❌     |
-| No dependencies | ✅         | ❌  | ❌    | ✅     | ❌     |
+| Feature         | Ayisha.js | Vue | React | Alpine | Svelte |
+|-----------------|-----------|-----|-------|--------|--------|
+| No build step   | ✅        | ❌  | ❌    | ✅     | ❌     |
+| File size       | <10KB     | 30KB+| 40KB+| 10KB   | 15KB+  |
+| Directives      | ✅        | ✅  | ❌    | ✅     | ❌     |
+| SPA Routing     | ✅        | ✅  | ✅    | ❌     | ✅     |
+| Components      | ✅        | ✅  | ✅    | ❌     | ✅     |
+| Two-way binding | ✅        | ✅  | ❌    | ✅     | ✅     |
+| Error banners   | ✅        | ❌  | ❌    | ❌     | ❌     |
+| No dependencies | ✅        | ❌  | ❌    | ✅     | ❌     |
 
 ---
 
