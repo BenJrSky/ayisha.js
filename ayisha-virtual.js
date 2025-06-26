@@ -482,7 +482,8 @@
 
       // unified fetch helper
       if (!this._pendingFetches) this._pendingFetches = {};
-      const setupFetch = (expr, rk, event) => {
+      if (!this._lastFetchUrl) this._lastFetchUrl = {};
+      const setupFetch = (expr, rk, event, force) => {
         let url = this._evalExpr(expr, ctx, event);
         if (url === undefined) {
           url = expr.replace(/\{([^}]+)\}/g, (_, key) => {
@@ -492,9 +493,11 @@
         }
         if (!url) return;
         const fid = `${url}::${rk}`;
-        // Prevent multiple concurrent fetches for the same key
+        // Only fetch if url changed or force is true
+        if (!force && this._lastFetchUrl[rk] === url) return;
         if (this._pendingFetches[fid]) return;
         this._pendingFetches[fid] = true;
+        this._lastFetchUrl[rk] = url;
         fetch(url)
           .then(res => res.ok ? res.json() : Promise.reject(res.status))
           .then(data => {
@@ -547,7 +550,7 @@
           const eventName = evt === 'hover' ? 'mouseover' : evt;
 
           if (dir === '@fetch') {
-            el.addEventListener(eventName, e => setupFetch(expr, vNode.directives['@result'] || 'result', e));
+            el.addEventListener(eventName, e => setupFetch(expr, vNode.directives['@result'] || 'result', e, true));
             return;
           }
 
@@ -599,10 +602,10 @@
       if (vNode.directives['@fetch'] && !vNode.subDirectives['@fetch']) {
         const expr = vNode.directives['@fetch'];
         const rk = vNode.directives['@result'] || 'result';
-        setupFetch(expr, rk);
+        setupFetch(expr, rk); // fetch solo se url cambia
         if (vNode.directives['@watch']) {
           vNode.directives['@watch'].split(',').forEach(dep => {
-            this.addWatcher(dep.trim(), () => setupFetch(expr, rk));
+            this.addWatcher(dep.trim(), () => setupFetch(expr, rk, undefined, true));
           });
         }
       }
