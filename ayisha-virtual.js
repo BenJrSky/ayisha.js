@@ -341,6 +341,7 @@
         errorDiv.style.margin = '0.5em 0';
         errorDiv.style.borderRadius = '4px';
         errorDiv.style.fontWeight = 'bold';
+        errorDiv.style.border = '1px solid #900';
         let msg = '';
         if (unknownDirective) {
           msg = `Errore: Direttiva sconosciuta <b>${unknownDirective}</b>.`;
@@ -352,6 +353,36 @@
         }
         errorDiv.innerHTML = msg;
         return errorDiv;
+      }
+
+      // --- GESTIONE ERRORI DI RETE/PARSING PER TUTTE LE DIRETTIVE ---
+      // Mostra un banner giallo per errori di rete/parsing associati a qualsiasi direttiva che abbia error in this._fetched
+      if (this._lastFetchUrl && this._fetched) {
+        // Cerca errori per tutte le chiavi di result usate nelle direttive
+        let foundError = null;
+        let foundDir = null;
+        for (const dir in vNode.directives) {
+          const rk = vNode.directives['@result'] || 'result';
+          const url = this._lastFetchUrl[rk];
+          if (url && this._fetched[url] && this._fetched[url].error) {
+            foundError = this._fetched[url].error;
+            foundDir = dir;
+            break;
+          }
+        }
+        if (foundError && foundDir) {
+          const warnDiv = document.createElement('div');
+          warnDiv.className = 'ayisha-directive-warning';
+          warnDiv.style.background = '#ffeb3b';
+          warnDiv.style.color = '#333';
+          warnDiv.style.padding = '1em';
+          warnDiv.style.margin = '0.5em 0';
+          warnDiv.style.borderRadius = '4px';
+          warnDiv.style.fontWeight = 'bold';
+          warnDiv.style.border = '1px solid #e0c200';
+          warnDiv.innerHTML = `<b>${foundDir}</b><br>${foundError}`;
+          return warnDiv;
+        }
       }
 
       // @text
@@ -551,15 +582,30 @@
         this._pendingFetches[fid] = true;
         this._lastFetchUrl[rk] = url;
         fetch(url)
-          .then(res => res.ok ? res.json() : Promise.reject(res.status))
+          .then(res => {
+            if (!res.ok) {
+              // Salva errore chiaro
+              if (!this._fetched[url]) this._fetched[url] = {};
+              this._fetched[url].error = `${res.status} ${res.statusText || 'errore di rete'}`;
+              throw new Error(`${res.status} ${res.statusText}`);
+            }
+            return res.json();
+          })
           .then(data => {
             const oldVal = this.state[rk];
             const isEqual = JSON.stringify(oldVal) === JSON.stringify(data);
             if (!isEqual) {
               this.state[rk] = data;
             }
+            // Pulisci eventuale errore precedente
+            if (this._fetched[url]) delete this._fetched[url].error;
           })
-          .catch(err => console.error('@fetch error:', err))
+          .catch(err => {
+            // Salva errore di parsing o di rete
+            if (!this._fetched[url]) this._fetched[url] = {};
+            if (!this._fetched[url].error) this._fetched[url].error = err.message;
+            console.error('@fetch error:', err);
+          })
           .finally(() => {
             delete this._pendingFetches[fid];
           });
@@ -892,6 +938,7 @@
       '@set:input': `Esempio: <input @set:input="foo='bar'">`,
       '@set:focus': `Esempio: <input @set:focus="foo='bar'">`,
       '@set:blur': `Esempio: <input @set:blur="foo='bar'">`,
+      '@focus': `Esempio: <input @focus="doSomething()">`,
     };
     return help[name] || '';
   };
