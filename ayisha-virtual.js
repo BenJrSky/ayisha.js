@@ -281,18 +281,20 @@
       if (focusInfo) {
         let node = this.root;
         focusInfo.path.forEach(i => node = node.childNodes[i]);
-        // Exclude input types that do not support setSelectionRange
-        const unsupportedTypes = [
-          'number', 'range', 'color', 'date', 'datetime-local', 'month', 'time',
-          'week', 'file', 'checkbox', 'radio', 'button', 'submit', 'reset', 'image', 'hidden'
-        ];
         if (
           node &&
-          (node.tagName === 'INPUT' || node.tagName === 'TEXTAREA') &&
-          !(node.tagName === 'INPUT' && unsupportedTypes.includes(node.type))
+          (node.tagName === 'INPUT' || node.tagName === 'TEXTAREA')
         ) {
           node.focus();
-          node.setSelectionRange(focusInfo.start, focusInfo.end);
+          // setSelectionRange solo se supportato
+          try {
+            if (
+              (node.tagName === 'INPUT' && typeof node.selectionStart === 'number' && typeof node.setSelectionRange === 'function' && node.type !== 'number') ||
+              node.tagName === 'TEXTAREA'
+            ) {
+              node.setSelectionRange(focusInfo.start, focusInfo.end);
+            }
+          } catch (e) {}
         }
       }
       this._modelBindings.forEach(b => b.update());

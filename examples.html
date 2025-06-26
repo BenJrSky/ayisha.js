@@ -501,6 +501,45 @@
         </div>
     </div>
 
+    <!-- Anagrafica User Form Example -->
+    <div class="example">
+        <h3>14. Form Anagrafica Utente</h3>
+        <init>
+            // Stato iniziale user
+            state.user = state.user || { nome: '', cognome: '', email: '', eta: '' };
+            state.userForm = { nome: '', cognome: '', email: '', eta: '' };
+        </init>
+        <form>
+            <div>
+                <label>Nome:</label><br>
+                <input @model="user.nome" placeholder="Nome" required>
+            </div>
+            <div>
+                <label>Cognome:</label><br>
+                <input @model="user.cognome" placeholder="Cognome" required>
+            </div>
+            <div>
+                <label>Email:</label><br>
+                <input type="email" @model="user.email" placeholder="Email" required>
+            </div>
+            <div>
+                <label>Età:</label><br>
+                <input type="number" @model="user.eta" placeholder="Età" min="0" required>
+            </div>
+            <div type="submit" class="primary" >Salva Anagrafica</div>
+        </form>
+        <h4>Dati utente inseriti:</h4>
+        <init>
+            state.user = { nome: 'Benito', cognome: 'Massidda', email: '', eta: '' };
+        </init>
+        <ul>
+            <li><b>Nome:</b> <span @text="user.nome"></span></li>
+            <li><b>Cognome:</b> <span @text="user.cognome"></span></li>
+            <li><b>Email:</b> <span @text="user.email"></span></li>
+            <li><b>Età:</b> <span @text="user.eta"></span></li>
+        </ul>
+    </div>
+
 </body>
 
 </html>
