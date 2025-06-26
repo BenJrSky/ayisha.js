@@ -2,6 +2,9 @@
 
 <button @click="posts = null" style="margin-bottom:1em">Ricarica post</button>
 
+<!-- Esempio di direttiva errata per testare il logging -->
+<div @iff="posts.length > 0">Questa direttiva è scritta male e attiverà il log di errore</div>
+
 
 <h3 @if="posts?.length==0" style="text-align: center;">Caricamento post...</h3>
 <ul>

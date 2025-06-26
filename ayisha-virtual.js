@@ -304,6 +304,56 @@
     _renderVNode(vNode, ctx) {
       if (!vNode) return null;
 
+      // --- GESTIONE ERRORI DIRETTIVE/SUB-DIRETTIVE ---
+      // Se c'è una direttiva o sub-direttiva sconosciuta, mostra un banner rosso invece del nodo
+      let unknownDirective = null;
+      let unknownSubDirective = null;
+      let unknownSubDirectiveEvt = null;
+      if (vNode && vNode.directives) {
+        for (const dir of Object.keys(vNode.directives)) {
+          // @src è valida SOLO su <component>
+          if (dir === '@src' && vNode.tag === 'component') continue;
+          if (!this.directiveHelp(dir) || this.directiveHelp(dir).startsWith('Nessun esempio')) {
+            unknownDirective = dir;
+            break;
+          }
+        }
+      }
+      if (!unknownDirective && vNode && vNode.subDirectives) {
+        for (const [dir, evs] of Object.entries(vNode.subDirectives)) {
+          for (const evt of Object.keys(evs)) {
+            const key = `${dir}:${evt}`;
+            if (!this.directiveHelp(key) || this.directiveHelp(key).startsWith('Nessun esempio')) {
+              unknownSubDirective = dir;
+              unknownSubDirectiveEvt = evt;
+              break;
+            }
+          }
+          if (unknownSubDirective) break;
+        }
+      }
+      if (unknownDirective || unknownSubDirective) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'ayisha-directive-error';
+        errorDiv.style.background = '#c00';
+        errorDiv.style.color = '#fff';
+        errorDiv.style.padding = '1em';
+        errorDiv.style.margin = '0.5em 0';
+        errorDiv.style.borderRadius = '4px';
+        errorDiv.style.fontWeight = 'bold';
+        let msg = '';
+        if (unknownDirective) {
+          msg = `Errore: Direttiva sconosciuta <b>${unknownDirective}</b>.`;
+          msg += '<br>' + this.directiveHelp(unknownDirective);
+        } else {
+          const key = `${unknownSubDirective}:${unknownSubDirectiveEvt}`;
+          msg = `Errore: Sub-direttiva sconosciuta <b>${key}</b>.`;
+          msg += '<br>' + this.directiveHelp(key);
+        }
+        errorDiv.innerHTML = msg;
+        return errorDiv;
+      }
+
       // @text
       if (vNode.type === 'text') return document.createTextNode(this._evalText(vNode.text, ctx));
 
@@ -773,4 +823,100 @@
   } else {
     new AyishaVDOM(document.body).mount();
   }
+
+  // --- LOGGING & ERROR HANDLING SYSTEM FOR DIRECTIVES/SUB-DIRECTIVES ---
+  // Usage: ayisha.logDirectives = true/false; ayisha.logLevel = 'warn'|'error'|'info';
+  // ayisha.directiveHelp('nomeDirettiva') per esempi pratici
+  AyishaVDOM.prototype._logDirective = function(type, name, el, msg, example) {
+    if (!window.ayisha || !window.ayisha.logDirectives) return;
+    const level = window.ayisha.logLevel || 'warn';
+    const prefix = `[Ayisha.${type}]`;
+    const where = el && el.outerHTML ? `\nElemento: ${el.outerHTML.slice(0, 120)}...` : '';
+    const help = example ? `\nEsempio: ${example}` : '';
+    if (level === 'error') console.error(`${prefix} ${name}: ${msg}${where}${help}`);
+    else if (level === 'warn') console.warn(`${prefix} ${name}: ${msg}${where}${help}`);
+    else console.info(`${prefix} ${name}: ${msg}${where}${help}`);
+  };
+  // Help examples for each directive/sub-directive
+  AyishaVDOM.prototype.directiveHelp = function(name) {
+    const help = {
+      // Direttive principali
+      '@if': `Esempio: <div @if="condizione">Mostra se condizione è true</div>`,
+      '@show': `Esempio: <div @show="condizione">Mostra se condizione è true</div>`,
+      '@hide': `Esempio: <div @hide="condizione">Nasconde se condizione è true</div>`,
+      '@for': `Esempio: <li @for="item in items">{{item}}</li>`,
+      '@model': `Esempio: <input @model="nome">`,
+      '@click': `Esempio: <button @click="state.count++">Aumenta</button>`,
+      '@fetch': `Esempio: <div @fetch="'url'" @result="data">Carica</div>`,
+      '@result': `Esempio: <div @fetch="'url'" @result="data">Carica</div>`,
+      '@watch': `Esempio: <div @watch="prop=>console.log(prop)"></div>`,
+      '@text': `Esempio: <span @text="nome"></span>`,
+      '@class': `Esempio: <div @class="{rosso: condizione}"></div>`,
+      '@style': `Esempio: <div @style="{color:'red'}"></div>`,
+      '@validate': `Esempio: <input @validate="required,minLength:3">`,
+      '@link': `Esempio: <a @link="pagina">Vai</a>`,
+      '@page': `Esempio: <div @page="home">Solo su home</div>`,
+      '@component': `Esempio: <component @src="comp.html"></component>`,
+      '@set': `Esempio: <button @set:click="foo=1"></button>`,
+      '@key': `Esempio: <li @for="item in items" @key="item.id"></li>`,
+      '@src': `Esempio: <component @src="comp.html"></component>`,
+      '@switch': `Esempio: <div @switch="valore"><div @case="1">Uno</div><div @default>Altro</div></div>`,
+      '@case': `Esempio: <div @case="1">Uno</div>`,
+      '@default': `Esempio: <div @default>Altro</div>`,
+      '@source': `Esempio: <div @source="items" @map="item => item*2" @result="doppio"></div>`,
+      '@map': `Esempio: <div @source="items" @map="item => item*2"></div>`,
+      '@filter': `Esempio: <div @source="items" @filter="item > 0"></div>`,
+      '@reduce': `Esempio: <div @source="items" @reduce="(acc, item) => acc+item" @initial="0"></div>`,
+      '@initial': `Esempio: <div @source="items" @reduce="(acc, item) => acc+item" @initial="0"></div>`,
+      '@animate': `Esempio: <div @animate="fade-in"></div>`,
+      // Sottodirettive
+      '@text:hover': `Esempio: <div @text:hover="'Testo hover'"></div>`,
+      '@text:click': `Esempio: <div @text:click="'Testo click'"></div>`,
+      '@text:input': `Esempio: <input @text:input="nome">`,
+      '@text:focus': `Esempio: <input @text:focus="nome">`,
+      '@class:focus': `Esempio: <input @class:focus="{rosso:true}">`,
+      '@class:hover': `Esempio: <div @class:hover="{rosso: condizione}"></div>`,
+      '@class:click': `Esempio: <div @class:click="{rosso: condizione}"></div>`,
+      '@class:input': `Esempio: <input @class:input="{rosso: condizione}">`,
+      '@class:change': `Esempio: <input @class:change="{rosso: condizione}">`,
+      '@fetch:click': `Esempio: <button @fetch:click="'url'" @result="data"></button>`,
+      '@fetch:hover': `Esempio: <button @fetch:hover="'url'" @result="data"></button>`,
+      '@fetch:input': `Esempio: <input @fetch:input="'url'" @result="data">`,
+      '@fetch:change': `Esempio: <input @fetch:change="'url'" @result="data">`,
+      '@model:input': `Esempio: <input @model:input="nome">`,
+      '@model:change': `Esempio: <input @model:change="nome">`,
+      '@model:focus': `Esempio: <input @model:focus="nome">`,
+      '@model:blur': `Esempio: <input @model:blur="nome">`,
+      '@set:change': `Esempio: <input @set:change="foo='bar'">`,
+      '@set:click': `Esempio: <button @set:click="foo=1"></button>`,
+      '@set:input': `Esempio: <input @set:input="foo='bar'">`,
+      '@set:focus': `Esempio: <input @set:focus="foo='bar'">`,
+      '@set:blur': `Esempio: <input @set:blur="foo='bar'">`,
+    };
+    return help[name] || '';
+  };
+  // Patch: wrap all directive/sub-directive handlers with logging
+  const _oldRenderVNode = AyishaVDOM.prototype._renderVNode;
+  AyishaVDOM.prototype._renderVNode = function(vNode, ctx) {
+    // Check for unknown/invalid directives
+    if (vNode && vNode.directives) {
+      Object.keys(vNode.directives).forEach(dir => {
+        if (!this.directiveHelp(dir)) {
+          this._logDirective('Direttiva', dir, null, 'Direttiva non riconosciuta.', null);
+        }
+      });
+    }
+    if (vNode && vNode.subDirectives) {
+      Object.entries(vNode.subDirectives).forEach(([dir, evs]) => {
+        Object.keys(evs).forEach(evt => {
+          const key = `${dir}:${evt}`;
+          if (!this.directiveHelp(key)) {
+            this._logDirective('SubDirettiva', key, null, 'Sub-direttiva non riconosciuta.', null);
+          }
+        });
+      });
+    }
+    // Call original
+    return _oldRenderVNode.call(this, vNode, ctx);
+  };
 })();
