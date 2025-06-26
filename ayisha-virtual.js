@@ -344,29 +344,29 @@
         errorDiv.style.border = '1px solid #900';
         let msg = '';
         if (unknownDirective) {
-          msg = `Errore: Direttiva sconosciuta <b>${unknownDirective}</b>.`;
+          msg = `Error: Unknown directive <b>${unknownDirective}</b>.`;
           msg += '<br>' + this.directiveHelp(unknownDirective);
         } else {
           const key = `${unknownSubDirective}:${unknownSubDirectiveEvt}`;
-          msg = `Errore: Sub-direttiva sconosciuta <b>${key}</b>.`;
+          msg = `Error: Unknown sub-directive <b>${key}</b>.`;
           msg += '<br>' + this.directiveHelp(key);
         }
         errorDiv.innerHTML = msg;
         return errorDiv;
       }
 
-      // --- GESTIONE ERRORI DI RETE/PARSING PER TUTTE LE DIRETTIVE ---
-      // Mostra un banner giallo per errori di rete/parsing associati a qualsiasi direttiva che abbia error in this._fetched
+      // --- NETWORK/PARSING ERRORS FOR ALL DIRECTIVES ---
       if (this._lastFetchUrl && this._fetched) {
-        // Cerca errori per tutte le chiavi di result usate nelle direttive
         let foundError = null;
         let foundDir = null;
+        let foundUrl = null;
         for (const dir in vNode.directives) {
           const rk = vNode.directives['@result'] || 'result';
           const url = this._lastFetchUrl[rk];
           if (url && this._fetched[url] && this._fetched[url].error) {
             foundError = this._fetched[url].error;
             foundDir = dir;
+            foundUrl = url;
             break;
           }
         }
@@ -380,7 +380,10 @@
           warnDiv.style.borderRadius = '4px';
           warnDiv.style.fontWeight = 'bold';
           warnDiv.style.border = '1px solid #e0c200';
-          warnDiv.innerHTML = `<b>${foundDir}</b><br>${foundError}`;
+          let allDirs = Object.entries(vNode.directives)
+            .map(([k,v]) => `<b>${k}</b>: <code>${String(v)}</code>`)
+            .join('<br>');
+          warnDiv.innerHTML = `${allDirs}<br><b>Error:</b> ${foundError}`;
           return warnDiv;
         }
       }
@@ -476,34 +479,60 @@
       }
 
       // Gestione speciale per il tag component con @src
-      if (vNode.tag === 'component' && vNode.directives['@src']) {
-        // Migliore gestione dell'URL del componente
+      if (vNode.tag === 'component') {
+        // ERROR: missing @src
+        if (!vNode.directives['@src']) {
+          const errorEl = document.createElement('div');
+          errorEl.className = 'ayisha-directive-error';
+          errorEl.style.background = '#c00';
+          errorEl.style.color = '#fff';
+          errorEl.style.padding = '1em';
+          errorEl.style.margin = '0.5em 0';
+          errorEl.style.borderRadius = '4px';
+          errorEl.style.fontWeight = 'bold';
+          errorEl.style.border = '1px solid #900';
+          errorEl.innerHTML = `Error: <b>&lt;component&gt;</b> requires the <b>@src</b> attribute (e.g. <code>&lt;component @src=\"file.html\"&gt;</code>)`;
+          return errorEl;
+        }
         let srcUrl = null;
-        
-        // Prima prova a valutare l'espressione
         try {
           srcUrl = this._evalExpr(vNode.directives['@src'], ctx);
         } catch (e) {
-          console.warn('Errore nella valutazione di @src:', e);
+          console.warn('Error evaluating @src:', e);
         }
-        
-        // Se l'URL è ancora undefined o null, prova ad interpretarlo come stringa letterale
         if (!srcUrl) {
           const rawSrc = vNode.directives['@src'].trim();
-          // Se è una stringa quotata, rimuovi le quote
           if (/^['"].*['"]$/.test(rawSrc)) {
             srcUrl = rawSrc.slice(1, -1);
           } else {
-            // Altrimenti usa il valore così com'è
             srcUrl = rawSrc;
           }
         }
-        
-        // Controlla che l'URL sia valido
         if (!srcUrl || srcUrl === 'undefined' || srcUrl === 'null') {
           const errorEl = document.createElement('div');
-          errorEl.className = 'component-error';
-          errorEl.textContent = `Errore: URL componente non valido (${vNode.directives['@src']})`;
+          errorEl.className = 'ayisha-directive-error';
+          errorEl.style.background = '#c00';
+          errorEl.style.color = '#fff';
+          errorEl.style.padding = '1em';
+          errorEl.style.margin = '0.5em 0';
+          errorEl.style.borderRadius = '4px';
+          errorEl.style.fontWeight = 'bold';
+          errorEl.style.border = '1px solid #900';
+          errorEl.innerHTML = `Error: Invalid component URL (<b>${vNode.directives['@src']}</b>)`;
+          return errorEl;
+        }
+        // If the component was loaded but contains an error (e.g. 404, fetch failed)
+        if (this._componentCache[srcUrl] && this._componentCache[srcUrl].includes('component-error')) {
+          const errorEl = document.createElement('div');
+          errorEl.className = 'ayisha-directive-error';
+          errorEl.style.background = '#c00';
+          errorEl.style.color = '#fff';
+          errorEl.style.padding = '1em';
+          errorEl.style.margin = '0.5em 0';
+          errorEl.style.borderRadius = '4px';
+          errorEl.style.fontWeight = 'bold';
+          errorEl.style.border = '1px solid #900';
+          errorEl.innerHTML = `Error: component <b>${srcUrl}</b> not rendered or not found.`;
           return errorEl;
         }
         // If already loaded, render it
