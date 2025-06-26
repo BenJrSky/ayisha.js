@@ -110,6 +110,15 @@
         <p>Count: <span @text="count"></span></p>
         <button @click="state.count++" class="primary">Increment</button>
         <button @click="state.count--" class="secondary">Decrement</button>
+
+        <h3>Test: <span @text="test"></span></h3>
+        <button @click="test='sinistra'" @click="sinistra++" class="secondary">sinistra</button>
+        <button @click="test='destra'" @click="destra++" class="primary">destra</button>
+
+        <div @watch="sinistra, destra">
+            {{test}}
+        </dvi>
+
     </div>
 
     <init>
