@@ -472,7 +472,7 @@
       });
 
       // unified fetch helper
-      const setupFetch = (expr, rk, event) => {
+      const setupFetch = (expr, rk, event, force = false) => {
         let url = this._evalExpr(expr, ctx, event);
         if (url === undefined) {
           url = expr.replace(/\{([^}]+)\}/g, (_, key) => {
@@ -482,11 +482,16 @@
         }
         if (!url) return;
         const fid = `${url}::${rk}`;
-        if (this._fetched[fid]) return;
+        if (!force && this._fetched[fid]) return;
         this._fetched[fid] = true;
         fetch(url)
           .then(res => res.ok ? res.json() : Promise.reject(res.status))
-          .then(data => { this.state[rk] = data; })
+          .then(data => {
+            // Aggiorna solo se il valore è effettivamente diverso
+            if (JSON.stringify(this.state[rk]) !== JSON.stringify(data)) {
+              this.state[rk] = data;
+            }
+          })
           .catch(err => console.error('@fetch error:', err));
       };
 
@@ -579,10 +584,28 @@
       if (vNode.directives['@fetch'] && !vNode.subDirectives['@fetch']) {
         const expr = vNode.directives['@fetch'];
         const rk = vNode.directives['@result'] || 'result';
-        setupFetch(expr, rk);
+        const doFetch = () => {
+          let url = this._evalExpr(expr, ctx);
+          if (url === undefined) {
+            url = expr.replace(/\{([^}]+)\}/g, (_, key) => {
+              const val = this._evalExpr(key, ctx);
+              return val != null ? val : '';
+            });
+          }
+          if (!url) return;
+          fetch(url)
+            .then(res => res.ok ? res.json() : Promise.reject(res.status))
+            .then(data => {
+              if (JSON.stringify(this.state[rk]) !== JSON.stringify(data)) {
+                this.state[rk] = data;
+              }
+            })
+            .catch(err => console.error('@fetch error:', err));
+        };
+        doFetch();
         if (vNode.directives['@watch']) {
           vNode.directives['@watch'].split(',').forEach(dep => {
-            this.addWatcher(dep.trim(), () => setupFetch(expr, rk));
+            this.addWatcher(dep.trim(), doFetch);
           });
         }
       }

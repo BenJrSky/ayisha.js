@@ -33,6 +33,17 @@
       <p>Questa pagina mostra come includere componenti dinamici annidati tramite <code>&lt;component @src=&quot;...&quot;&gt;</code> con AyishaVDOM.</p>
       <p>Puoi annidare componenti, direttive e sub-direttive senza limiti.</p>
     </div>
+    <div class="section">
+      <h2>Post dinamici da JSONPlaceholder</h2>
+      <button @click="state.posts = null" style="margin-bottom:1em">Ricarica post</button>
+      <ul>
+        <li @for="post in state.posts" style="margin-bottom:1em">
+          <strong>{{post.title}}</strong><br>
+          <span>{{post.body}}</span>
+        </li>
+      </ul>
+      <div @watch="posts" @fetch="'https://jsonplaceholder.typicode.com/posts?_limit=5'" @result="posts" style="color:#888">Caricamento post...</div>
+    </div>
   </div>
   <component @src="footer.html" />
   <init>
