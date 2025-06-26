@@ -8,7 +8,7 @@
 
 <h3 @if="posts?.length==0" style="text-align: center;">Caricamento post...</h3>
 <ul>
-    <li @for="post in posts" style="margin-bottom:1em">
+    <li data-type @for="post in posts" style="margin-bottom:1em">
         <strong>{{post.title}}</strong><br>
         <span>{{post.body}}</span>
     </li>

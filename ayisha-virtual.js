@@ -415,11 +415,15 @@
           if (typeof arr === 'object' && !Array.isArray(arr)) arr = Object.values(arr);
           const frag = document.createDocumentFragment();
           arr.forEach(val => {
+            // Clona il vNode (tutto il nodo, non solo i children)
+            const clone = JSON.parse(JSON.stringify(vNode));
+            // Rimuovi la direttiva @for dal clone per evitare loop infiniti
+            delete clone.directives['@for'];
+            // Crea un nuovo contesto con la variabile di iterazione
             const subCtx = { ...ctx, [it]: val };
-            vNode.children.forEach(c => {
-              const node = this._renderVNode(c, subCtx);
-              if (node) frag.appendChild(node);
-            });
+            // Renderizza il nodo clonato (che sarà un <li> completo)
+            const node = this._renderVNode(clone, subCtx);
+            if (node) frag.appendChild(node);
           });
           return frag;
         }
