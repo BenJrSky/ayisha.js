@@ -270,7 +270,16 @@
       if (focusInfo) {
         let node = this.root;
         focusInfo.path.forEach(i => node = node.childNodes[i]);
-        if (node && (node.tagName === 'INPUT' || node.tagName === 'TEXTAREA')) {
+        // Exclude input types that do not support setSelectionRange
+        const unsupportedTypes = [
+          'number', 'range', 'color', 'date', 'datetime-local', 'month', 'time',
+          'week', 'file', 'checkbox', 'radio', 'button', 'submit', 'reset', 'image', 'hidden'
+        ];
+        if (
+          node &&
+          (node.tagName === 'INPUT' || node.tagName === 'TEXTAREA') &&
+          !(node.tagName === 'INPUT' && unsupportedTypes.includes(node.type))
+        ) {
           node.focus();
           node.setSelectionRange(focusInfo.start, focusInfo.end);
         }
@@ -472,7 +481,8 @@
       });
 
       // unified fetch helper
-      const setupFetch = (expr, rk, event, force = false) => {
+      if (!this._pendingFetches) this._pendingFetches = {};
+      const setupFetch = (expr, rk, event) => {
         let url = this._evalExpr(expr, ctx, event);
         if (url === undefined) {
           url = expr.replace(/\{([^}]+)\}/g, (_, key) => {
@@ -482,17 +492,22 @@
         }
         if (!url) return;
         const fid = `${url}::${rk}`;
-        if (!force && this._fetched[fid]) return;
-        this._fetched[fid] = true;
+        // Prevent multiple concurrent fetches for the same key
+        if (this._pendingFetches[fid]) return;
+        this._pendingFetches[fid] = true;
         fetch(url)
           .then(res => res.ok ? res.json() : Promise.reject(res.status))
           .then(data => {
-            // Aggiorna solo se il valore è effettivamente diverso
-            if (JSON.stringify(this.state[rk]) !== JSON.stringify(data)) {
+            const oldVal = this.state[rk];
+            const isEqual = JSON.stringify(oldVal) === JSON.stringify(data);
+            if (!isEqual) {
               this.state[rk] = data;
             }
           })
-          .catch(err => console.error('@fetch error:', err));
+          .catch(err => console.error('@fetch error:', err))
+          .finally(() => {
+            delete this._pendingFetches[fid];
+          });
       };
 
       // primary directives
@@ -584,28 +599,10 @@
       if (vNode.directives['@fetch'] && !vNode.subDirectives['@fetch']) {
         const expr = vNode.directives['@fetch'];
         const rk = vNode.directives['@result'] || 'result';
-        const doFetch = () => {
-          let url = this._evalExpr(expr, ctx);
-          if (url === undefined) {
-            url = expr.replace(/\{([^}]+)\}/g, (_, key) => {
-              const val = this._evalExpr(key, ctx);
-              return val != null ? val : '';
-            });
-          }
-          if (!url) return;
-          fetch(url)
-            .then(res => res.ok ? res.json() : Promise.reject(res.status))
-            .then(data => {
-              if (JSON.stringify(this.state[rk]) !== JSON.stringify(data)) {
-                this.state[rk] = data;
-              }
-            })
-            .catch(err => console.error('@fetch error:', err));
-        };
-        doFetch();
+        setupFetch(expr, rk);
         if (vNode.directives['@watch']) {
           vNode.directives['@watch'].split(',').forEach(dep => {
-            this.addWatcher(dep.trim(), doFetch);
+            this.addWatcher(dep.trim(), () => setupFetch(expr, rk));
           });
         }
       }
@@ -660,26 +657,21 @@
       } else {
         this._vdom = this.parse(this.root);
       }
-      // --- SPOSTATO PRIMA DEL PROXY ---
-      // Setup routing e currentPage PRIMA del Proxy
-      let cp = null;
+      this._makeReactive();
+      this._runInitBlocks();
+      this._setupRouting();
+      const self = this;
+      let cp = this.state.currentPage;
       Object.defineProperty(this.state, 'currentPage', {
         get() { return cp; },
-        set: (v) => {
+        set(v) {
           if (cp !== v) {
             cp = v;
             history.pushState({}, '', '/' + v);
-            // Notifica i watcher di currentPage
-            (this.watchers['currentPage'] || []).forEach(fn => fn(v));
-            this.render();
+            self.render();
           }
-        },
-        configurable: true,
-        enumerable: true
+        }
       });
-      this._setupRouting();
-      this._makeReactive();
-      this._runInitBlocks();
       this.render();
       this.root.addEventListener('click', e => {
         let el = e.target;
