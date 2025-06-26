@@ -14,12 +14,13 @@
       this._vdom = null;
       this._modelBindings = [];
       this._fetched = {};
-      this._componentCache = {}; // Cache per i componenti caricati
-      this._loadingComponents = new Set(); // Traccia i componenti in caricamento
-      this._isRendering = false; // Flag per evitare loop infiniti
+      this._componentCache = {};
+      this._loadingComponents = new Set();
+      this._isRendering = false;
       window.ayisha = this;
     }
 
+    // @parse - Parsing DOM to Virtual DOM
     parse(node) {
       if (!node) return null;
       // Handle DocumentFragment (for HTML fragments)
@@ -65,6 +66,7 @@
       return vNode;
     }
 
+    // @init - Run <init> blocks
     _runInitBlocks() {
       this._initBlocks.forEach(code => {
         try {
@@ -75,6 +77,7 @@
       });
     }
 
+    // @reactivity - Make state reactive
     _makeReactive() {
       this.state = new Proxy(this.state, {
         set: (obj, prop, val) => {
@@ -86,16 +89,18 @@
       });
     }
 
+    // @watch - Add watcher for a property
     addWatcher(prop, fn) {
       this.watchers[prop] = this.watchers[prop] || [];
       this.watchers[prop].push(fn);
     }
 
+    // @component - Register a component
     component(name, html) {
       this.components[name] = html;
     }
 
-    // Metodo per caricare un componente da URL
+    // @component:external - Load external component by URL
     async _loadExternalComponent(url) {
       // Controlla se il componente è già in cache
       if (this._componentCache[url]) {
@@ -133,6 +138,7 @@
       }
     }
 
+    // @expression - Evaluate JS expressions in context
     _evalExpr(expr, ctx = {}, event) {
       const t = expr.trim();
       if (/^['"].*['"]$/.test(t)) return t.slice(1, -1);
@@ -148,6 +154,7 @@
       }
     }
 
+    // @expression:text - Evaluate mustache in text
     _evalText(text, ctx) {
       return text.replace(/{{(.*?)}}/g, (_, e) => {
         const r = this._evalExpr(e.trim(), ctx);
@@ -155,7 +162,7 @@
       });
     }
 
-    // Helper to evaluate dynamic expressions in attribute values
+    // @expression:attr - Evaluate dynamic attribute values
     _evalAttrValue(val, ctx) {
       // Replace {{...}} expressions
       let result = val.replace(/{{(.*?)}}/g, (_, e) => {
@@ -184,6 +191,7 @@
       return result;
     }
 
+    // @model - Two-way binding for inputs
     _bindModel(el, key, ctx) {
       const update = () => {
         const val = this._evalExpr(key, ctx);
@@ -199,6 +207,7 @@
       });
     }
 
+    // @validate - Input validation
     _bindValidation(el, rulesStr) {
       const rules = rulesStr.split(',').map(r => r.trim());
       el.addEventListener('input', () => {
@@ -214,6 +223,7 @@
       });
     }
 
+    // @router - SPA Routing
     _setupRouting() {
       let p = location.pathname.replace(/^\//, '') || '';
       if (!p || p === 'index.html') { history.replaceState({}, '', '/'); p = ''; }
@@ -224,6 +234,7 @@
       });
     }
 
+    // @render - Main render function
     render() {
       // Evita rendering ricorsivo
       if (this._isRendering) return;
@@ -289,9 +300,14 @@
       this._isRendering = false;
     }
 
+    // @vdom - Render Virtual DOM node
     _renderVNode(vNode, ctx) {
       if (!vNode) return null;
+
+      // @text
       if (vNode.type === 'text') return document.createTextNode(this._evalText(vNode.text, ctx));
+
+      // @fragment
       if (vNode.tag === 'fragment') {
         const frag = document.createDocumentFragment();
         vNode.children.forEach(child => {
@@ -300,6 +316,8 @@
         });
         return frag;
       }
+
+      // @if, @show, @hide
       if (vNode.directives['@if'] && !this._evalExpr(vNode.directives['@if'], ctx)) return null;
       if (vNode.directives['@show'] && !this._evalExpr(vNode.directives['@show'], ctx)) return null;
       if (vNode.directives['@hide'] && this._evalExpr(vNode.directives['@hide'], ctx)) return null;
@@ -323,7 +341,7 @@
         }
       }
 
-      // @switch / @case / @default
+      // @switch, @case, @default
       if (vNode.directives['@switch']) {
         const swVal = this._evalExpr(vNode.directives['@switch'], ctx);
         let defaultNode = null;
@@ -339,7 +357,7 @@
         return defaultNode ? this._renderVNode(defaultNode, ctx) : document.createComment('noswitch');
       }
 
-      // functional directives
+      // @source, @map, @filter, @reduce (functional)
       if (vNode.directives['@source']) {
         const arr = this._evalExpr(vNode.directives['@source'], ctx) || [];
         const setState = (key, val) => {
@@ -474,13 +492,16 @@
         return placeholder;
       }
 
+      // @element - Create real DOM element
       const el = document.createElement(vNode.tag);
-      // Evaluate dynamic attribute values
+
+      // @attr - Set attributes
       Object.entries(vNode.attrs).forEach(([k, v]) => {
         el.setAttribute(k, this._evalAttrValue(v, ctx));
       });
 
-      // unified fetch helper
+      // @fetch - Unified fetch helper
+      // ---------------------------------
       if (!this._pendingFetches) this._pendingFetches = {};
       if (!this._lastFetchUrl) this._lastFetchUrl = {};
       const setupFetch = (expr, rk, event, force) => {
@@ -512,8 +533,11 @@
             delete this._pendingFetches[fid];
           });
       };
+      // ---------------------------------
 
-      // primary directives
+      // @directives - Main directives
+      // ---------------------------------
+      // @click
       if (vNode.directives['@click']) {
         el.addEventListener('click', e => {
           new Function('state','ctx','event', `with(state){with(ctx){${vNode.directives['@click']}}}`)
@@ -522,6 +546,7 @@
         });
       }
 
+      // @hover
       if (vNode.directives['@hover']) {
         // hover applies expression on enter and restores on leave
         const expr = vNode.directives['@hover'];
@@ -538,13 +563,13 @@
         el.addEventListener('mouseout', applyHover);
       }
 
-      // children
+      // @children
       vNode.children.forEach(child => {
         const node = this._renderVNode(child, ctx);
         if (node) el.appendChild(node);
       });
 
-      // sub-directives
+      // @sub-directives
       Object.entries(vNode.subDirectives).forEach(([dir, evs]) => {
         Object.entries(evs).forEach(([evt, expr]) => {
           const eventName = evt === 'hover' ? 'mouseover' : evt;
@@ -598,7 +623,7 @@
         });
       });
 
-      // default fetch
+      // @fetch (default)
       if (vNode.directives['@fetch'] && !vNode.subDirectives['@fetch']) {
         const expr = vNode.directives['@fetch'];
         const rk = vNode.directives['@result'] || 'result';
@@ -638,7 +663,7 @@
         }
       }
 
-      // generic @watch support (not only for fetch)
+      // @watch (generic, not fetch)
       if (vNode.directives['@watch'] && !vNode.directives['@fetch']) {
         vNode.directives['@watch'].split(',').forEach(watchExpr => {
           watchExpr = watchExpr.trim();
@@ -668,20 +693,27 @@
         });
       }
 
+      // @text (static)
       if (vNode.directives['@text'] && !vNode.subDirectives['@text']) {
         el.textContent = this._evalExpr(vNode.directives['@text'], ctx);
       }
 
+      // @model
       if (vNode.directives['@model']) this._bindModel(el, vNode.directives['@model'], ctx);
+
+      // @class
       if (vNode.directives['@class'] && !vNode.subDirectives['@class']) {
         const clsMap = this._evalExpr(vNode.directives['@class'], ctx) || {};
         Object.entries(clsMap).forEach(([cls, cond]) => el.classList.toggle(cls, !!cond));
       }
+      // @style
       if (vNode.directives['@style']) {
         const styles = this._evalExpr(vNode.directives['@style'], ctx) || {};
         Object.entries(styles).forEach(([prop, val]) => el.style[prop] = val);
       }
+      // @validate
       if (vNode.directives['@validate']) this._bindValidation(el, vNode.directives['@validate']);
+      // @link
       if (vNode.directives['@link']) {
         el.setAttribute('href', vNode.directives['@link']);
         el.addEventListener('click', e => {
@@ -689,8 +721,11 @@
           this.state.currentPage = vNode.directives['@link'];
         });
       }
+      // @page
       if (vNode.directives['@page'] && this.state.currentPage !== vNode.directives['@page']) return null;
+      // @animate
       if (vNode.directives['@animate']) el.classList.add(vNode.directives['@animate']);
+      // @component (inline)
       if (vNode.directives['@component']) {
         const n = vNode.directives['@component'];
         if (this.components[n]) {
@@ -700,10 +735,12 @@
           if (compEl) el.appendChild(compEl);
         }
       }
+      // ---------------------------------
 
       return el;
     }
 
+    // @mount - Mount the app
     mount() {
       // Se il root ha più figli, crea un fragment vNode ESCLUDENDO <init>
       if (this.root.childNodes.length > 1) {
