@@ -612,9 +612,14 @@
               const prop = match[1];
               const code = match[2];
               this.addWatcher(prop, function(newVal) {
-                // Expose state as local variables
                 const state = window.ayisha.state;
                 try {
+                  // Auto-initialize arrays for .push usage in watcher code
+                  const pushMatch = code.match(/state\.(\w+)\.push\s*\(/) || code.match(/(\w+)\.push\s*\(/);
+                  if (pushMatch) {
+                    const arrName = pushMatch[1];
+                    if (!state[arrName]) state[arrName] = [];
+                  }
                   new Function('state','newVal', `
                     with(state){ 
                       const {${Object.keys(state).join(',')}} = state;
@@ -644,6 +649,11 @@
             this.addWatcher(prop, function(newVal) {
               const state = window.ayisha.state;
               try {
+                const pushMatch = code.match(/state\.(\w+)\.push\s*\(/) || code.match(/(\w+)\.push\s*\(/);
+                if (pushMatch) {
+                  const arrName = pushMatch[1];
+                  if (!state[arrName]) state[arrName] = [];
+                }
                 new Function('state','newVal', `
                   with(state){ 
                     const {${Object.keys(state).join(',')}} = state;
