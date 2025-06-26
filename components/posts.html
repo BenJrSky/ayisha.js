@@ -1,10 +1,11 @@
 <h2>Post dinamici da JSONPlaceholder</h2>
 
-<button @click="state.posts = null" style="margin-bottom:1em">Ricarica post</button>
+<button @click="posts = null" style="margin-bottom:1em">Ricarica post</button>
 
+
+<h3 @if="posts?.length==0" style="text-align: center;">Caricamento post...</h3>
 <ul>
-
-    <li @for="post in state.posts" style="margin-bottom:1em">
+    <li @for="post in posts" style="margin-bottom:1em">
         <strong>{{post.title}}</strong><br>
         <span>{{post.body}}</span>
     </li>
