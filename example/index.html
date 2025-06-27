@@ -6,11 +6,27 @@
   <title>Ayisha.js Example - JSONPlaceholder</title>
   <script src="../ayisha.js"></script>
   <link rel="stylesheet" href="style.css">
+  <style>
+    .ayisha-error-banner {
+      display: inline-block;
+      background: orange;
+      color: #222;
+      font-weight: bold;
+      border-radius: 4px;
+      padding: 4px 10px;
+      margin: 4px 0 4px 8px;
+      font-size: 0.95em;
+      vertical-align: middle;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      border: 1px solid #d97c00;
+      z-index: 1000;
+    }
+  </style>
 </head>
 <body>
   <component @src="components/navbar.html"></component>
 
-    <div @if="!posts || !posts.length">
+    <div @if="posts">
         <p>Nessun post trovato.</p>
       </div>
 
@@ -20,8 +36,8 @@
     <p>Demo che mostra tutte le funzionalità di Ayisha.js con dati reali da JSONPlaceholder.</p>
 
 {{userId}}
-        <button @fetch:click="url='https://jsonplaceholder.typicode.com/posts?userId={userId}'" @result="aaa">URL</button>
-{{postsClick}}
+        <button @fetch:click="url=https://jsonplaceholder.typicode.com/posts?userId={userId}" @result="aaa">URL</button>
+{{url}}
 
 
     <div class="example">
@@ -34,6 +50,7 @@
         <button @click="userId=1">Reset User</button>
 
         <button @click="userId++">User++</button>
+        <button @click="fooBar++">User++</button>
 
 
       </div>
@@ -41,9 +58,7 @@
       <div @if="posts && posts.length">
         <component @src="components/posts.html" prop-posts="posts"></component>
       </div>
-      <div @if="!posts || !posts.length">
-        <p>Nessun post trovato.</p>
-      </div>
+      
     </div>
 
     <div class="example">

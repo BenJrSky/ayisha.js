@@ -646,10 +646,18 @@
       // @click
       if (vNode.directives['@click']) {
         el.addEventListener('click', e => {
-          // Interpolazione sempre, anche per espressioni complesse
-          const expr = this._evalAttrValue(vNode.directives['@click'], ctx);
-          new Function('state', 'ctx', 'event', `with(state){with(ctx){${expr}}}`)
-            (this.state, ctx, e);
+          const expr = vNode.directives['@click'];
+          let codeToRun = expr;
+          // Permetti interpolazione se contiene pattern {var} o {{var}}
+          if (this._hasInterpolation(expr)) {
+            codeToRun = this._evalAttrValue(expr, ctx);
+          }
+          try {
+            new Function('state', 'ctx', 'event', `with(state){with(ctx){${codeToRun}}}`)
+              (this.state, ctx, e);
+          } catch (err) {
+            this._showAyishaError(el, err, codeToRun);
+          }
           this.render();
         });
       }
@@ -658,12 +666,15 @@
       if (vNode.directives['@hover']) {
         const rawExpr = vNode.directives['@hover'];
         const applyHover = e => {
+          let codeToRun = rawExpr;
+          if (this._hasInterpolation(rawExpr)) {
+            codeToRun = this._evalAttrValue(rawExpr, ctx);
+          }
           try {
-            const expr = this._evalAttrValue(rawExpr, ctx);
-            new Function('state', 'ctx', 'event', `with(state){with(ctx){${expr}}}`)
+            new Function('state', 'ctx', 'event', `with(state){with(ctx){${codeToRun}}}`)
               (this.state, ctx, e);
           } catch (err) {
-            console.error('Error in @hover:', err);
+            this._showAyishaError(el, err, codeToRun);
           }
           this.render();
         };
@@ -681,56 +692,179 @@
       Object.entries(vNode.subDirectives).forEach(([dir, evs]) => {
         Object.entries(evs).forEach(([evt, expr]) => {
           const eventName = evt === 'hover' ? 'mouseover' : evt;
-
-          // Interpolazione sempre
-          const getInterpolatedExpr = () => this._evalAttrValue(expr, ctx);
-
-          if (dir === '@fetch') {
-            el.addEventListener(eventName, e => setupFetch(getInterpolatedExpr(), vNode.directives['@result'] || 'result', e, true));
-            return;
-          }
-
-          if (dir === '@class') {
-            if (evt === 'hover') {
-              el.addEventListener('mouseover', e => {
-                const clsMap = this._evalExpr(getInterpolatedExpr(), ctx, e) || {};
-                Object.entries(clsMap).forEach(([cls, cond]) => {
-                  if (cond) el.classList.add(cls);
-                });
-              });
-              el.addEventListener('mouseout', e => {
-                const clsMap = this._evalExpr(getInterpolatedExpr(), ctx, e) || {};
-                Object.entries(clsMap).forEach(([cls, cond]) => {
-                  if (cond) el.classList.remove(cls);
-                });
-              });
-            } else {
+          const isEvent = (
+            dir === '@click' || dir === '@hover' || dir === '@set' || dir === '@fetch' ||
+            dir === '@model' || dir === '@focus' || dir === '@blur' || dir === '@change' ||
+            dir === '@input' || dir === '@class' || dir === '@text'
+          ) && (
+            evt === 'click' || evt === 'hover' || evt === 'focus' || evt === 'input' || evt === 'change' || evt === 'blur'
+          );
+          if (isEvent) {
+            if (dir === '@fetch') {
               el.addEventListener(eventName, e => {
-                const clsMap = this._evalExpr(getInterpolatedExpr(), ctx, e) || {};
-                Object.entries(clsMap).forEach(([cls, cond]) => {
-                  if (cond) el.classList.add(cls);
-                  else el.classList.remove(cls);
-                });
+                // Gestione assegnazione tipo url=...
+                let exprToRun = expr;
+                let matchAssign = expr.match(/^([\w$]+)\s*=\s*(.+)$/);
+                if (matchAssign && this._hasInterpolation(expr)) {
+                  const varName = matchAssign[1];
+                  let valueExpr = matchAssign[2].trim();
+                  // Interpola la parte destra, mantenendo eventuali virgolette
+                  let interpolated = this._evalAttrValue(valueExpr, ctx);
+                  if (!(varName in this.state)) this.state[varName] = '';
+                  this.state[varName] = interpolated;
+                  setupFetch(varName, vNode.directives['@result'] || 'result', e, true);
+                } else {
+                  // Caso classico: esegui come codice JS puro o interpolato
+                  let codeToRun = expr;
+                  if (this._hasInterpolation(expr)) {
+                    codeToRun = this._evalAttrValue(expr, ctx);
+                  }
+                  try {
+                    new Function('state', 'ctx', 'event', `with(state){with(ctx){${codeToRun}}}`)
+                      (this.state, ctx, e);
+                  } catch (err) {
+                    this._showAyishaError(el, err, codeToRun);
+                  }
+                  if (/^\w+$/.test(expr.trim())) {
+                    setupFetch(expr.trim(), vNode.directives['@result'] || 'result', e, true);
+                  }
+                }
+                this.render();
               });
+              return;
             }
+            if (dir === '@class') {
+              if (evt === 'hover') {
+                el.addEventListener('mouseover', e => {
+                  let codeToRun = expr;
+                  if (this._hasInterpolation(expr)) {
+                    codeToRun = this._evalAttrValue(expr, ctx);
+                  }
+                  const clsMap = this._evalExpr(codeToRun, ctx, e) || {};
+                  Object.entries(clsMap).forEach(([cls, cond]) => {
+                    if (cond) el.classList.add(cls);
+                  });
+                });
+                el.addEventListener('mouseout', e => {
+                  let codeToRun = expr;
+                  if (this._hasInterpolation(expr)) {
+                    codeToRun = this._evalAttrValue(expr, ctx);
+                  }
+                  const clsMap = this._evalExpr(codeToRun, ctx, e) || {};
+                  Object.entries(clsMap).forEach(([cls, cond]) => {
+                    if (cond) el.classList.remove(cls);
+                  });
+                });
+              } else {
+                el.addEventListener(eventName, e => {
+                  let codeToRun = expr;
+                  if (this._hasInterpolation(expr)) {
+                    codeToRun = this._evalAttrValue(expr, ctx);
+                  }
+                  const clsMap = this._evalExpr(codeToRun, ctx, e) || {};
+                  Object.entries(clsMap).forEach(([cls, cond]) => {
+                    if (cond) el.classList.add(cls);
+                    else el.classList.remove(cls);
+                  });
+                });
+              }
+              return;
+            }
+            if (dir === '@text') {
+              if (!el._ayishaOriginal) el._ayishaOriginal = el.textContent;
+              if (evt === 'click') {
+                el.addEventListener('click', e => {
+                  let codeToRun = expr;
+                  if (this._hasInterpolation(expr)) {
+                    codeToRun = this._evalAttrValue(expr, ctx);
+                  }
+                  el.textContent = this._evalExpr(codeToRun, ctx, e);
+                });
+              } else if (evt === 'hover') {
+                el.addEventListener('mouseover', e => {
+                  let codeToRun = expr;
+                  if (this._hasInterpolation(expr)) {
+                    codeToRun = this._evalAttrValue(expr, ctx);
+                  }
+                  el.textContent = this._evalExpr(codeToRun, ctx, e);
+                });
+                el.addEventListener('mouseout', () => {
+                  el.textContent = el._ayishaOriginal;
+                });
+              }
+              return;
+            }
+            // Default: esegui come codice JS puro o interpolato se contiene pattern
+            el.addEventListener(eventName, e => {
+              let codeToRun = expr;
+              if (this._hasInterpolation(expr)) {
+                codeToRun = this._evalAttrValue(expr, ctx);
+              }
+              try {
+                new Function('state', 'ctx', 'event', `with(state){with(ctx){${codeToRun}}}`)
+                  (this.state, ctx, e);
+              } catch (err) {
+                this._showAyishaError(el, err, codeToRun);
+              }
+              this.render();
+            });
             return;
           }
 
-          if (dir === '@text') {
-            if (!el._ayishaOriginal) el._ayishaOriginal = el.textContent;
-            if (evt === 'click') {
-              el.addEventListener('click', e => {
-                el.textContent = this._evalExpr(getInterpolatedExpr(), ctx, e);
-              });
-            } else if (evt === 'hover') {
-              el.addEventListener('mouseover', e => {
-                el.textContent = this._evalExpr(getInterpolatedExpr(), ctx, e);
-              });
-              el.addEventListener('mouseout', () => {
-                el.textContent = el._ayishaOriginal;
-              });
+          // Per sub-direttive NON evento, mantieni l'interpolazione
+          Object.entries(evs).forEach(([evt, expr]) => {
+            const eventName = evt === 'hover' ? 'mouseover' : evt;
+
+            // Interpolazione sempre
+            const getInterpolatedExpr = () => this._evalAttrValue(expr, ctx);
+
+            if (dir === '@fetch') {
+              el.addEventListener(eventName, e => setupFetch(getInterpolatedExpr(), vNode.directives['@result'] || 'result', e, true));
+              return;
             }
-          }
+
+            if (dir === '@class') {
+              if (evt === 'hover') {
+                el.addEventListener('mouseover', e => {
+                  const clsMap = this._evalExpr(getInterpolatedExpr(), ctx, e) || {};
+                  Object.entries(clsMap).forEach(([cls, cond]) => {
+                    if (cond) el.classList.add(cls);
+                  });
+                });
+                el.addEventListener('mouseout', e => {
+                  const clsMap = this._evalExpr(getInterpolatedExpr(), ctx, e) || {};
+                  Object.entries(clsMap).forEach(([cls, cond]) => {
+                    if (cond) el.classList.remove(cls);
+                  });
+                });
+              } else {
+                el.addEventListener(eventName, e => {
+                  const clsMap = this._evalExpr(getInterpolatedExpr(), ctx, e) || {};
+                  Object.entries(clsMap).forEach(([cls, cond]) => {
+                    if (cond) el.classList.add(cls);
+                    else el.classList.remove(cls);
+                  });
+                });
+              }
+              return;
+            }
+
+            if (dir === '@text') {
+              if (!el._ayishaOriginal) el._ayishaOriginal = el.textContent;
+              if (evt === 'click') {
+                el.addEventListener('click', e => {
+                  el.textContent = this._evalExpr(getInterpolatedExpr(), ctx, e);
+                });
+              } else if (evt === 'hover') {
+                el.addEventListener('mouseover', e => {
+                  el.textContent = this._evalExpr(getInterpolatedExpr(), ctx, e);
+                });
+                el.addEventListener('mouseout', () => {
+                  el.textContent = el._ayishaOriginal;
+                });
+              }
+            }
+          });
         });
       });
 
@@ -963,6 +1097,12 @@
       }
       return expr;
     }
+
+    // Utility: controlla se una stringa contiene pattern di interpolazione {var} o {{var}}
+    _hasInterpolation(expr) {
+      return /\{\{.*?\}\}|\{[\w$.]+\}/.test(expr);
+    }
+
   }
 
   window.AyishaVDOM = AyishaVDOM;
@@ -1006,5 +1146,28 @@
       });
     }
     return _oldRenderVNode.call(this, vNode, ctx);
+  };
+
+  // Funzione di utilità per mostrare un banner di errore rosso vicino all'elemento
+  AyishaVDOM.prototype._showAyishaError = function(el, err, expr) {
+    if (!el) return;
+    let banner = el.parentNode && el.parentNode.querySelector('.ayisha-error-banner');
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.className = 'ayisha-error-banner';
+      banner.style.background = '#c00';
+      banner.style.color = '#fff';
+      banner.style.padding = '0.5em 1em';
+      banner.style.margin = '0.5em 0';
+      banner.style.borderRadius = '4px';
+      banner.style.fontWeight = 'bold';
+      banner.style.border = '1px solid #900';
+      banner.style.position = 'relative';
+      banner.style.zIndex = '1000';
+      banner.innerHTML = `<b>Errore JS:</b> ${err.message}<br><code>${expr}</code>`;
+      el.parentNode && el.parentNode.insertBefore(banner, el.nextSibling);
+    } else {
+      banner.innerHTML = `<b>Errore JS:</b> ${err.message}<br><code>${expr}</code>`;
+    }
   };
 })();
