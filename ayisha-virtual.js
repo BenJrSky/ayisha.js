@@ -1,6 +1,4 @@
-// ayisha-virtual.js - Virtual DOM engine with directives, sub-directives, two-way binding, routing, components
-
-(function() {
+(function () {
   // Prevent redeclaration
   if (window.AyishaVDOM) return;
 
@@ -23,7 +21,6 @@
     // @parse - Parsing DOM to Virtual DOM
     parse(node) {
       if (!node) return null;
-      // Handle DocumentFragment (for HTML fragments)
       if (node.nodeType === 11) { // DocumentFragment
         const fragVNode = { tag: 'fragment', attrs: {}, directives: {}, subDirectives: {}, children: [] };
         node.childNodes.forEach(child => {
@@ -56,7 +53,6 @@
           vNode.attrs[attr.name] = attr.value;
         }
       }
-      // Always try to parse children (self-closing tags will just have none)
       if (node.childNodes && node.childNodes.length > 0) {
         node.childNodes.forEach(child => {
           const cn = this.parse(child);
@@ -102,33 +98,23 @@
 
     // @component:external - Load external component by URL
     async _loadExternalComponent(url) {
-      // Controlla se il componente è già in cache
       if (this._componentCache[url]) {
         return this._componentCache[url];
       }
-
-      // Evita richieste duplicate per lo stesso URL
       if (this._loadingComponents.has(url)) {
-        // Attende che la richiesta in corso si completi
         while (this._loadingComponents.has(url)) {
           await new Promise(resolve => setTimeout(resolve, 10));
         }
         return this._componentCache[url];
       }
-
       this._loadingComponents.add(url);
-
       try {
         const response = await fetch(url);
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        
         const html = await response.text();
-        
-        // Salva in cache
         this._componentCache[url] = html;
-        
         return html;
       } catch (error) {
         console.error(`Errore nel caricamento del componente da ${url}:`, error);
@@ -148,7 +134,7 @@
           get: (o, k) => o[k],
           set: (o, k, v) => { o[k] = v; return true; }
         });
-        return new Function('state','ctx','event', `with(state){with(ctx||{}){return (${expr})}}`)(sp, ctx, event);
+        return new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){return (${expr})}}`)(sp, ctx, event);
       } catch {
         return undefined;
       }
@@ -164,26 +150,20 @@
 
     // @expression:attr - Evaluate dynamic attribute values
     _evalAttrValue(val, ctx) {
-      // Replace {{...}} expressions
       let result = val.replace(/{{(.*?)}}/g, (_, e) => {
         const r = this._evalExpr(e.trim(), ctx);
         return r != null ? r : '';
       });
-      // Replace [{...}] expressions (for array/object access)
       result = result.replace(/\[\{(.*?)\}\]/g, (_, e) => {
         const r = this._evalExpr(e.trim(), ctx);
         return r != null ? r : '';
       });
-      // Replace {...} expressions (for direct JS-like access)
-      // If the whole value is a single {...}, evaluate as a full JS expression
       if (/^\{([^{}]+)\}$/.test(result.trim())) {
         const expr = result.trim().slice(1, -1);
         const r = this._evalExpr(expr, ctx);
         return r != null ? r : '';
       }
-      // Otherwise, replace {...} inside the string
       result = result.replace(/\{([^{}]+)\}/g, (match, e) => {
-        // Avoid replacing inside {{...}}
         if (/^\{\{.*\}\}$/.test(match)) return match;
         const r = this._evalExpr(e.trim(), ctx);
         return r != null ? r : '';
@@ -202,7 +182,7 @@
       this._modelBindings.push({ el, update });
       update();
       el.addEventListener('input', () => {
-        new Function('state','ctx','value', `with(state){with(ctx||{}){${key}=value}}`)(this.state, ctx, el.value);
+        new Function('state', 'ctx', 'value', `with(state){with(ctx||{}){${key}=value}}`)(this.state, ctx, el.value);
         this.render();
       });
     }
@@ -236,10 +216,9 @@
 
     // @render - Main render function
     render() {
-      // Evita rendering ricorsivo
       if (this._isRendering) return;
       this._isRendering = true;
-      
+
       const active = document.activeElement;
       let focusInfo = null;
       if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
@@ -258,7 +237,6 @@
         document.body.innerHTML = '';
         if (real) {
           if (real.tagName === undefined && real.childNodes) {
-            // If it's a fragment, append all children
             Array.from(real.childNodes).forEach(child => document.body.appendChild(child));
           } else if (real instanceof DocumentFragment) {
             document.body.appendChild(real);
@@ -286,7 +264,6 @@
           (node.tagName === 'INPUT' || node.tagName === 'TEXTAREA')
         ) {
           node.focus();
-          // setSelectionRange solo se supportato
           try {
             if (
               (node.tagName === 'INPUT' && typeof node.selectionStart === 'number' && typeof node.setSelectionRange === 'function' && node.type !== 'number') ||
@@ -294,11 +271,11 @@
             ) {
               node.setSelectionRange(focusInfo.start, focusInfo.end);
             }
-          } catch (e) {}
+          } catch (e) { }
         }
       }
       this._modelBindings.forEach(b => b.update());
-      
+
       this._isRendering = false;
     }
 
@@ -306,14 +283,12 @@
     _renderVNode(vNode, ctx) {
       if (!vNode) return null;
 
-      // --- GESTIONE ERRORI DIRETTIVE/SUB-DIRETTIVE ---
-      // Se c'è una direttiva o sub-direttiva sconosciuta, mostra un banner rosso invece del nodo
+      // --- ERROR HANDLING FOR UNKNOWN DIRECTIVES/SUB-DIRECTIVES ---
       let unknownDirective = null;
       let unknownSubDirective = null;
       let unknownSubDirectiveEvt = null;
       if (vNode && vNode.directives) {
         for (const dir of Object.keys(vNode.directives)) {
-          // @src è valida SOLO su <component>
           if (dir === '@src' && vNode.tag === 'component') continue;
           if (!this.directiveHelp(dir) || this.directiveHelp(dir).startsWith('Nessun esempio')) {
             unknownDirective = dir;
@@ -383,7 +358,7 @@
           warnDiv.style.fontWeight = 'bold';
           warnDiv.style.border = '1px solid #e0c200';
           let allDirs = Object.entries(vNode.directives)
-            .map(([k,v]) => `<b>${k}</b>: <code>${String(v)}</code>`)
+            .map(([k, v]) => `<b>${k}</b>: <code>${String(v)}</code>`)
             .join('<br>');
           warnDiv.innerHTML = `${allDirs}<br><b>Error:</b> ${foundError}`;
           return warnDiv;
@@ -417,13 +392,9 @@
           if (typeof arr === 'object' && !Array.isArray(arr)) arr = Object.values(arr);
           const frag = document.createDocumentFragment();
           arr.forEach(val => {
-            // Clona il vNode (tutto il nodo, non solo i children)
             const clone = JSON.parse(JSON.stringify(vNode));
-            // Rimuovi la direttiva @for dal clone per evitare loop infiniti
             delete clone.directives['@for'];
-            // Crea un nuovo contesto con la variabile di iterazione
             const subCtx = { ...ctx, [it]: val };
-            // Renderizza il nodo clonato (che sarà un <li> completo)
             const node = this._renderVNode(clone, subCtx);
             if (node) frag.appendChild(node);
           });
@@ -475,7 +446,7 @@
             const [a, b] = params.replace(/[()]/g, '').split(',').map(s => s.trim());
             redFn = new Function(a, b, `return (${body})`);
           } else {
-            redFn = new Function('acc','item', `return (${str})`);
+            redFn = new Function('acc', 'item', `return (${str})`);
           }
           const initial = vNode.directives['@initial'] ? this._evalExpr(vNode.directives['@initial'], ctx) : undefined;
           const result = initial !== undefined ? arr.reduce(redFn, initial) : arr.reduce(redFn);
@@ -486,7 +457,6 @@
 
       // Gestione speciale per il tag component con @src
       if (vNode.tag === 'component') {
-        // ERROR: missing @src
         if (!vNode.directives['@src']) {
           const errorEl = document.createElement('div');
           errorEl.className = 'ayisha-directive-error';
@@ -497,7 +467,7 @@
           errorEl.style.borderRadius = '4px';
           errorEl.style.fontWeight = 'bold';
           errorEl.style.border = '1px solid #900';
-          errorEl.innerHTML = `Error: <b>&lt;component&gt;</b> requires the <b>@src</b> attribute (e.g. <code>&lt;component @src=\"file.html\"&gt;</code>)`;
+          errorEl.innerHTML = `Error: <b>&lt;component&gt;</b> requires the <b>@src</b> attribute (e.g. <code>&lt;component @src="file.html"&gt;</code>)`;
           return errorEl;
         }
         let srcUrl = null;
@@ -527,7 +497,6 @@
           errorEl.innerHTML = `Error: Invalid component URL (<b>${vNode.directives['@src']}</b>)`;
           return errorEl;
         }
-        // If the component was loaded but contains an error (e.g. 404, fetch failed)
         if (this._componentCache[srcUrl] && this._componentCache[srcUrl].includes('component-error')) {
           const errorEl = document.createElement('div');
           errorEl.className = 'ayisha-directive-error';
@@ -541,12 +510,10 @@
           errorEl.innerHTML = `Error: component <b>${srcUrl}</b> not rendered or not found.`;
           return errorEl;
         }
-        // If already loaded, render it
         if (this._componentCache[srcUrl]) {
           const componentHtml = this._componentCache[srcUrl];
           const tempDiv = document.createElement('div');
           tempDiv.innerHTML = componentHtml;
-          // Always parse children, even if self-closing (for both <component .../> and <component ...></component>)
           const componentVNode = this.parse(tempDiv);
           if (componentVNode && componentVNode.children) {
             const frag = document.createDocumentFragment();
@@ -557,7 +524,6 @@
             return frag;
           }
         }
-        // If not loaded, fetch and re-render
         if (!this._componentCache[srcUrl] && !this._loadingComponents.has(srcUrl)) {
           this._loadingComponents.add(srcUrl);
           fetch(srcUrl)
@@ -576,7 +542,6 @@
               if (!this._isRendering) requestAnimationFrame(() => this.render());
             });
         }
-        // Placeholder
         const placeholder = document.createElement('div');
         placeholder.className = 'component-loading';
         if (this._loadingComponents.has(srcUrl)) {
@@ -597,8 +562,38 @@
         el.setAttribute(k, this._evalAttrValue(v, ctx));
       });
 
+      // --- NUOVA DIRETTIVA @state ---
+      if (vNode.directives.hasOwnProperty('@state')) {
+        // wrapper semitrasparente
+        const wrapper = document.createElement('div');
+        wrapper.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+        wrapper.style.color = '#fff';
+        wrapper.style.padding = '1em';
+        wrapper.style.borderRadius = '4px';
+        wrapper.style.marginTop = '1em';
+        wrapper.style.overflow = 'auto';
+
+        // titolo
+        const title = document.createElement('h3');
+        title.textContent = 'CURRENT STATE';
+        title.style.margin = '0.5em 0 2em';
+        title.style.fontSize = '1.1em';
+        title.style.fontWeight = 'bold';
+        title.style.color = '#fff';
+        wrapper.appendChild(title);
+
+        // pre con JSON formattato
+        const pre = document.createElement('pre');
+        pre.style.margin = '0';
+        pre.style.whiteSpace = 'pre-wrap';
+        pre.style.fontFamily = 'monospace';
+        pre.textContent = JSON.stringify(this.state, null, 2);
+        wrapper.appendChild(pre);
+
+        el.appendChild(wrapper);
+      }
+
       // @fetch - Unified fetch helper
-      // ---------------------------------
       if (!this._pendingFetches) this._pendingFetches = {};
       if (!this._lastFetchUrl) this._lastFetchUrl = {};
       const setupFetch = (expr, rk, event, force) => {
@@ -611,7 +606,6 @@
         }
         if (!url) return;
         const fid = `${url}::${rk}`;
-        // Only fetch if url changed or force is true
         if (!force && this._lastFetchUrl[rk] === url) return;
         if (this._pendingFetches[fid]) return;
         this._pendingFetches[fid] = true;
@@ -619,7 +613,6 @@
         fetch(url)
           .then(res => {
             if (!res.ok) {
-              // Salva errore chiaro
               if (!this._fetched[url]) this._fetched[url] = {};
               this._fetched[url].error = `${res.status} ${res.statusText || 'errore di rete'}`;
               throw new Error(`${res.status} ${res.statusText}`);
@@ -632,11 +625,9 @@
             if (!isEqual) {
               this.state[rk] = data;
             }
-            // Pulisci eventuale errore precedente
             if (this._fetched[url]) delete this._fetched[url].error;
           })
           .catch(err => {
-            // Salva errore di parsing o di rete
             if (!this._fetched[url]) this._fetched[url] = {};
             if (!this._fetched[url].error) this._fetched[url].error = err.message;
             console.error('@fetch error:', err);
@@ -645,14 +636,13 @@
             delete this._pendingFetches[fid];
           });
       };
+
       // ---------------------------------
 
-      // @directives - Main directives
-      // ---------------------------------
       // @click
       if (vNode.directives['@click']) {
         el.addEventListener('click', e => {
-          new Function('state','ctx','event', `with(state){with(ctx){${vNode.directives['@click']}}}`)
+          new Function('state', 'ctx', 'event', `with(state){with(ctx){${vNode.directives['@click']}}}`)
             (this.state, ctx, e);
           this.render();
         });
@@ -660,11 +650,10 @@
 
       // @hover
       if (vNode.directives['@hover']) {
-        // hover applies expression on enter and restores on leave
         const expr = vNode.directives['@hover'];
         const applyHover = e => {
           try {
-            new Function('state','ctx','event', `with(state){with(ctx){${expr}}}`)
+            new Function('state', 'ctx', 'event', `with(state){with(ctx){${expr}}}`)
               (this.state, ctx, e);
           } catch (err) {
             console.error('Error in @hover:', err);
@@ -739,25 +728,23 @@
       if (vNode.directives['@fetch'] && !vNode.subDirectives['@fetch']) {
         const expr = vNode.directives['@fetch'];
         const rk = vNode.directives['@result'] || 'result';
-        setupFetch(expr, rk); // fetch solo se url cambia
+        setupFetch(expr, rk);
         if (vNode.directives['@watch']) {
           vNode.directives['@watch'].split(',').forEach(watchExpr => {
             watchExpr = watchExpr.trim();
-            // Support both "prop" and "prop=>code" or "prop: code"
             let match = watchExpr.match(/^(\w+)\s*=>\s*(.+)$/) || watchExpr.match(/^(\w+)\s*:\s*(.+)$/);
             if (match) {
               const prop = match[1];
               const code = match[2];
-              this.addWatcher(prop, function(newVal) {
+              this.addWatcher(prop, function (newVal) {
                 const state = window.ayisha.state;
                 try {
-                  // Auto-initialize arrays for .push usage in watcher code
                   const pushMatch = code.match(/state\.(\w+)\.push\s*\(/) || code.match(/(\w+)\.push\s*\(/);
                   if (pushMatch) {
                     const arrName = pushMatch[1];
                     if (!state[arrName]) state[arrName] = [];
                   }
-                  new Function('state','newVal', `
+                  new Function('state', 'newVal', `
                     with(state){ 
                       const {${Object.keys(state).join(',')}} = state;
                       ${code}
@@ -768,7 +755,6 @@
                 }
               });
             } else {
-              // Simple watcher: just refetch
               this.addWatcher(watchExpr, () => setupFetch(expr, rk, undefined, true));
             }
           });
@@ -783,7 +769,7 @@
           if (match) {
             const prop = match[1];
             const code = match[2];
-            this.addWatcher(prop, function(newVal) {
+            this.addWatcher(prop, function (newVal) {
               const state = window.ayisha.state;
               try {
                 const pushMatch = code.match(/state\.(\w+)\.push\s*\(/) || code.match(/(\w+)\.push\s*\(/);
@@ -791,7 +777,7 @@
                   const arrName = pushMatch[1];
                   if (!state[arrName]) state[arrName] = [];
                 }
-                new Function('state','newVal', `
+                new Function('state', 'newVal', `
                   with(state){ 
                     const {${Object.keys(state).join(',')}} = state;
                     ${code}
@@ -818,13 +804,16 @@
         const clsMap = this._evalExpr(vNode.directives['@class'], ctx) || {};
         Object.entries(clsMap).forEach(([cls, cond]) => el.classList.toggle(cls, !!cond));
       }
+
       // @style
       if (vNode.directives['@style']) {
         const styles = this._evalExpr(vNode.directives['@style'], ctx) || {};
         Object.entries(styles).forEach(([prop, val]) => el.style[prop] = val);
       }
+
       // @validate
       if (vNode.directives['@validate']) this._bindValidation(el, vNode.directives['@validate']);
+
       // @link
       if (vNode.directives['@link']) {
         el.setAttribute('href', vNode.directives['@link']);
@@ -833,10 +822,13 @@
           this.state.currentPage = vNode.directives['@link'];
         });
       }
+
       // @page
       if (vNode.directives['@page'] && this.state.currentPage !== vNode.directives['@page']) return null;
+
       // @animate
       if (vNode.directives['@animate']) el.classList.add(vNode.directives['@animate']);
+
       // @component (inline)
       if (vNode.directives['@component']) {
         const n = vNode.directives['@component'];
@@ -847,18 +839,15 @@
           if (compEl) el.appendChild(compEl);
         }
       }
-      // ---------------------------------
 
       return el;
     }
 
     // @mount - Mount the app
     mount() {
-      // Se il root ha più figli, crea un fragment vNode ESCLUDENDO <init>
       if (this.root.childNodes.length > 1) {
         const fragVNode = { tag: 'fragment', attrs: {}, directives: {}, subDirectives: {}, children: [] };
         this.root.childNodes.forEach(child => {
-          // Escludi nodi <init>
           if (child.nodeType === 1 && child.tagName && child.tagName.toLowerCase() === 'init') return;
           const cn = this.parse(child);
           if (cn) fragVNode.children.push(cn);
@@ -895,6 +884,67 @@
         }
       }, true);
     }
+
+    // Help examples for each directive/sub-directive
+    directiveHelp(name) {
+      const help = {
+        '@if': `Esempio: <div @if="condizione">Mostra se condizione è true</div>`,
+        '@show': `Esempio: <div @show="condizione">Mostra se condizione è true</div>`,
+        '@hide': `Esempio: <div @hide="condizione">Nasconde se condizione è true</div>`,
+        '@for': `Esempio: <li @for="item in items">{{item}}</li>`,
+        '@model': `Esempio: <input @model="nome">`,
+        '@click': `Esempio: <button @click="state.count++">Aumenta</button>`,
+        '@fetch': `Esempio: <div @fetch="'url'" @result="data">Carica</div>`,
+        '@result': `Esempio: <div @fetch="'url'" @result="data">Carica</div>`,
+        '@watch': `Esempio: <div @watch="prop=>console.log(prop)"></div>`,
+        '@text': `Esempio: <span @text="nome"></span>`,
+        '@class': `Esempio: <div @class="{rosso: condizione}"></div>`,
+        '@style': `Esempio: <div @style="{color:'red'}"></div>`,
+        '@validate': `Esempio: <input @validate="required,minLength:3">`,
+        '@link': `Esempio: <a @link="pagina">Vai</a>`,
+        '@page': `Esempio: <div @page="home">Solo su home</div>`,
+        '@component': `Esempio: <component @src="comp.html"></component>`,
+        '@set': `Esempio: <button @set:click="foo=1"></button>`,
+        '@key': `Esempio: <li @for="item in items" @key="item.id"></li>`,
+        '@src': `Esempio: <component @src="comp.html"></component>`,
+        '@switch': `Esempio: <div @switch="valore"><div @case="1">Uno</div><div @default>Altro</div></div>`,
+        '@case': `Esempio: <div @case="1">Uno</div>`,
+        '@default': `Esempio: <div @default>Altro</div>`,
+        '@source': `Esempio: <div @source="items" @map="item => item*2" @result="doppio"></div>`,
+        '@map': `Esempio: <div @source="items" @map="item => item*2"></div>`,
+        '@filter': `Esempio: <div @source="items" @filter="item > 0"></div>`,
+        '@reduce': `Esempio: <div @source="items" @reduce="(acc, item) => acc+item" @initial="0"></div>`,
+        '@initial': `Esempio: <div @source="items" @reduce="(acc, item) => acc+item" @initial="0"></div>`,
+        '@animate': `Esempio: <div @animate="fade-in"></div>`,
+        // **NUOVA**
+        '@state': `Esempio: <div @state></div> (renderizza lo stato corrente come JSON)`,
+        // Sub-directives
+        '@text:hover': `Esempio: <div @text:hover="'Testo hover'"></div>`,
+        '@text:click': `Esempio: <div @text:click="'Testo click'"></div>`,
+        '@text:input': `Esempio: <input @text:input="nome">`,
+        '@text:focus': `Esempio: <input @text:focus="nome">`,
+        '@class:focus': `Esempio: <input @class:focus="{rosso:true}">`,
+        '@class:hover': `Esempio: <div @class:hover="{rosso: condizione}"></div>`,
+        '@class:click': `Esempio: <div @class:click="{rosso: condizione}"></div>`,
+        '@class:input': `Esempio: <input @class:input="{rosso: condizione}">`,
+        '@class:change': `Esempio: <input @class:change="{rosso: condizione}">`,
+        '@fetch:click': `Esempio: <button @fetch:click="'url'" @result="data"></button>`,
+        '@fetch:hover': `Esempio: <button @fetch:hover="'url'" @result="data"></button>`,
+        '@fetch:input': `Esempio: <input @fetch:input="'url'" @result="data">`,
+        '@fetch:change': `Esempio: <input @fetch:change="'url'" @result="data">`,
+        '@model:input': `Esempio: <input @model:input="nome">`,
+        '@model:change': `Esempio: <input @model:change="nome">`,
+        '@model:focus': `Esempio: <input @model:focus="nome">`,
+        '@model:blur': `Esempio: <input @model:blur="nome">`,
+        '@set:change': `Esempio: <input @set:change="foo='bar'">`,
+        '@set:click': `Esempio: <button @set:click="foo=1"></button>`,
+        '@set:input': `Esempio: <input @set:input="foo='bar'">`,
+        '@set:focus': `Esempio: <input @set:focus="foo='bar'">`,
+        '@set:blur': `Esempio: <input @set:blur="foo='bar'">`,
+        '@focus': `Esempio: <input @focus="doSomething()">`,
+      };
+      return help[name] || '';
+    }
   }
 
   window.AyishaVDOM = AyishaVDOM;
@@ -906,9 +956,7 @@
   }
 
   // --- LOGGING & ERROR HANDLING SYSTEM FOR DIRECTIVES/SUB-DIRECTIVES ---
-  // Usage: ayisha.logDirectives = true/false; ayisha.logLevel = 'warn'|'error'|'info';
-  // ayisha.directiveHelp('nomeDirettiva') per esempi pratici
-  AyishaVDOM.prototype._logDirective = function(type, name, el, msg, example) {
+  AyishaVDOM.prototype._logDirective = function (type, name, el, msg, example) {
     if (!window.ayisha || !window.ayisha.logDirectives) return;
     const level = window.ayisha.logLevel || 'warn';
     const prefix = `[Ayisha.${type}]`;
@@ -918,69 +966,10 @@
     else if (level === 'warn') console.warn(`${prefix} ${name}: ${msg}${where}${help}`);
     else console.info(`${prefix} ${name}: ${msg}${where}${help}`);
   };
-  // Help examples for each directive/sub-directive
-  AyishaVDOM.prototype.directiveHelp = function(name) {
-    const help = {
-      // Direttive principali
-      '@if': `Esempio: <div @if="condizione">Mostra se condizione è true</div>`,
-      '@show': `Esempio: <div @show="condizione">Mostra se condizione è true</div>`,
-      '@hide': `Esempio: <div @hide="condizione">Nasconde se condizione è true</div>`,
-      '@for': `Esempio: <li @for="item in items">{{item}}</li>`,
-      '@model': `Esempio: <input @model="nome">`,
-      '@click': `Esempio: <button @click="state.count++">Aumenta</button>`,
-      '@fetch': `Esempio: <div @fetch="'url'" @result="data">Carica</div>`,
-      '@result': `Esempio: <div @fetch="'url'" @result="data">Carica</div>`,
-      '@watch': `Esempio: <div @watch="prop=>console.log(prop)"></div>`,
-      '@text': `Esempio: <span @text="nome"></span>`,
-      '@class': `Esempio: <div @class="{rosso: condizione}"></div>`,
-      '@style': `Esempio: <div @style="{color:'red'}"></div>`,
-      '@validate': `Esempio: <input @validate="required,minLength:3">`,
-      '@link': `Esempio: <a @link="pagina">Vai</a>`,
-      '@page': `Esempio: <div @page="home">Solo su home</div>`,
-      '@component': `Esempio: <component @src="comp.html"></component>`,
-      '@set': `Esempio: <button @set:click="foo=1"></button>`,
-      '@key': `Esempio: <li @for="item in items" @key="item.id"></li>`,
-      '@src': `Esempio: <component @src="comp.html"></component>`,
-      '@switch': `Esempio: <div @switch="valore"><div @case="1">Uno</div><div @default>Altro</div></div>`,
-      '@case': `Esempio: <div @case="1">Uno</div>`,
-      '@default': `Esempio: <div @default>Altro</div>`,
-      '@source': `Esempio: <div @source="items" @map="item => item*2" @result="doppio"></div>`,
-      '@map': `Esempio: <div @source="items" @map="item => item*2"></div>`,
-      '@filter': `Esempio: <div @source="items" @filter="item > 0"></div>`,
-      '@reduce': `Esempio: <div @source="items" @reduce="(acc, item) => acc+item" @initial="0"></div>`,
-      '@initial': `Esempio: <div @source="items" @reduce="(acc, item) => acc+item" @initial="0"></div>`,
-      '@animate': `Esempio: <div @animate="fade-in"></div>`,
-      // Sottodirettive
-      '@text:hover': `Esempio: <div @text:hover="'Testo hover'"></div>`,
-      '@text:click': `Esempio: <div @text:click="'Testo click'"></div>`,
-      '@text:input': `Esempio: <input @text:input="nome">`,
-      '@text:focus': `Esempio: <input @text:focus="nome">`,
-      '@class:focus': `Esempio: <input @class:focus="{rosso:true}">`,
-      '@class:hover': `Esempio: <div @class:hover="{rosso: condizione}"></div>`,
-      '@class:click': `Esempio: <div @class:click="{rosso: condizione}"></div>`,
-      '@class:input': `Esempio: <input @class:input="{rosso: condizione}">`,
-      '@class:change': `Esempio: <input @class:change="{rosso: condizione}">`,
-      '@fetch:click': `Esempio: <button @fetch:click="'url'" @result="data"></button>`,
-      '@fetch:hover': `Esempio: <button @fetch:hover="'url'" @result="data"></button>`,
-      '@fetch:input': `Esempio: <input @fetch:input="'url'" @result="data">`,
-      '@fetch:change': `Esempio: <input @fetch:change="'url'" @result="data">`,
-      '@model:input': `Esempio: <input @model:input="nome">`,
-      '@model:change': `Esempio: <input @model:change="nome">`,
-      '@model:focus': `Esempio: <input @model:focus="nome">`,
-      '@model:blur': `Esempio: <input @model:blur="nome">`,
-      '@set:change': `Esempio: <input @set:change="foo='bar'">`,
-      '@set:click': `Esempio: <button @set:click="foo=1"></button>`,
-      '@set:input': `Esempio: <input @set:input="foo='bar'">`,
-      '@set:focus': `Esempio: <input @set:focus="foo='bar'">`,
-      '@set:blur': `Esempio: <input @set:blur="foo='bar'">`,
-      '@focus': `Esempio: <input @focus="doSomething()">`,
-    };
-    return help[name] || '';
-  };
-  // Patch: wrap all directive/sub-directive handlers with logging
+
+  // Wrap all directive/sub-directive handlers with logging
   const _oldRenderVNode = AyishaVDOM.prototype._renderVNode;
-  AyishaVDOM.prototype._renderVNode = function(vNode, ctx) {
-    // Check for unknown/invalid directives
+  AyishaVDOM.prototype._renderVNode = function (vNode, ctx) {
     if (vNode && vNode.directives) {
       Object.keys(vNode.directives).forEach(dir => {
         if (!this.directiveHelp(dir)) {
@@ -998,7 +987,6 @@
         });
       });
     }
-    // Call original
     return _oldRenderVNode.call(this, vNode, ctx);
   };
 })();

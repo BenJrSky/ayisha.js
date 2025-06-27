@@ -1,0 +1,3 @@
+# Ignore example HTML and components directory
+examples.html
+components/

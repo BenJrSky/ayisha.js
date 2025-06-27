@@ -401,50 +401,143 @@ La direttiva `@watch` permette di reagire a cambiamenti di stato o espressioni, 
 
 ### Main Directives
 
-| Directive         | Description                                                                                 |
-|-------------------|---------------------------------------------------------------------------------------------|
-| `@if`            | Conditional rendering. E.g. `<div @if="state.show">Visible</div>`                          |
-| `@show`          | Show/hide via CSS. E.g. `<div @show="state.visible">Show if true</div>`                    |
-| `@hide`          | Hide via CSS. E.g. `<div @hide="state.hidden">Hide if true</div>`                          |
-| `@for`           | List rendering. E.g. `<li @for="item in items">{{item}}</li>`                              |
-| `@model`         | Two-way binding for inputs. E.g. `<input @model="name">`                                   |
-| `@click`         | Click event. E.g. `<button @click="state.count++">Inc</button>`                            |
-| `@fetch`         | Fetch data from URL. E.g. `<div @fetch="'url'" @result="data"></div>`                    |
-| `@result`        | Where to store fetch result.                                                                |
-| `@watch`         | Watch a property and run code or refetch.                                                   |
-| `@text`          | Set text content. E.g. `<span @text="name"></span>`                                        |
-| `@class`         | Dynamic classes. E.g. `<div @class="{red: state.error}"></div>`                            |
-| `@style`         | Dynamic styles. E.g. `<div @style="{color:'red'}"></div>`                                  |
-| `@validate`      | Input validation. E.g. `<input @validate="required,minLength:3">`                          |
-| `@link`          | SPA navigation. E.g. `<a @link="page">Go</a>`                                              |
-| `@page`          | Show only on specific page. E.g. `<div @page="home"></div>`                                |
-| `@component`     | Inline component. E.g. `<div @component="myComp"></div>`                                   |
-| `@src`           | Component source. E.g. `<component @src="file.html"></component>`                          |
-| `@set`           | Set state on event. E.g. `<button @set:click="foo=1"></button>`                            |
-| `@key`           | Unique key for list items.                                                                  |
-| `@switch`        | Switch/case rendering.                                                                      |
-| `@case`          | Case for switch.                                                                            |
-| `@default`       | Default for switch.                                                                         |
-| `@source`        | Functional data source for map/filter/reduce.                                               |
-| `@map`           | Map function.                                                                               |
-| `@filter`        | Filter function.                                                                            |
-| `@reduce`        | Reduce function.                                                                            |
-| `@initial`       | Initial value for reduce.                                                                   |
-| `@animate`       | Add animation class.                                                                        |
-| `@focus`         | Focus event. E.g. `<input @focus="doSomething()">`                                         |
+| Directive         | Description                                                                                 | Example |
+|-------------------|---------------------------------------------------------------------------------------------|---------|
+| `@if`            | Conditional rendering.                                                                      | `<div @if="state.show">Visible</div>` |
+| `@show`          | Show/hide via CSS.                                                                          | `<div @show="state.visible">Show if true</div>` |
+| `@hide`          | Hide via CSS.                                                                               | `<div @hide="state.hidden">Hide if true</div>` |
+| `@for`           | List rendering.                                                                             | `<li @for="item in items">{{item}}</li>` |
+| `@model`         | Two-way binding for inputs.                                                                 | `<input @model="name">` |
+| `@click`         | Click event.                                                                                | `<button @click="state.count++">Inc</button>` |
+| `@fetch`         | Fetch data from URL.                                                                        | `<div @fetch="'url'" @result="data"></div>` |
+| `@result`        | Where to store fetch result.                                                                | `<div @fetch="'url'" @result="data"></div>` |
+| `@watch`         | Watch a property and run code or refetch.                                                   | `<div @watch="foo, bar: console.log(foo, bar)"></div>` |
+| `@text`          | Set text content.                                                                           | `<span @text="name"></span>` |
+| `@class`         | Dynamic classes.                                                                            | `<div @class="{red: state.error}"></div>` |
+| `@style`         | Dynamic styles.                                                                             | `<div @style="{color:'red'}"></div>` |
+| `@validate`      | Input validation.                                                                           | `<input @validate="required,minLength:3">` |
+| `@link`          | SPA navigation.                                                                             | `<a @link="page">Go</a>` |
+| `@page`          | Show only on specific page.                                                                  | `<div @page="home"></div>` |
+| `@component`     | Inline component.                                                                           | `<div @component="myComp"></div>` |
+| `@src`           | Component source.                                                                           | `<component @src="file.html"></component>` |
+| `@set`           | Set state on event.                                                                         | `<button @set:click="foo=1"></button>` |
+| `@key`           | Unique key for list items.                                                                  | `<li @for="item in items" @key="item.id"></li>` |
+| `@switch`        | Switch/case rendering.                                                                      | `<div @switch="page"><div @case="'home'">Home</div></div>` |
+| `@case`          | Case for switch.                                                                            | `<div @case="'home'">Home</div>` |
+| `@default`       | Default for switch.                                                                         | `<div @default>Other</div>` |
+| `@source`        | Functional data source for map/filter/reduce.                                               | `<div @source="items" @map="item => item*2" @result="doubled"></div>` |
+| `@map`           | Map function.                                                                               | `<div @source="items" @map="item => item*2"></div>` |
+| `@filter`        | Filter function.                                                                            | `<div @source="items" @filter="item > 0"></div>` |
+| `@reduce`        | Reduce function.                                                                            | `<div @source="items" @reduce="(acc, item) => acc+item" @initial="0"></div>` |
+| `@initial`       | Initial value for reduce.                                                                   | `<div @source="items" @reduce="(acc, item) => acc+item" @initial="0"></div>` |
+| `@animate`       | Add animation class.                                                                        | `<div @animate="fade-in"></div>` |
+| `@focus`         | Focus event.                                                                                | `<input @focus="doSomething()">` |
+| `@state`         | Show the current state as a styled JSON box.                                                | `<div @state></div>` |
 
-### Sub-Directives
+#### Example: @state
 
-| Sub-Directive         | Description/Example                                                        |
-|----------------------|-----------------------------------------------------------------------------|
-| `@text:hover`        | `<div @text:hover="'Hovered!'"></div>`                                    |
-| `@text:click`        | `<div @text:click="'Clicked!'"></div>`                                    |
-| `@class:focus`       | `<input @class:focus="{red:true}">`                                       |
-| `@class:hover`       | `<div @class:hover="{red: state.hover}"></div>`                           |
-| `@fetch:click`       | `<button @fetch:click="'url'" @result="data"></button>`                 |
-| `@model:input`       | `<input @model:input="name">`                                             |
-| `@set:change`        | `<input @set:change="foo='bar'">`                                         |
-| ...and many more!    | See code for full list.                                                     |
+The `@state` directive renders a styled box showing the current application state as JSON. Useful for debugging and development.
+
+```html
+<div @state></div>
+<button @click="state.foo = (state.foo||0)+1">Aumenta foo</button>
+```
+
+**Result:**
+A visually clear box with the current state, automatically updated on every change.
+
+#### More Examples for Each Directive
+
+- **@if**
+  ```html
+  <div @if="user">Welcome, {{user.name}}!</div>
+  <div @if="count > 5">Count is high!</div>
+  ```
+- **@for**
+  ```html
+  <ul>
+    <li @for="item in items">{{item}}</li>
+  </ul>
+  ```
+- **@model**
+  ```html
+  <input @model="email" placeholder="Email">
+  <input @model="user.name" placeholder="Name">
+  ```
+- **@click**
+  ```html
+  <button @click="count++">Increment</button>
+  <button @click="state.items.push('new')">Add Item</button>
+  ```
+- **@fetch**
+  ```html
+  <div @fetch="'https://api.example.com/data'" @result="data"></div>
+  <button @fetch:click="'https://api.example.com/user'" @result="user">Load User</button>
+  ```
+- **@watch**
+  ```html
+  <div @watch="userId: console.log('User changed', userId)"></div>
+  <div @watch="foo, bar: doSomething(foo, bar)"></div>
+  ```
+- **@text**
+  ```html
+  <span @text="user.name"></span>
+  <span @text="count + 1"></span>
+  ```
+- **@class**
+  ```html
+  <div @class="{active: isActive, error: hasError}"></div>
+  ```
+- **@style**
+  ```html
+  <div @style="{color: textColor, fontSize: fontSize + 'px'}"></div>
+  ```
+- **@validate**
+  ```html
+  <input @validate="required,email" @model="email">
+  <input @validate="minLength:6" @model="password">
+  ```
+- **@link**
+  ```html
+  <a @link="'home'">Home</a>
+  <a @link="page">Go to page</a>
+  ```
+- **@page**
+  ```html
+  <div @page="'home'">This is the home page</div>
+  ```
+- **@component**
+  ```html
+  <div @component="userCard"></div>
+  <component @src="components/user.html"></component>
+  ```
+- **@set**
+  ```html
+  <button @set:click="foo=1"></button>
+  <input @set:change="bar='baz'">
+  ```
+- **@switch, @case, @default**
+  ```html
+  <div @switch="page">
+    <div @case="'home'">Home</div>
+    <div @case="'about'">About</div>
+    <div @default>Other</div>
+  </div>
+  ```
+- **@source, @map, @filter, @reduce, @initial**
+  ```html
+  <div @source="numbers" @map="item*2" @result="doubled"></div>
+  <div @source="numbers" @filter="item>5" @result="filtered"></div>
+  <div @source="numbers" @reduce="(acc, item) => acc+item" @initial="0" @result="sum"></div>
+  ```
+- **@animate**
+  ```html
+  <div @animate="fade-in"></div>
+  ```
+- **@focus**
+  ```html
+  <input @focus="console.log('Focused!')">
+  ```
 
 ---
 
