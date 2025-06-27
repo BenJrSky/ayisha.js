@@ -56,7 +56,7 @@
       </div>
       <div @fetch="postsUrl" @result="aaa" @watch="postsUrl"></div>
       <div @if="posts && posts.length">
-        <component @src="components/posts.html" prop-posts="posts"></component>
+        <component @src="components/posts.html" prop-posts="posts" @console></component>
       </div>
       
     </div>

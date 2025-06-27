@@ -595,6 +595,7 @@
 
       // --- NUOVA DIRETTIVA @console ---
       let consoleWrapper = null;
+      let fetchConsoleInfo = null;
       if (vNode.directives.hasOwnProperty('@console')) {
         consoleWrapper = document.createElement('div');
         consoleWrapper.className = 'ayisha-console-wrapper';
@@ -626,21 +627,162 @@
           }
         };
 
+        // Se c'è una fetch, mostra info dettagliate
+        let fetchDir = null, fetchExpr = null, fetchType = null;
+        Object.entries(vNode.directives).forEach(([dir, expr]) => {
+          if (dir.startsWith('@fetch')) {
+            fetchDir = dir;
+            fetchExpr = expr;
+            fetchType = 'directive';
+          }
+        });
+        Object.entries(vNode.subDirectives).forEach(([dir, evs]) => {
+          if (dir === '@fetch') {
+            Object.entries(evs).forEach(([evt, expr]) => {
+              fetchDir = `${dir}:${evt}`;
+              fetchExpr = expr;
+              fetchType = 'subdirective';
+            });
+          }
+        });
+        if (fetchDir) {
+          // Ricava url, method, headers, payload
+          let url = null, method = 'GET', headers = {}, payload = null;
+          try {
+            url = this._evalExpr(fetchExpr, ctx);
+          } catch {}
+          // Se la fetch è una subdirettiva con assegnazione (es: url=...), estrai url
+          if (!url && typeof fetchExpr === 'string') {
+            const m = fetchExpr.match(/([\w$]+)\s*=\s*(.+)/);
+            if (m) url = this._evalExpr(m[2], ctx);
+          }
+          // Se la fetch è una POST/PUT/DELETE, cerca @method, @headers, @payload
+          if (vNode.directives['@method']) method = this._evalExpr(vNode.directives['@method'], ctx) || 'GET';
+          if (vNode.directives['@headers']) headers = this._evalExpr(vNode.directives['@headers'], ctx) || {};
+          if (vNode.directives['@payload']) payload = this._evalExpr(vNode.directives['@payload'], ctx);
+
+          // Migliora la visualizzazione di url (stringa, oggetto, array)
+          let urlHtml = '';
+          if (typeof url === 'string') {
+            urlHtml = `<span style=\"color:#0ff\">${url}</span>`;
+          } else if (url && typeof url === 'object') {
+            // Mostra sia l'oggetto che la stringa interpolata risultante da _evalAttrValue
+            let asString = '';
+            try {
+              asString = this._evalAttrValue(fetchExpr, ctx);
+            } catch {}
+            if (asString && typeof asString === 'string' && asString !== '[object Object]') {
+              urlHtml = `<span style=\"color:#0ff\">${asString}</span>`;
+            } else {
+              urlHtml = `<pre style=\"color:#0ff;background:#222;padding:0.3em;display:inline-block;max-width:400px;overflow:auto;\">${JSON.stringify(url, null, 2)}</pre>`;
+            }
+          } else {
+            urlHtml = '<i>undefined</i>';
+          }
+
+          // Migliora la visualizzazione di headers
+          let headersHtml = '';
+          if (headers && typeof headers === 'object' && Object.keys(headers).length) {
+            headersHtml = `<pre style=\"color:#0ff;background:#222;padding:0.3em;display:inline-block;max-width:400px;overflow:auto;\">${JSON.stringify(headers, null, 2)}</pre>`;
+          } else {
+            headersHtml = '{}';
+          }
+
+          // Migliora la visualizzazione di payload
+          let payloadHtml = '';
+          if (payload !== null && payload !== undefined) {
+            if (typeof payload === 'object') {
+              payloadHtml = `<pre style=\"color:#0ff;background:#222;padding:0.3em;display:inline-block;max-width:400px;overflow:auto;\">${JSON.stringify(payload, null, 2)}</pre>`;
+            } else {
+              payloadHtml = `<span style=\"color:#0ff\">${String(payload)}</span>`;
+            }
+          }
+
+          const fetchInfo = document.createElement('div');
+          fetchInfo.style.marginBottom = '0.5em';
+          fetchInfo.innerHTML = `<b style=\"color:#ffd700\">${fetchDir}</b><br>` +
+            `<b style=\"color:#aaa\">URL:</b> ${urlHtml}<br>` +
+            `<b style=\"color:#aaa\">Method:</b> <span style=\"color:#0ff\">${method}</span><br>` +
+            `<b style=\"color:#aaa\">Headers:</b> ${headersHtml}<br>` +
+            (payloadHtml ? `<b style=\"color:#aaa\">Payload:</b> ${payloadHtml}<br>` : '');
+          consoleWrapper.appendChild(fetchInfo);
+        }
+
         // Direttive normali
         Object.entries(vNode.directives).forEach(([dir, expr]) => {
           if (dir === '@console') return;
+          // Evita duplicati per @fetch già mostrato sopra
+          if (dir === fetchDir) return;
+          // Evita duplicati per @watch già mostrato sopra
+          if (dir === '@watch' && fetchConsoleInfo && fetchConsoleInfo.watch) return;
+          let info = '';
+          if (dir === '@model') {
+            // Mostra la proprietà agganciata e il valore attuale
+            const val = this._evalExpr(expr, ctx);
+            info = `<span style=\"color:#0ff\">(proprietà: <b>${expr}</b>, valore: <b>${val}</b>)</span>`;
+          } else if (dir === '@watch') {
+            info = `<span style=\"color:#0ff\">(osserva: <b>${expr}</b>)</span>`;
+          } else if (dir === '@text') {
+            const val = this._evalExpr(expr, ctx);
+            info = `<span style=\"color:#0ff\">(valore: <b>${val}</b>)</span>`;
+          } else if (dir === '@class') {
+            const val = this._evalExpr(expr, ctx);
+            info = `<span style=\"color:#0ff\">(classi: <b>${JSON.stringify(val)}</b>)</span>`;
+          } else if (dir === '@style') {
+            const val = this._evalExpr(expr, ctx);
+            info = `<span style=\"color:#0ff\">(stili: <b>${JSON.stringify(val)}</b>)</span>`;
+          } else if (dir === '@validate') {
+            info = `<span style=\"color:#0ff\">(regole: <b>${expr}</b>)</span>`;
+          } else if (dir === '@result') {
+            const val = this._evalExpr(expr, ctx);
+            info = `<span style=\"color:#0ff\">(variabile: <b>${expr}</b>, valore: <b>${JSON.stringify(val)}</b>)</span>`;
+          } else if (dir === '@for') {
+            info = `<span style=\"color:#0ff\">(iterazione: <b>${expr}</b>)</span>`;
+          } else if (dir === '@if' || dir === '@show' || dir === '@hide') {
+            const val = this._evalExpr(expr, ctx);
+            info = `<span style=\"color:#0ff\">(condizione: <b>${expr}</b> = <b>${val}</b>)</span>`;
+          } else if (dir === '@component') {
+            info = `<span style=\"color:#0ff\">(componente: <b>${expr}</b>)</span>`;
+          } else if (dir === '@set') {
+            info = `<span style=\"color:#0ff\">(assegnazione: <b>${expr}</b>)</span>`;
+          } else if (dir === '@key') {
+            info = `<span style=\"color:#0ff\">(chiave: <b>${expr}</b>)</span>`;
+          } else if (dir === '@page') {
+            info = `<span style=\"color:#0ff\">(pagina: <b>${expr}</b>)</span>`;
+          } else if (dir === '@animate') {
+            info = `<span style=\"color:#0ff\">(animazione: <b>${expr}</b>)</span>`;
+          }
           const row = document.createElement('div');
           row.style.marginBottom = '0.5em';
-          row.innerHTML = `<b style=\"color:#ffd700\">${dir}</b>: <span>${renderValue(expr, ctx)}</span><br><span style=\"color:#aaa;font-size:0.9em\">${this.directiveHelp(dir) || ''}</span>`;
+          row.innerHTML = `<b style=\"color:#ffd700\">${dir}</b>: <span>${renderValue(expr, ctx)}</span> ${info}`;
           consoleWrapper.appendChild(row);
         });
         // Sub-direttive
         Object.entries(vNode.subDirectives).forEach(([dir, evs]) => {
+          if (dir === '@fetch') return;
           Object.entries(evs).forEach(([evt, expr]) => {
+            let info = '';
+            if (dir === '@model') {
+              const val = this._evalExpr(expr, ctx);
+              info = `<span style=\"color:#0ff\">(proprietà: <b>${expr}</b>, valore: <b>${val}</b>, evento: <b>${evt}</b>)</span>`;
+            } else if (dir === '@watch') {
+              info = `<span style=\"color:#0ff\">(osserva: <b>${expr}</b>, evento: <b>${evt}</b>)</span>`;
+            } else if (dir === '@text') {
+              const val = this._evalExpr(expr, ctx);
+              info = `<span style=\"color:#0ff\">(valore: <b>${val}</b>, evento: <b>${evt}</b>)</span>`;
+            } else if (dir === '@class') {
+              const val = this._evalExpr(expr, ctx);
+              info = `<span style=\"color:#0ff\">(classi: <b>${JSON.stringify(val)}</b>, evento: <b>${evt}</b>)</span>`;
+            } else if (dir === '@style') {
+              const val = this._evalExpr(expr, ctx);
+              info = `<span style=\"color:#0ff\">(stili: <b>${JSON.stringify(val)}</b>, evento: <b>${evt}</b>)</span>`;
+            } else if (dir === '@set') {
+              info = `<span style=\"color:#0ff\">(assegnazione: <b>${expr}</b>, evento: <b>${evt}</b>)</span>`;
+            }
             const key = `${dir}:${evt}`;
             const row = document.createElement('div');
             row.style.marginBottom = '0.5em';
-            row.innerHTML = `<b style=\"color:#ffd700\">${key}</b>: <span>${renderValue(expr, ctx)}</span><br><span style=\"color:#aaa;font-size:0.9em\">${this.directiveHelp(key) || ''}</span>`;
+            row.innerHTML = `<b style=\"color:#ffd700\">${key}</b>: <span>${renderValue(expr, ctx)}</span> ${info}`;
             consoleWrapper.appendChild(row);
           });
         });
