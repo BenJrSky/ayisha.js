@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ayisha.js Example - JSONPlaceholder</title>
+  <script src="../ayisha.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <component @src="components/navbar.html"></component>
+
+  <div class="container">
+    <h1>Ayisha.js Demo - JSONPlaceholder</h1>
+    <p>Demo che mostra tutte le funzionalità di Ayisha.js con dati reali da JSONPlaceholder.</p>
+
+{{userId}}
+        <button @fetch="https://jsonplaceholder.typicode.com/posts?userId={userId}" @result="posts" @watch="userId" >Carica Post</button>
+
+        <button @fetch:click="url='https://jsonplaceholder.typicode.com/posts?userId={userId}'"  @result="postsClick">URL</button>
+{{postsClick}}
+
+
+    <div class="example">
+      <h2>Posts</h2>
+      <div>
+        <input @model="userId" type="number" min="1" max="10" placeholder="User ID (1-10)">
+        {{userId}}
+
+        <button @fetch="https://jsonplaceholder.typicode.com/posts?userId={userId}" @result="posts" @watch="userId" >Carica Post</button>
+
+
+        <button @click="userId=1">Reset User</button>
+
+        {{userId}}
+
+      </div>
+      <div @fetch="postsUrl" @result="posts" @watch="postsUrl"></div>
+      <div @if="posts && posts.length">
+        <component @src="components/posts.html" prop-posts="posts"></component>
+      </div>
+      <div @if="!posts || !posts.length">
+        <p>Nessun post trovato.</p>
+      </div>
+    </div>
+
+    <div class="example">
+        <h3>4. HTTP Requests & Data Fetching with watch</h3>
+        <input type="number" @model="userId" min="1" max="10">
+        <div @fetch="https://jsonplaceholder.typicode.com/users/{userId}" @result="currentUser" @watch="userId">
+        </div>
+    </div>
+
+    <div class="example">
+      <h2>Nuovo Post</h2>
+      <form>
+        <input @model="newTitle" placeholder="Titolo">
+        <input @model="newBody" placeholder="Contenuto">
+        <button type="button" @click="addPost()">Aggiungi Post</button>
+      </form>
+      <div @if="lastPost">
+        <h4>Ultimo post aggiunto:</h4>
+        <pre @text="JSON.stringify(lastPost, null, 2)"></pre>
+      </div>
+    </div>
+
+    <div class="example">
+      <h2>Funzionalità Avanzate</h2>
+      <div>
+        <button @click="showState = !showState">Toggle Stato</button>
+        <div @if="showState" @state></div>
+      </div>
+      <div>
+        <input @model="filter" placeholder="Filtra per titolo">
+        <ul>
+          <li @for="post in (posts||[]).filter(p => !filter || p.title.toLowerCase().includes(filter.toLowerCase()))" @key="post.id">
+            <b @text="post.title"></b>
+            <p @text="post.body"></p>
+            <button @click="post.liked = !post.liked" @class="{liked: post.liked}">Like</button>
+            <span @if="post.liked">❤️</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <component @src="components/footer.html"></component>
+
+  <div @state></div>
+
+  <init>
+    userId = 1;
+    state.postsUrl = `https://jsonplaceholder.typicode.com/posts?userId=${state.userId}`;
+    state.posts = [];
+    state.newTitle = '';
+    state.newBody = '';
+    state.lastPost = null;
+    state.showState = false;
+    state.filter = '';
+    function fetchPosts() {
+      state.postsUrl = `https://jsonplaceholder.typicode.com/posts?userId=${state.userId}`;
+    }
+    function addPost() {
+      const post = { userId: state.userId, title: state.newTitle, body: state.newBody };
+      fetch('https://jsonplaceholder.typicode.com/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(post)
+      })
+      .then(res => res.json())
+      .then(data => {
+        state.lastPost = data;
+        state.posts = [data, ...(state.posts||[])];
+        state.newTitle = '';
+        state.newBody = '';
+      });
+    }
+  </init>
+</body>
+</html>

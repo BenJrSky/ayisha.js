@@ -642,7 +642,9 @@
       // @click
       if (vNode.directives['@click']) {
         el.addEventListener('click', e => {
-          new Function('state', 'ctx', 'event', `with(state){with(ctx){${vNode.directives['@click']}}}`)
+          // Interpolazione
+          const expr = this._evalAttrValue(vNode.directives['@click'], ctx);
+          new Function('state', 'ctx', 'event', `with(state){with(ctx){${expr}}}`)
             (this.state, ctx, e);
           this.render();
         });
@@ -650,9 +652,10 @@
 
       // @hover
       if (vNode.directives['@hover']) {
-        const expr = vNode.directives['@hover'];
+        const rawExpr = vNode.directives['@hover'];
         const applyHover = e => {
           try {
+            const expr = this._evalAttrValue(rawExpr, ctx);
             new Function('state', 'ctx', 'event', `with(state){with(ctx){${expr}}}`)
               (this.state, ctx, e);
           } catch (err) {
@@ -675,28 +678,31 @@
         Object.entries(evs).forEach(([evt, expr]) => {
           const eventName = evt === 'hover' ? 'mouseover' : evt;
 
+          // Interpolazione per tutte le sub-direttive
+          const getInterpolatedExpr = () => this._evalAttrValue(expr, ctx);
+
           if (dir === '@fetch') {
-            el.addEventListener(eventName, e => setupFetch(expr, vNode.directives['@result'] || 'result', e, true));
+            el.addEventListener(eventName, e => setupFetch(getInterpolatedExpr(), vNode.directives['@result'] || 'result', e, true));
             return;
           }
 
           if (dir === '@class') {
             if (evt === 'hover') {
               el.addEventListener('mouseover', e => {
-                const clsMap = this._evalExpr(expr, ctx, e) || {};
+                const clsMap = this._evalExpr(getInterpolatedExpr(), ctx, e) || {};
                 Object.entries(clsMap).forEach(([cls, cond]) => {
                   if (cond) el.classList.add(cls);
                 });
               });
               el.addEventListener('mouseout', e => {
-                const clsMap = this._evalExpr(expr, ctx, e) || {};
+                const clsMap = this._evalExpr(getInterpolatedExpr(), ctx, e) || {};
                 Object.entries(clsMap).forEach(([cls, cond]) => {
                   if (cond) el.classList.remove(cls);
                 });
               });
             } else {
               el.addEventListener(eventName, e => {
-                const clsMap = this._evalExpr(expr, ctx, e) || {};
+                const clsMap = this._evalExpr(getInterpolatedExpr(), ctx, e) || {};
                 Object.entries(clsMap).forEach(([cls, cond]) => {
                   if (cond) el.classList.add(cls);
                   else el.classList.remove(cls);
@@ -710,11 +716,11 @@
             if (!el._ayishaOriginal) el._ayishaOriginal = el.textContent;
             if (evt === 'click') {
               el.addEventListener('click', e => {
-                el.textContent = this._evalExpr(expr, ctx, e);
+                el.textContent = this._evalExpr(getInterpolatedExpr(), ctx, e);
               });
             } else if (evt === 'hover') {
               el.addEventListener('mouseover', e => {
-                el.textContent = this._evalExpr(expr, ctx, e);
+                el.textContent = this._evalExpr(getInterpolatedExpr(), ctx, e);
               });
               el.addEventListener('mouseout', () => {
                 el.textContent = el._ayishaOriginal;
