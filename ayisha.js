@@ -593,6 +593,59 @@
         el.appendChild(wrapper);
       }
 
+      // --- NUOVA DIRETTIVA @console ---
+      let consoleWrapper = null;
+      if (vNode.directives.hasOwnProperty('@console')) {
+        consoleWrapper = document.createElement('div');
+        consoleWrapper.className = 'ayisha-console-wrapper';
+        consoleWrapper.style.background = '#222';
+        consoleWrapper.style.color = '#fff';
+        consoleWrapper.style.padding = '1em';
+        consoleWrapper.style.borderRadius = '4px';
+        consoleWrapper.style.marginTop = '1em';
+        consoleWrapper.style.overflow = 'auto';
+        consoleWrapper.style.fontSize = '0.95em';
+        consoleWrapper.style.fontFamily = 'monospace';
+        consoleWrapper.style.border = '1px solid #444';
+
+        const title = document.createElement('div');
+        title.textContent = 'AYISHA CONSOLE';
+        title.style.fontWeight = 'bold';
+        title.style.marginBottom = '0.5em';
+        title.style.letterSpacing = '1px';
+        consoleWrapper.appendChild(title);
+
+        // Helper per mostrare valore o errore
+        const renderValue = (expr, ctx) => {
+          try {
+            const val = this._evalExpr(expr, ctx);
+            if (typeof val === 'object') return `<pre style=\"color:#fff;background:#333;padding:0.5em;border-radius:3px;overflow:auto;width:100%;\">${JSON.stringify(val, null, 2)}</pre>`;
+            return `<span style=\"color:#0f0\">${String(val)}</span>`;
+          } catch (err) {
+            return `<span style=\"color:#f55\">Errore: ${err.message}</span>`;
+          }
+        };
+
+        // Direttive normali
+        Object.entries(vNode.directives).forEach(([dir, expr]) => {
+          if (dir === '@console') return;
+          const row = document.createElement('div');
+          row.style.marginBottom = '0.5em';
+          row.innerHTML = `<b style=\"color:#ffd700\">${dir}</b>: <span>${renderValue(expr, ctx)}</span><br><span style=\"color:#aaa;font-size:0.9em\">${this.directiveHelp(dir) || ''}</span>`;
+          consoleWrapper.appendChild(row);
+        });
+        // Sub-direttive
+        Object.entries(vNode.subDirectives).forEach(([dir, evs]) => {
+          Object.entries(evs).forEach(([evt, expr]) => {
+            const key = `${dir}:${evt}`;
+            const row = document.createElement('div');
+            row.style.marginBottom = '0.5em';
+            row.innerHTML = `<b style=\"color:#ffd700\">${key}</b>: <span>${renderValue(expr, ctx)}</span><br><span style=\"color:#aaa;font-size:0.9em\">${this.directiveHelp(key) || ''}</span>`;
+            consoleWrapper.appendChild(row);
+          });
+        });
+      }
+
       // @fetch - Unified fetch helper
       if (!this._pendingFetches) this._pendingFetches = {};
       if (!this._lastFetchUrl) this._lastFetchUrl = {};
@@ -989,6 +1042,13 @@
         }
       }
 
+      // Alla fine della funzione, dopo aver costruito el normalmente
+      if (consoleWrapper) {
+        const frag = document.createDocumentFragment();
+        frag.appendChild(el);
+        frag.appendChild(consoleWrapper);
+        return frag;
+      }
       return el;
     }
 
@@ -1067,6 +1127,7 @@
         '@animate': `Esempio: <div @animate="fade-in"></div>`,
         // **NUOVA**
         '@state': `Esempio: <div @state></div> (renderizza lo stato corrente come JSON)`,
+        '@console': `Esempio: <div @console></div> (mostra la console delle direttive sull'elemento)`,
         // Sub-directives
         '@text:hover': `Esempio: <div @text:hover="'Testo hover'"></div>`,
         '@text:click': `Esempio: <div @text:click="'Testo click'"></div>`,
