@@ -620,6 +620,10 @@
             return res.json();
           })
           .then(data => {
+            // Se la variabile @result non esiste nello state, la crea
+            if (!(rk in this.state)) {
+              this.state[rk] = undefined;
+            }
             const oldVal = this.state[rk];
             const isEqual = JSON.stringify(oldVal) === JSON.stringify(data);
             if (!isEqual) {
@@ -642,7 +646,7 @@
       // @click
       if (vNode.directives['@click']) {
         el.addEventListener('click', e => {
-          // Interpolazione
+          // Interpolazione sempre, anche per espressioni complesse
           const expr = this._evalAttrValue(vNode.directives['@click'], ctx);
           new Function('state', 'ctx', 'event', `with(state){with(ctx){${expr}}}`)
             (this.state, ctx, e);
@@ -678,7 +682,7 @@
         Object.entries(evs).forEach(([evt, expr]) => {
           const eventName = evt === 'hover' ? 'mouseover' : evt;
 
-          // Interpolazione per tutte le sub-direttive
+          // Interpolazione sempre
           const getInterpolatedExpr = () => this._evalAttrValue(expr, ctx);
 
           if (dir === '@fetch') {
@@ -732,13 +736,13 @@
 
       // @fetch (default)
       if (vNode.directives['@fetch'] && !vNode.subDirectives['@fetch']) {
-        const expr = vNode.directives['@fetch'];
+        const expr = this._autoVarExpr(vNode.directives['@fetch']);
         const rk = vNode.directives['@result'] || 'result';
         setupFetch(expr, rk);
         if (vNode.directives['@watch']) {
           vNode.directives['@watch'].split(',').forEach(watchExpr => {
             watchExpr = watchExpr.trim();
-            let match = watchExpr.match(/^(\w+)\s*=>\s*(.+)$/) || watchExpr.match(/^(\w+)\s*:\s*(.+)$/);
+            let match = watchExpr.match(/^([\w$]+)\s*=>\s*(.+)$/) || watchExpr.match(/^([\w$]+)\s*:\s*(.+)$/);
             if (match) {
               const prop = match[1];
               const code = match[2];
@@ -950,6 +954,14 @@
         '@focus': `Esempio: <input @focus="doSomething()">`,
       };
       return help[name] || '';
+    }
+
+    // Utility: se expr è una sola parola, trattala come variabile
+    _autoVarExpr(expr) {
+      if (typeof expr === 'string' && /^\w+$/.test(expr.trim())) {
+        return `{${expr.trim()}}`;
+      }
+      return expr;
     }
   }
 
