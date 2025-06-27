@@ -1,0 +1,10 @@
+<ul style="padding:0;list-style:none;">
+  <li @for="post in posts" @key="post.id" style="border:1px solid #eee;margin:1em 0;padding:1em;border-radius:6px;">
+    <h3 @text="post.title"></h3>
+    <p @text="post.body"></p>
+    <div style="font-size:0.9em;color:#888;">ID: <span @text="post.id"></span> | User: <span @text="post.userId"></span></div>
+    <button @click="post.liked = !post.liked" @class="{liked: post.liked}" style="margin-top:0.5em;">Like</button>
+    <span @if="post.liked">❤️</span>
+    <button @click="state.posts = state.posts.filter(p => p.id !== post.id)" style="margin-left:1em;">Rimuovi</button>
+  </li>
+</ul>
