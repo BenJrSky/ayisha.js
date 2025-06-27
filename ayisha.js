@@ -648,7 +648,12 @@
         el.addEventListener('click', e => {
           const expr = vNode.directives['@click'];
           let codeToRun = expr;
-          // Permetti interpolazione se contiene pattern {var} o {{var}}
+          // Se è un'assegnazione a una variabile non esistente nello state, crea la variabile
+          let matchAssign = expr.match(/^([\w$]+)\s*=/);
+          if (matchAssign) {
+            const varName = matchAssign[1];
+            if (!(varName in this.state)) this.state[varName] = undefined;
+          }
           if (this._hasInterpolation(expr)) {
             codeToRun = this._evalAttrValue(expr, ctx);
           }
