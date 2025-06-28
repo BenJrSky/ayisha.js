@@ -703,7 +703,7 @@
           fetchInfo.style.marginBottom = '0.5em';
           fetchInfo.innerHTML = `<b style=\"color:#ffd700\">${fetchDir}</b><br>` +
             `<b style=\"color:#aaa\">URL:</b> ${urlHtml}<br>` +
-            `<b style=\"color:#aaa\">Method:</b> <span style=\"color:#0ff\">${method}</span><br>` +
+            `<b style=\"color:#aaa">Method:</b> <span style=\"color:#0ff\">${method}</span><br>` +
             `<b style=\"color:#aaa\">Headers:</b> ${headersHtml}<br>` +
             (payloadHtml ? `<b style=\"color:#aaa\">Payload:</b> ${payloadHtml}<br>` : '');
           logWrapper.appendChild(fetchInfo);
@@ -843,13 +843,8 @@
       if (vNode.directives['@click']) {
         el.addEventListener('click', e => {
           const expr = vNode.directives['@click'];
+          this._ensureVarInState(expr);
           let codeToRun = expr;
-          // Se è un'assegnazione a una variabile non esistente nello state, crea la variabile
-          let matchAssign = expr.match(/^([\w$]+)\s*=/);
-          if (matchAssign) {
-            const varName = matchAssign[1];
-            if (!(varName in this.state)) this.state[varName] = undefined;
-          }
           if (this._hasInterpolation(expr)) {
             codeToRun = this._evalAttrValue(expr, ctx);
           }
@@ -916,6 +911,7 @@
                   setupFetch(varName, vNode.directives['@result'] || 'result', e, true);
                 } else {
                   // Caso classico: esegui come codice JS puro o interpolato
+                  this._ensureVarInState(expr);
                   let codeToRun = expr;
                   if (this._hasInterpolation(expr)) {
                     codeToRun = this._evalAttrValue(expr, ctx);
@@ -1081,6 +1077,8 @@
             if (match) {
               const prop = match[1];
               const code = match[2];
+              window.ayisha._ensureVarInState(code);
+              window.ayisha._ensureVarInState(code);
               this.addWatcher(prop, function (newVal) {
                 const state = window.ayisha.state;
                 try {
@@ -1310,6 +1308,42 @@
     // Utility: controlla se una stringa contiene pattern di interpolazione {var} o {{var}}
     _hasInterpolation(expr) {
       return /\{\{.*?\}\}|\{[\w$.]+\}/.test(expr);
+    }
+
+    // Utility: assicura che tutte le variabili usate in assegnazioni/espressioni esistano nello state
+    _ensureVarInState(expr) {
+      // Gestisce foo=..., foo++, foo+=..., foo.push(...)
+      if (typeof expr !== 'string') return;
+      // foo = ...
+      let m = expr.match(/([\w$]+)\s*=/);
+      if (m) {
+        const varName = m[1];
+        if (!(varName in this.state)) {
+          // Se è un assegnamento stringa
+          let valMatch = expr.match(/=\s*['"](.*)['"]/);
+          if (valMatch) this.state[varName] = valMatch[1];
+          // Se è un assegnamento numerico
+          else if (/=\s*\d+/.test(expr)) this.state[varName] = parseInt(expr.split('=')[1]);
+          else this.state[varName] = undefined;
+        }
+      }
+      // foo++ o foo += ...
+      m = expr.match(/([\w$]+)\s*\+\+/);
+      if (m) {
+        const varName = m[1];
+        if (!(varName in this.state)) this.state[varName] = 1;
+      }
+      m = expr.match(/([\w$]+)\s*\+=/);
+      if (m) {
+        const varName = m[1];
+        if (!(varName in this.state)) this.state[varName] = 1;
+      }
+      // foo.push(...)
+      m = expr.match(/([\w$]+)\.push\s*\(/);
+      if (m) {
+        const varName = m[1];
+        if (!(varName in this.state)) this.state[varName] = [];
+      }
     }
 
   }
