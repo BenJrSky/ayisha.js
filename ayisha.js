@@ -41,13 +41,14 @@
       const vNode = { tag, attrs: {}, directives: {}, subDirectives: {}, children: [] };
       for (const attr of Array.from(node.attributes)) {
         if (attr.name.startsWith('@')) {
-          const parts = attr.name.split(':');
+          const name = attr.name === '@console' ? '@log' : attr.name;
+          const parts = name.split(':');
           if (parts.length === 2) {
             const [dir, evt] = parts;
             vNode.subDirectives[dir] = vNode.subDirectives[dir] || {};
             vNode.subDirectives[dir][evt] = attr.value;
           } else {
-            vNode.directives[attr.name] = attr.value;
+            vNode.directives[name] = attr.value;
           }
         } else {
           vNode.attrs[attr.name] = attr.value;
@@ -593,28 +594,28 @@
         el.appendChild(wrapper);
       }
 
-      // --- NUOVA DIRETTIVA @console ---
-      let consoleWrapper = null;
-      let fetchConsoleInfo = null;
-      if (vNode.directives.hasOwnProperty('@console')) {
-        consoleWrapper = document.createElement('div');
-        consoleWrapper.className = 'ayisha-console-wrapper';
-        consoleWrapper.style.background = '#222';
-        consoleWrapper.style.color = '#fff';
-        consoleWrapper.style.padding = '1em';
-        consoleWrapper.style.borderRadius = '4px';
-        consoleWrapper.style.marginTop = '1em';
-        consoleWrapper.style.overflow = 'auto';
-        consoleWrapper.style.fontSize = '0.95em';
-        consoleWrapper.style.fontFamily = 'monospace';
-        consoleWrapper.style.border = '1px solid #444';
+      // --- NUOVA DIRETTIVA @log ---
+      let logWrapper = null;
+      let fetchLogInfo = null;
+      if (vNode.directives.hasOwnProperty('@log')) {
+        logWrapper = document.createElement('div');
+        logWrapper.className = 'ayisha-console-wrapper';
+        logWrapper.style.background = '#222';
+        logWrapper.style.color = '#fff';
+        logWrapper.style.padding = '1em';
+        logWrapper.style.borderRadius = '4px';
+        logWrapper.style.marginTop = '1em';
+        logWrapper.style.overflow = 'auto';
+        logWrapper.style.fontSize = '0.95em';
+        logWrapper.style.fontFamily = 'monospace';
+        logWrapper.style.border = '1px solid #444';
 
         const title = document.createElement('div');
-        title.textContent = 'AYISHA CONSOLE';
+        title.textContent = 'AYISHA LOG';
         title.style.fontWeight = 'bold';
         title.style.marginBottom = '0.5em';
         title.style.letterSpacing = '1px';
-        consoleWrapper.appendChild(title);
+        logWrapper.appendChild(title);
 
         // Helper per mostrare valore o errore
         const renderValue = (expr, ctx) => {
@@ -705,16 +706,16 @@
             `<b style=\"color:#aaa\">Method:</b> <span style=\"color:#0ff\">${method}</span><br>` +
             `<b style=\"color:#aaa\">Headers:</b> ${headersHtml}<br>` +
             (payloadHtml ? `<b style=\"color:#aaa\">Payload:</b> ${payloadHtml}<br>` : '');
-          consoleWrapper.appendChild(fetchInfo);
+          logWrapper.appendChild(fetchInfo);
         }
 
         // Direttive normali
         Object.entries(vNode.directives).forEach(([dir, expr]) => {
-          if (dir === '@console') return;
+          if (dir === '@log') return;
           // Evita duplicati per @fetch già mostrato sopra
           if (dir === fetchDir) return;
           // Evita duplicati per @watch già mostrato sopra
-          if (dir === '@watch' && fetchConsoleInfo && fetchConsoleInfo.watch) return;
+          if (dir === '@watch' && fetchLogInfo && fetchLogInfo.watch) return;
           let info = '';
           if (dir === '@model') {
             // Mostra la proprietà agganciata e il valore attuale
@@ -755,7 +756,7 @@
           const row = document.createElement('div');
           row.style.marginBottom = '0.5em';
           row.innerHTML = `<b style=\"color:#ffd700\">${dir}</b>: <span>${renderValue(expr, ctx)}</span> ${info}`;
-          consoleWrapper.appendChild(row);
+          logWrapper.appendChild(row);
         });
         // Sub-direttive
         Object.entries(vNode.subDirectives).forEach(([dir, evs]) => {
@@ -783,7 +784,7 @@
             const row = document.createElement('div');
             row.style.marginBottom = '0.5em';
             row.innerHTML = `<b style=\"color:#ffd700\">${key}</b>: <span>${renderValue(expr, ctx)}</span> ${info}`;
-            consoleWrapper.appendChild(row);
+            logWrapper.appendChild(row);
           });
         });
       }
@@ -1185,10 +1186,10 @@
       }
 
       // Alla fine della funzione, dopo aver costruito el normalmente
-      if (consoleWrapper) {
+      if (logWrapper) {
         const frag = document.createDocumentFragment();
         frag.appendChild(el);
-        frag.appendChild(consoleWrapper);
+        frag.appendChild(logWrapper);
         return frag;
       }
       return el;
@@ -1269,7 +1270,7 @@
         '@animate': `Esempio: <div @animate="fade-in"></div>`,
         // **NUOVA**
         '@state': `Esempio: <div @state></div> (renderizza lo stato corrente come JSON)`,
-        '@console': `Esempio: <div @console></div> (mostra la console delle direttive sull'elemento)`,
+        '@log': `Esempio: <div @log></div> (mostra il log delle direttive sull'elemento)`,
         // Sub-directives
         '@text:hover': `Esempio: <div @text:hover="'Testo hover'"></div>`,
         '@text:click': `Esempio: <div @text:click="'Testo click'"></div>`,
@@ -1338,15 +1339,17 @@
   AyishaVDOM.prototype._renderVNode = function (vNode, ctx) {
     if (vNode && vNode.directives) {
       Object.keys(vNode.directives).forEach(dir => {
-        if (!this.directiveHelp(dir)) {
-          this._logDirective('Direttiva', dir, null, 'Direttiva non riconosciuta.', null);
+        const d = dir === '@console' ? '@log' : dir;
+        if (!this.directiveHelp(d)) {
+          this._logDirective('Direttiva', d, null, 'Direttiva non riconosciuta.', null);
         }
       });
     }
     if (vNode && vNode.subDirectives) {
       Object.entries(vNode.subDirectives).forEach(([dir, evs]) => {
+        const d = dir === '@console' ? '@log' : dir;
         Object.keys(evs).forEach(evt => {
-          const key = `${dir}:${evt}`;
+          const key = `${d}:${evt}`;
           if (!this.directiveHelp(key)) {
             this._logDirective('SubDirettiva', key, null, 'Sub-direttiva non riconosciuta.', null);
           }
