@@ -41,7 +41,7 @@
       const vNode = { tag, attrs: {}, directives: {}, subDirectives: {}, children: [] };
       for (const attr of Array.from(node.attributes)) {
         if (attr.name.startsWith('@')) {
-          const name = attr.name === '@console' ? '@log' : attr.name;
+          const name = attr.name;
           const parts = name.split(':');
           if (parts.length === 2) {
             const [dir, evt] = parts;
@@ -1339,17 +1339,15 @@
   AyishaVDOM.prototype._renderVNode = function (vNode, ctx) {
     if (vNode && vNode.directives) {
       Object.keys(vNode.directives).forEach(dir => {
-        const d = dir === '@console' ? '@log' : dir;
-        if (!this.directiveHelp(d)) {
-          this._logDirective('Direttiva', d, null, 'Direttiva non riconosciuta.', null);
+        if (!this.directiveHelp(dir)) {
+          this._logDirective('Direttiva', dir, null, 'Direttiva non riconosciuta.', null);
         }
       });
     }
     if (vNode && vNode.subDirectives) {
       Object.entries(vNode.subDirectives).forEach(([dir, evs]) => {
-        const d = dir === '@console' ? '@log' : dir;
         Object.keys(evs).forEach(evt => {
-          const key = `${d}:${evt}`;
+          const key = `${dir}:${evt}`;
           if (!this.directiveHelp(key)) {
             this._logDirective('SubDirettiva', key, null, 'Sub-direttiva non riconosciuta.', null);
           }
