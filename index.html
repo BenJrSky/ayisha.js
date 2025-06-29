@@ -48,8 +48,17 @@
         <input @model="userId" type="number" min="1" max="10" placeholder="User ID (1-10)">
         {{userId}}
 
-        <button @fetch="https://jsonplaceholder.typicode.com/posts?userId={userId}" @result="articoli"
-          @watch="userId">Carica Post</button>
+     
+
+        <button @fetch:click="https://jsonplaceholder.typicode.com/posts?userId=5" @result="user5">Carica user 5</button>
+        <span style="margin-left:1em;color:#0a0">{{user5 && user5.length ? 'OK: ' + user5.length + ' posts' : ''}}</span>
+        <span style="margin-left:1em;color:#c00" @if="ayisha._fetched && ayisha._lastFetchUrl && ayisha._lastFetchUrl.user5 && ayisha._fetched[ayisha._lastFetchUrl.user5] && ayisha._fetched[ayisha._lastFetchUrl.user5].error">
+          Errore: {{ayisha._fetched[ayisha._lastFetchUrl.user5].error}}
+        </span>
+        <span style="margin-left:1em;color:#888;font-size:0.9em" @if="ayisha._lastFetchUrl && ayisha._lastFetchUrl.user5">
+          URL: {{ayisha._lastFetchUrl.user5}}
+        </span>
+
         <button @click="userId=1">Reset User</button>
 
         <button @click="userId++">User++</button>

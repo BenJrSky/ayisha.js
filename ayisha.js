@@ -226,6 +226,8 @@ _makeReactive() {
       if (this._isRendering) return;
       this._isRendering = true;
 
+      // Salva scroll della pagina
+      const scrollX = window.scrollX, scrollY = window.scrollY;
       const active = document.activeElement;
       let focusInfo = null;
       if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
@@ -236,7 +238,7 @@ _makeReactive() {
           path.unshift([...parent.childNodes].indexOf(node));
           node = parent;
         }
-        focusInfo = { path, start: active.selectionStart, end: active.selectionEnd };
+        focusInfo = { path, start: active.selectionStart, end: active.selectionEnd, type: active.type };
       }
       this._modelBindings = [];
       const real = this._renderVNode(this._vdom, this.state);
@@ -281,8 +283,9 @@ _makeReactive() {
           } catch (e) { }
         }
       }
+      // Ripristina scroll della pagina
+      window.scrollTo(scrollX, scrollY);
       this._modelBindings.forEach(b => b.update());
-
       this._isRendering = false;
     }
 
@@ -852,6 +855,10 @@ _makeReactive() {
       // @click
       if (vNode.directives['@click']) {
         el.addEventListener('click', e => {
+          // Previeni sempre il default per i button (anche senza type)
+          if (el.tagName === 'BUTTON') {
+            e.preventDefault();
+          }
           const expr = vNode.directives['@click'];
           this._ensureVarInState(expr);
           let codeToRun = expr;
@@ -906,6 +913,8 @@ _makeReactive() {
               evt === 'click' || evt === 'hover' || evt === 'focus' || evt === 'input' || evt === 'change' || evt === 'blur'
             );
           if (isEvent) {
+            // Centralizzazione: sempre interpolazione
+            const getInterpolatedExpr = () => this._evalAttrValue(expr, ctx);
             if (dir === '@fetch') {
               el.addEventListener(eventName, e => {
                 // Gestione assegnazione tipo url=...
@@ -914,13 +923,11 @@ _makeReactive() {
                 if (matchAssign && this._hasInterpolation(expr)) {
                   const varName = matchAssign[1];
                   let valueExpr = matchAssign[2].trim();
-                  // Interpola la parte destra, mantenendo eventuali virgolette
                   let interpolated = this._evalAttrValue(valueExpr, ctx);
                   if (!(varName in this.state)) this.state[varName] = '';
                   this.state[varName] = interpolated;
                   setupFetch(varName, vNode.directives['@result'] || 'result', e, true);
                 } else {
-                  // Caso classico: esegui come codice JS puro o interpolato
                   this._ensureVarInState(expr);
                   let codeToRun = expr;
                   if (this._hasInterpolation(expr)) {
@@ -932,9 +939,8 @@ _makeReactive() {
                   } catch (err) {
                     this._showAyishaError(el, err, codeToRun);
                   }
-                  if (/^\w+$/.test(expr.trim())) {
-                    setupFetch(expr.trim(), vNode.directives['@result'] || 'result', e, true);
-                  }
+                  // PATCH: always call setupFetch for @fetch:click, not just for variable names
+                  setupFetch(expr, vNode.directives['@result'] || 'result', e, true);
                 }
                 this.render();
               });
@@ -943,32 +949,20 @@ _makeReactive() {
             if (dir === '@class') {
               if (evt === 'hover') {
                 el.addEventListener('mouseover', e => {
-                  let codeToRun = expr;
-                  if (this._hasInterpolation(expr)) {
-                    codeToRun = this._evalAttrValue(expr, ctx);
-                  }
-                  const clsMap = this._evalExpr(codeToRun, ctx, e) || {};
+                  const clsMap = this._evalExpr(getInterpolatedExpr(), ctx, e) || {};
                   Object.entries(clsMap).forEach(([cls, cond]) => {
                     if (cond) el.classList.add(cls);
                   });
                 });
                 el.addEventListener('mouseout', e => {
-                  let codeToRun = expr;
-                  if (this._hasInterpolation(expr)) {
-                    codeToRun = this._evalAttrValue(expr, ctx);
-                  }
-                  const clsMap = this._evalExpr(codeToRun, ctx, e) || {};
+                  const clsMap = this._evalExpr(getInterpolatedExpr(), ctx, e) || {};
                   Object.entries(clsMap).forEach(([cls, cond]) => {
                     if (cond) el.classList.remove(cls);
                   });
                 });
               } else {
                 el.addEventListener(eventName, e => {
-                  let codeToRun = expr;
-                  if (this._hasInterpolation(expr)) {
-                    codeToRun = this._evalAttrValue(expr, ctx);
-                  }
-                  const clsMap = this._evalExpr(codeToRun, ctx, e) || {};
+                  const clsMap = this._evalExpr(getInterpolatedExpr(), ctx, e) || {};
                   Object.entries(clsMap).forEach(([cls, cond]) => {
                     if (cond) el.classList.add(cls);
                     else el.classList.remove(cls);
@@ -981,19 +975,11 @@ _makeReactive() {
               if (!el._ayishaOriginal) el._ayishaOriginal = el.textContent;
               if (evt === 'click') {
                 el.addEventListener('click', e => {
-                  let codeToRun = expr;
-                  if (this._hasInterpolation(expr)) {
-                    codeToRun = this._evalAttrValue(expr, ctx);
-                  }
-                  el.textContent = this._evalExpr(codeToRun, ctx, e);
+                  el.textContent = this._evalExpr(getInterpolatedExpr(), ctx, e);
                 });
               } else if (evt === 'hover') {
                 el.addEventListener('mouseover', e => {
-                  let codeToRun = expr;
-                  if (this._hasInterpolation(expr)) {
-                    codeToRun = this._evalAttrValue(expr, ctx);
-                  }
-                  el.textContent = this._evalExpr(codeToRun, ctx, e);
+                  el.textContent = this._evalExpr(getInterpolatedExpr(), ctx, e);
                 });
                 el.addEventListener('mouseout', () => {
                   el.textContent = el._ayishaOriginal;
@@ -1003,10 +989,7 @@ _makeReactive() {
             }
             // Default: esegui come codice JS puro o interpolato se contiene pattern
             el.addEventListener(eventName, e => {
-              let codeToRun = expr;
-              if (this._hasInterpolation(expr)) {
-                codeToRun = this._evalAttrValue(expr, ctx);
-              }
+              let codeToRun = getInterpolatedExpr();
               try {
                 new Function('state', 'ctx', 'event', `with(state){with(ctx){${codeToRun}}}`)
                   (this.state, ctx, e);
@@ -1017,61 +1000,6 @@ _makeReactive() {
             });
             return;
           }
-
-          // Per sub-direttive NON evento, mantieni l'interpolazione
-          Object.entries(evs).forEach(([evt, expr]) => {
-            const eventName = evt === 'hover' ? 'mouseover' : evt;
-
-            // Interpolazione sempre
-            const getInterpolatedExpr = () => this._evalAttrValue(expr, ctx);
-
-            if (dir === '@fetch') {
-              el.addEventListener(eventName, e => setupFetch(getInterpolatedExpr(), vNode.directives['@result'] || 'result', e, true));
-              return;
-            }
-
-            if (dir === '@class') {
-              if (evt === 'hover') {
-                el.addEventListener('mouseover', e => {
-                  const clsMap = this._evalExpr(getInterpolatedExpr(), ctx, e) || {};
-                  Object.entries(clsMap).forEach(([cls, cond]) => {
-                    if (cond) el.classList.add(cls);
-                  });
-                });
-                el.addEventListener('mouseout', e => {
-                  const clsMap = this._evalExpr(getInterpolatedExpr(), ctx, e) || {};
-                  Object.entries(clsMap).forEach(([cls, cond]) => {
-                    if (cond) el.classList.remove(cls);
-                  });
-                });
-              } else {
-                el.addEventListener(eventName, e => {
-                  const clsMap = this._evalExpr(getInterpolatedExpr(), ctx, e) || {};
-                  Object.entries(clsMap).forEach(([cls, cond]) => {
-                    if (cond) el.classList.add(cls);
-                    else el.classList.remove(cls);
-                  });
-                });
-              }
-              return;
-            }
-
-            if (dir === '@text') {
-              if (!el._ayishaOriginal) el._ayishaOriginal = el.textContent;
-              if (evt === 'click') {
-                el.addEventListener('click', e => {
-                  el.textContent = this._evalExpr(getInterpolatedExpr(), ctx, e);
-                });
-              } else if (evt === 'hover') {
-                el.addEventListener('mouseover', e => {
-                  el.textContent = this._evalExpr(getInterpolatedExpr(), ctx, e);
-                });
-                el.addEventListener('mouseout', () => {
-                  el.textContent = el._ayishaOriginal;
-                });
-              }
-            }
-          });
         });
       });
 
