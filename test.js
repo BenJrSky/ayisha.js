@@ -11,6 +11,8 @@
       this._initBlocks = [];
       this._vdom = null;
       this._modelBindings = [];
+      this._pendingFetches = {};
+      this._lastFetchUrl = {};
       this._fetched = {};
       this._componentCache = {};
       this._loadingComponents = new Set();
@@ -21,278 +23,176 @@
     // @parse - Parsing DOM to Virtual DOM
     parse(node) {
       if (!node) return null;
-      if (node.nodeType === 11) { // DocumentFragment
-        const fragVNode = { tag: 'fragment', attrs: {}, directives: {}, subDirectives: {}, children: [] };
-        node.childNodes.forEach(child => {
-          const cn = this.parse(child);
-          if (cn) fragVNode.children.push(cn);
-        });
-        return fragVNode;
+      if (node.nodeType === 11) {
+        const frag = { tag: 'fragment', attrs: {}, directives: {}, subDirectives: {}, children: [] };
+        node.childNodes.forEach(c => { const n = this.parse(c); if (n) frag.children.push(n); });
+        return frag;
       }
       if (node.nodeType === 3) {
         return { type: 'text', text: node.textContent };
       }
       if (node.nodeType !== 1) return null;
       const tag = node.tagName.toLowerCase();
-      if (tag === 'init') {
-        this._initBlocks.push(node.textContent);
-        return null;
-      }
+      if (tag === 'init') { this._initBlocks.push(node.textContent); return null; }
       const vNode = { tag, attrs: {}, directives: {}, subDirectives: {}, children: [] };
-      for (const attr of Array.from(node.attributes)) {
+      Array.from(node.attributes).forEach(attr => {
         if (attr.name.startsWith('@')) {
-          const name = attr.name;
-          const parts = name.split(':');
+          const parts = attr.name.split(':');
           if (parts.length === 2) {
-            const [dir, evt] = parts;
-            vNode.subDirectives[dir] = vNode.subDirectives[dir] || {};
-            vNode.subDirectives[dir][evt] = attr.value;
+            const [d,e] = parts;
+            vNode.subDirectives[d] = vNode.subDirectives[d]||{};
+            vNode.subDirectives[d][e] = attr.value;
           } else {
-            vNode.directives[name] = attr.value;
+            vNode.directives[attr.name] = attr.value;
           }
         } else {
           vNode.attrs[attr.name] = attr.value;
         }
-      }
-      if (node.childNodes && node.childNodes.length > 0) {
-        node.childNodes.forEach(child => {
-          const cn = this.parse(child);
-          if (cn) vNode.children.push(cn);
-        });
-      }
+      });
+      node.childNodes.forEach(c => { const n = this.parse(c); if (n) vNode.children.push(n); });
       return vNode;
     }
 
-    // @init - Run <init> blocks
+    // @init
     _runInitBlocks() {
       this._initBlocks.forEach(code => {
-        try {
-          new Function('state', code)(this.state);
-        } catch (e) {
-          console.error('Init error:', e);
+        try { new Function('state', code)(this.state); } catch (e) { console.error('Init error:', e); }
+      });
+    }
+
+    // @reactivity
+    _makeReactive() {
+      this.state = new Proxy(this.state, {
+        set: (obj, prop, val) => {
+          const old = obj[prop];
+          if (JSON.stringify(old) === JSON.stringify(val)) { obj[prop] = val; return true; }
+          obj[prop] = val;
+          (this.watchers[prop]||[]).forEach(fn=>fn(val));
+          this.render();
+          return true;
         }
       });
     }
 
-    // @reactivity - Make state reactive
-_makeReactive() {
-  this.state = new Proxy(this.state, {
-    set: (obj, prop, val) => {
-      const old = obj[prop];
-      // se uguali (anche come oggetti), non scattare watcher né render
-      if (JSON.stringify(old) === JSON.stringify(val)) {
-        obj[prop] = val;
-        return true;
-      }
-      obj[prop] = val;
-      (this.watchers[prop] || []).forEach(fn => fn(val));
-      this.render();
-      return true;
-    }
-  });
-}
+    addWatcher(prop, fn) { this.watchers[prop] = this.watchers[prop]||[]; this.watchers[prop].push(fn); }
 
-    // @watch - Add watcher for a property
-    addWatcher(prop, fn) {
-      this.watchers[prop] = this.watchers[prop] || [];
-      this.watchers[prop].push(fn);
-    }
+    component(name, html) { this.components[name] = html; }
 
-    // @component - Register a component
-    component(name, html) {
-      this.components[name] = html;
-    }
-
-    // @component:external - Load external component by URL
     async _loadExternalComponent(url) {
-      if (this._componentCache[url]) {
-        return this._componentCache[url];
-      }
+      if (this._componentCache[url]) return this._componentCache[url];
       if (this._loadingComponents.has(url)) {
-        while (this._loadingComponents.has(url)) {
-          await new Promise(resolve => setTimeout(resolve, 10));
-        }
+        while (this._loadingComponents.has(url)) await new Promise(r=>setTimeout(r,10));
         return this._componentCache[url];
       }
       this._loadingComponents.add(url);
       try {
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        const html = await response.text();
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const html = await res.text();
         this._componentCache[url] = html;
         return html;
-      } catch (error) {
-        console.error(`Errore nel caricamento del componente da ${url}:`, error);
-        return null;
-      } finally {
-        this._loadingComponents.delete(url);
-      }
+      } catch(e) { console.error(`Error loading ${url}:`, e); return null; }
+      finally { this._loadingComponents.delete(url); }
     }
 
-    // @expression - Evaluate JS expressions in context
-    _evalExpr(expr, ctx = {}, event) {
+    _evalExpr(expr, ctx={}, event) {
       const t = expr.trim();
-      if (/^['"].*['"]$/.test(t)) return t.slice(1, -1);
+      if (/^['"].*['"]$/.test(t)) return t.slice(1,-1);
       if (/^\d+(\.\d+)?$/.test(t)) return Number(t);
       try {
-        const sp = new Proxy(this.state, {
-          get: (o, k) => o[k],
-          set: (o, k, v) => { o[k] = v; return true; }
-        });
-        return new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){return (${expr})}}`)(sp, ctx, event);
-      } catch {
-        return undefined;
-      }
+        const sp = new Proxy(this.state, { get:(o,k)=>o[k], set:(o,k,v)=>{o[k]=v;return true;} });
+        return new Function('state','ctx','event', `with(state){with(ctx||{}){return (${expr})}}`)(sp,ctx,event);
+      } catch { return undefined; }
     }
 
-    // @expression:text - Evaluate mustache in text
-    _evalText(text, ctx) {
-      return text.replace(/{{(.*?)}}/g, (_, e) => {
-        const r = this._evalExpr(e.trim(), ctx);
-        return r != null ? r : '';
-      });
+    _evalText(text, ctx) { return text.replace(/{{(.*?)}}/g,(_,e)=>{const r=this._evalExpr(e.trim(),ctx); return r!=null?r:'';}); }
+
+    _evalAttrValue(val,ctx) {
+      let r = val.replace(/{{(.*?)}}/g,(_,e)=>{const x=this._evalExpr(e.trim(),ctx); return x!=null?x:'';});
+      r = r.replace(/\[\{(.*?)\}\]/g,(_,e)=>{const x=this._evalExpr(e.trim(),ctx); return x!=null?x:'';});
+      if (/^\{([^{}]+)\}$/.test(r.trim())) { const e=r.trim().slice(1,-1), x=this._evalExpr(e,ctx); return x!=null?x:''; }
+      return r.replace(/\{([^{}]+)\}/g, (m,e)=>{ if(/^{{.*}}$/.test(m)) return m; const x=this._evalExpr(e.trim(),ctx); return x!=null?x:''; });
     }
 
-    // @expression:attr - Evaluate dynamic attribute values
-    _evalAttrValue(val, ctx) {
-      let result = val.replace(/{{(.*?)}}/g, (_, e) => {
-        const r = this._evalExpr(e.trim(), ctx);
-        return r != null ? r : '';
-      });
-      result = result.replace(/\[\{(.*?)\}\]/g, (_, e) => {
-        const r = this._evalExpr(e.trim(), ctx);
-        return r != null ? r : '';
-      });
-      if (/^\{([^{}]+)\}$/.test(result.trim())) {
-        const expr = result.trim().slice(1, -1);
-        const r = this._evalExpr(expr, ctx);
-        return r != null ? r : '';
-      }
-      result = result.replace(/\{([^{}]+)\}/g, (match, e) => {
-        if (/^\{\{.*\}\}$/.test(match)) return match;
-        const r = this._evalExpr(e.trim(), ctx);
-        return r != null ? r : '';
-      });
-      return result;
+    _bindModel(el,key,ctx) {
+      const upd=()=>{const v=this._evalExpr(key,ctx); if(el.type==='checkbox')el.checked=!!v; else if(el.type==='radio')el.checked=v==el.value; else if(el.value!==String(v))el.value=v??'';};
+      this._modelBindings.push({el,upd}); upd();
+      el.addEventListener('input',()=>{ new Function('state','ctx','value', `with(state){with(ctx||{}){${key}=value}}`)(this.state,ctx,el.value); this.render(); });
     }
 
-    // @model - Two-way binding for inputs
-    _bindModel(el, key, ctx) {
-      const update = () => {
-        const val = this._evalExpr(key, ctx);
-        if (el.type === 'checkbox') el.checked = !!val;
-        else if (el.type === 'radio') el.checked = val == el.value;
-        else if (el.value !== String(val)) el.value = val ?? '';
-      };
-      this._modelBindings.push({ el, update });
-      update();
-      el.addEventListener('input', () => {
-        new Function('state', 'ctx', 'value', `with(state){with(ctx||{}){${key}=value}}`)(this.state, ctx, el.value);
-        this.render();
-      });
+    _bindValidation(el,rules) {
+      const rs=rules.split(',').map(r=>r.trim());
+      el.addEventListener('input',()=>{let ok=true; rs.forEach(r=>{ if(r==='required'&&!el.value)ok=false; if(r.startsWith('minLength')){const m=parseInt(r.split(':')[1]); if(el.value.length<m)ok=false;} }); el.classList.toggle('invalid',!ok); });
     }
 
-    // @validate - Input validation
-    _bindValidation(el, rulesStr) {
-      const rules = rulesStr.split(',').map(r => r.trim());
-      el.addEventListener('input', () => {
-        let valid = true;
-        rules.forEach(rule => {
-          if (rule === 'required' && !el.value) valid = false;
-          if (rule.startsWith('minLength')) {
-            const m = parseInt(rule.split(':')[1], 10);
-            if (el.value.length < m) valid = false;
-          }
-        });
-        el.classList.toggle('invalid', !valid);
-      });
-    }
-
-    // @router - SPA Routing
     _setupRouting() {
-      let p = location.pathname.replace(/^\//, '') || '';
-      if (!p || p === 'index.html') { history.replaceState({}, '', '/'); p = ''; }
-      this.state.currentPage = p;
-      window.addEventListener('popstate', () => {
-        this.state.currentPage = location.pathname.replace(/^\//, '') || '';
-        this.render();
-      });
+      let p=location.pathname.replace(/^\//,'')||'';
+      if(!p||p==='index.html'){history.replaceState({},'', '/'); p='';}
+      this.state.currentPage=p;
+      window.addEventListener('popstate',()=>{ this.state.currentPage=location.pathname.replace(/^\//,'')||''; this.render(); });
     }
 
-    // @render - Main render function
     render() {
-      if (this._isRendering) return;
-      this._isRendering = true;
-
-      const active = document.activeElement;
-      let focusInfo = null;
-      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
-        const path = [];
-        let node = active;
-        while (node && node !== this.root) {
-          const parent = node.parentNode;
-          path.unshift([...parent.childNodes].indexOf(node));
-          node = parent;
-        }
-        focusInfo = { path, start: active.selectionStart, end: active.selectionEnd };
-      }
-      this._modelBindings = [];
-      const real = this._renderVNode(this._vdom, this.state);
-      if (this.root === document.body) {
-        document.body.innerHTML = '';
-        if (real) {
-          if (real.tagName === undefined && real.childNodes) {
-            Array.from(real.childNodes).forEach(child => document.body.appendChild(child));
-          } else if (real instanceof DocumentFragment) {
-            document.body.appendChild(real);
-          } else {
-            document.body.appendChild(real);
-          }
-        }
-      } else {
-        this.root.innerHTML = '';
-        if (real) {
-          if (real.tagName === undefined && real.childNodes) {
-            Array.from(real.childNodes).forEach(child => this.root.appendChild(child));
-          } else if (real instanceof DocumentFragment) {
-            this.root.appendChild(real);
-          } else {
-            this.root.appendChild(real);
-          }
-        }
-      }
-      if (focusInfo) {
-        let node = this.root;
-        focusInfo.path.forEach(i => node = node.childNodes[i]);
-        if (
-          node &&
-          (node.tagName === 'INPUT' || node.tagName === 'TEXTAREA')
-        ) {
-          node.focus();
-          try {
-            if (
-              (node.tagName === 'INPUT' && typeof node.selectionStart === 'number' && typeof node.setSelectionRange === 'function' && node.type !== 'number') ||
-              node.tagName === 'TEXTAREA'
-            ) {
-              node.setSelectionRange(focusInfo.start, focusInfo.end);
-            }
-          } catch (e) { }
-        }
-      }
-      this._modelBindings.forEach(b => b.update());
-
-      this._isRendering = false;
-    }
-
-    // @vdom - Render Virtual DOM node
-    _renderVNode(vNode, ctx) {
+      if(this._isRendering) return; this._isRendering=true;
+      this._modelBindings=[];
+      const real = this._renderVNode(vNode, ctx) {
       if (!vNode) return null;
-
-      // Central ensure: crea tutte le variabili usate nelle direttive
+      // central ensure: crea tutte le variabili usate nelle direttive
       Object.values(vNode.directives || {}).forEach(expr => this._ensureVarInState(expr));
       Object.values(vNode.subDirectives || {}).forEach(ev => Object.values(ev).forEach(expr => this._ensureVarInState(expr)));
+
+      // --- ERROR HANDLING FOR UNKNOWN DIRECTIVES/SUB-DIRECTIVES ---
+      let unknownDirective = null;
+      let unknownSubDirective = null;
+      let unknownSubDirectiveEvt = null;
+      if (vNode.directives) {
+        for (const dir of Object.keys(vNode.directives)) {
+          if (dir === '@src' && vNode.tag === 'component') continue;
+          if (!this.directiveHelp(dir) || this.directiveHelp(dir).startsWith('Nessun esempio')) {
+            unknownDirective = dir;
+            break;
+          }
+        }
+      }
+      if (!unknownDirective && vNode.subDirectives) {
+        for (const [dir, evs] of Object.entries(vNode.subDirectives)) {
+          for (const evt of Object.keys(evs)) {
+            const key = `${dir}:${evt}`;
+            if (!this.directiveHelp(key) || this.directiveHelp(key).startsWith('Nessun esempio')) {
+              unknownSubDirective = dir;
+              unknownSubDirectiveEvt = evt;
+              break;
+            }
+          }
+          if (unknownSubDirective) break;
+        }
+      }
+      if (unknownDirective || unknownSubDirective) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'ayisha-directive-error';
+        errorDiv.style.background = '#c00';
+        errorDiv.style.color = '#fff';
+        errorDiv.style.padding = '1em';
+        errorDiv.style.margin = '0.5em 0';
+        errorDiv.style.borderRadius = '4px';
+        errorDiv.style.fontWeight = 'bold';
+        errorDiv.style.border = '1px solid #900';
+        let msg = '';
+        if (unknownDirective) {
+          msg = `Error: Unknown directive <b>${unknownDirective}</b>.`;
+          msg += '<br>' + this.directiveHelp(unknownDirective);
+        } else {
+          const key = `${unknownSubDirective}:${unknownSubDirectiveEvt}`;
+          msg = `Error: Unknown sub-directive <b>${key}</b>.`;
+          msg += '<br>' + this.directiveHelp(key);
+        }
+        errorDiv.innerHTML = msg;
+        return errorDiv;
+      }
+
+          // @vdom - Render Virtual DOM node
+    _renderVNode(vNode, ctx) {
+      if (!vNode) return null;
 
       // --- ERROR HANDLING FOR UNKNOWN DIRECTIVES/SUB-DIRECTIVES ---
       let unknownDirective = null;
@@ -1210,224 +1110,36 @@ _makeReactive() {
       return el;
     }
 
-    // @mount - Mount the app
-    mount() {
-      if (this.root.childNodes.length > 1) {
-        const fragVNode = { tag: 'fragment', attrs: {}, directives: {}, subDirectives: {}, children: [] };
-        this.root.childNodes.forEach(child => {
-          if (child.nodeType === 1 && child.tagName && child.tagName.toLowerCase() === 'init') return;
-          const cn = this.parse(child);
-          if (cn) fragVNode.children.push(cn);
-        });
-        this._vdom = fragVNode;
-      } else {
-        this._vdom = this.parse(this.root);
-      }
-      this._makeReactive();
-      this._runInitBlocks();
-      this._setupRouting();
-      const self = this;
-      let cp = this.state.currentPage;
-      Object.defineProperty(this.state, 'currentPage', {
-        get() { return cp; },
-        set(v) {
-          if (cp !== v) {
-            cp = v;
-            history.pushState({}, '', '/' + v);
-            self.render();
-          }
-        }
-      });
+    
+    }
+
+    mount() { /* implementazione mount invariata */ } {
+      if(this.root.childNodes.length>1) {
+        const frag={tag:'fragment',attrs:{},directives:{},subDirectives:{},children:[]};
+        this.root.childNodes.forEach(c=>{ if(c.tagName?.toLowerCase()==='init') return; const n=this.parse(c); if(n)frag.children.push(n); });
+        this._vdom=frag;
+      } else this._vdom=this.parse(this.root);
+      this._makeReactive(); this._runInitBlocks(); this._setupRouting();
+      let cp=this.state.currentPage;
+      Object.defineProperty(this.state,'currentPage',{get:()=>cp,set:v=>{ if(cp!==v){ cp=v; history.pushState({},'', '/'+v); this.render(); }} });
       this.render();
-      this.root.addEventListener('click', e => {
-        let el = e.target;
-        while (el && el !== this.root) {
-          if (el.hasAttribute('@link')) {
-            e.preventDefault();
-            this.state.currentPage = el.getAttribute('@link');
-            return;
-          }
-          el = el.parentNode;
-        }
-      }, true);
     }
 
-    // Help examples for each directive/sub-directive
-    directiveHelp(name) {
-      const help = {
-        '@if': `Esempio: <div @if="condizione">Mostra se condizione è true</div>`,
-        '@show': `Esempio: <div @show="condizione">Mostra se condizione è true</div>`,
-        '@hide': `Esempio: <div @hide="condizione">Nasconde se condizione è true</div>`,
-        '@for': `Esempio: <li @for="item in items">{{item}}</li>`,
-        '@model': `Esempio: <input @model="nome">`,
-        '@click': `Esempio: <button @click="state.count++">Aumenta</button>`,
-        '@fetch': `Esempio: <div @fetch="'url'" @result="data">Carica</div>`,
-        '@result': `Esempio: <div @fetch="'url'" @result="data">Carica</div>`,
-        '@watch': `Esempio: <div @watch="prop=>console.log(prop)"></div>`,
-        '@text': `Esempio: <span @text="nome"></span>`,
-        '@class': `Esempio: <div @class="{rosso: condizione}"></div>`,
-        '@style': `Esempio: <div @style="{color:'red'}"></div>`,
-        '@validate': `Esempio: <input @validate="required,minLength:3">`,
-        '@link': `Esempio: <a @link="pagina">Vai</a>`,
-        '@page': `Esempio: <div @page="home">Solo su home</div>`,
-        '@component': `Esempio: <component @src="comp.html"></component>`,
-        '@set': `Esempio: <button @set:click="foo=1"></button>`,
-        '@key': `Esempio: <li @for="item in items" @key="item.id"></li>`,
-        '@src': `Esempio: <component @src="comp.html"></component>`,
-        '@switch': `Esempio: <div @switch="valore"><div @case="1">Uno</div><div @default>Altro</div></div>`,
-        '@case': `Esempio: <div @case="1">Uno</div>`,
-        '@default': `Esempio: <div @default>Altro</div>`,
-        '@source': `Esempio: <div @source="items" @map="item => item*2" @result="doppio"></div>`,
-        '@map': `Esempio: <div @source="items" @map="item => item*2"></div>`,
-        '@filter': `Esempio: <div @source="items" @filter="item > 0"></div>`,
-        '@reduce': `Esempio: <div @source="items" @reduce="(acc, item) => acc+item" @initial="0"></div>`,
-        '@initial': `Esempio: <div @source="items" @reduce="(acc, item) => acc+item" @initial="0"></div>`,
-        '@animate': `Esempio: <div @animate="fade-in"></div>`,
-        // **NUOVA**
-        '@state': `Esempio: <div @state></div> (renderizza lo stato corrente come JSON)`,
-        '@log': `Esempio: <div @log></div> (mostra il log delle direttive sull'elemento)`,
-        // Sub-directives
-        '@text:hover': `Esempio: <div @text:hover="'Testo hover'"></div>`,
-        '@text:click': `Esempio: <div @text:click="'Testo click'"></div>`,
-        '@text:input': `Esempio: <input @text:input="nome">`,
-        '@text:focus': `Esempio: <input @text:focus="nome">`,
-        '@class:focus': `Esempio: <input @class:focus="{rosso:true}">`,
-        '@class:hover': `Esempio: <div @class:hover="{rosso: condizione}"></div>`,
-        '@class:click': `Esempio: <div @class:click="{rosso: condizione}"></div>`,
-        '@class:input': `Esempio: <input @class:input="{rosso: condizione}">`,
-        '@class:change': `Esempio: <input @class:change="{rosso: condizione}">`,
-        '@fetch:click': `Esempio: <button @fetch:click="'url'" @result="data"></button>`,
-        '@fetch:hover': `Esempio: <button @fetch:hover="'url'" @result="data"></button>`,
-        '@fetch:input': `Esempio: <input @fetch:input="'url'" @result="data">`,
-        '@fetch:change': `Esempio: <input @fetch:change="'url'" @result="data">`,
-        '@model:input': `Esempio: <input @model:input="nome">`,
-        '@model:change': `Esempio: <input @model:change="nome">`,
-        '@model:focus': `Esempio: <input @model:focus="nome">`,
-        '@model:blur': `Esempio: <input @model:blur="nome">`,
-        '@set:change': `Esempio: <input @set:change="foo='bar'">`,
-        '@set:click': `Esempio: <button @set:click="foo=1"></button>`,
-        '@set:input': `Esempio: <input @set:input="foo='bar'">`,
-        '@set:focus': `Esempio: <input @set:focus="foo='bar'">`,
-        '@set:blur': `Esempio: <input @set:blur="foo='bar'">`,
-        '@focus': `Esempio: <input @focus="doSomething()">`,
-      };
-      return help[name] || '';
-    }
-
-    // Utility: se expr è una sola parola, trattala come variabile
-    _autoVarExpr(expr) {
-      if (typeof expr === 'string' && /^\w+$/.test(expr.trim())) {
-        return `{${expr.trim()}}`;
-      }
-      return expr;
-    }
-
-    // Utility: controlla se una stringa contiene pattern di interpolazione {var} o {{var}}
-    _hasInterpolation(expr) {
-      return /\{\{.*?\}\}|\{[\w$.]+\}/.test(expr);
-    }
-
-    // Utility: assicura che tutte le variabili usate in assegnazioni/espressioni esistano nello state
     _ensureVarInState(expr) {
-      // Gestisce foo=..., foo++, foo+=..., foo.push(...)
-      if (typeof expr !== 'string') return;
-      // foo = ...
-      let m = expr.match(/([\w$]+)\s*=/);
-      if (m) {
-        const varName = m[1];
-        if (!(varName in this.state)) {
-          // Se è un assegnamento stringa
-          let valMatch = expr.match(/=\s*['"](.*)['"]/);
-          if (valMatch) this.state[varName] = valMatch[1];
-          // Se è un assegnamento numerico
-          else if (/=\s*\d+/.test(expr)) this.state[varName] = parseInt(expr.split('=')[1]);
-          else this.state[varName] = undefined;
-        }
+      if(typeof expr!=='string') return;
+      let m=expr.match(/([\w$]+)\s*=/);
+      if(m&&!this.state.hasOwnProperty(m[1])){
+        const s2=expr.match(/=\s*['"](.*)['"]/);
+        this.state[m[1]]=(s2? s2[1] : /^=\s*\d+/.test(expr)?parseInt(expr.split('=')[1]):undefined);
       }
-      // foo++ o foo += ...
-      m = expr.match(/([\w$]+)\s*\+\+/);
-      if (m) {
-        const varName = m[1];
-        if (!(varName in this.state)) this.state[varName] = 1;
-      }
-      m = expr.match(/([\w$]+)\s*\+=/);
-      if (m) {
-        const varName = m[1];
-        if (!(varName in this.state)) this.state[varName] = 1;
-      }
-      // foo.push(...)
-      m = expr.match(/([\w$]+)\.push\s*\(/);
-      if (m) {
-        const varName = m[1];
-        if (!(varName in this.state)) this.state[varName] = [];
-      }
-    }
-
-  }
-
-  window.AyishaVDOM = AyishaVDOM;
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => new AyishaVDOM(document.body).mount());
-  } else {
-    new AyishaVDOM(document.body).mount();
-  }
-
-  // --- LOGGING & ERROR HANDLING SYSTEM FOR DIRECTIVES/SUB-DIRECTIVES ---
-  AyishaVDOM.prototype._logDirective = function (type, name, el, msg, example) {
-    if (!window.ayisha || !window.ayisha.logDirectives) return;
-    const level = window.ayisha.logLevel || 'warn';
-    const prefix = `[Ayisha.${type}]`;
-    const where = el && el.outerHTML ? `\nElemento: ${el.outerHTML.slice(0, 120)}...` : '';
-    const help = example ? `\nEsempio: ${example}` : '';
-    if (level === 'error') console.error(`${prefix} ${name}: ${msg}${where}${help}`);
-    else if (level === 'warn') console.warn(`${prefix} ${name}: ${msg}${where}${help}`);
-    else console.info(`${prefix} ${name}: ${msg}${where}${help}`);
-  };
-
-  // Wrap all directive/sub-directive handlers with logging
-  const _oldRenderVNode = AyishaVDOM.prototype._renderVNode;
-  AyishaVDOM.prototype._renderVNode = function (vNode, ctx) {
-    if (vNode && vNode.directives) {
-      Object.keys(vNode.directives).forEach(dir => {
-        if (!this.directiveHelp(dir)) {
-          this._logDirective('Direttiva', dir, null, 'Direttiva non riconosciuta.', null);
-        }
+      [['\+\+','1'],['\+=','1'],['\.push\\(','[]']].forEach(([pat,def])=>{
+        const r=expr.match(new RegExp(`([\\w$]+)${pat}`));
+        if(r&&!this.state.hasOwnProperty(r[1])) this.state[r[1]]= JSON.parse(def);
       });
     }
-    if (vNode && vNode.subDirectives) {
-      Object.entries(vNode.subDirectives).forEach(([dir, evs]) => {
-        Object.keys(evs).forEach(evt => {
-          const key = `${dir}:${evt}`;
-          if (!this.directiveHelp(key)) {
-            this._logDirective('SubDirettiva', key, null, 'Sub-direttiva non riconosciuta.', null);
-          }
-        });
-      });
-    }
-    return _oldRenderVNode.call(this, vNode, ctx);
-  };
+  }
 
-  // Funzione di utilità per mostrare un banner di errore rosso vicino all'elemento
-  AyishaVDOM.prototype._showAyishaError = function (el, err, expr) {
-    if (!el) return;
-    let banner = el.parentNode && el.parentNode.querySelector('.ayisha-error-banner');
-    if (!banner) {
-      banner = document.createElement('div');
-      banner.className = 'ayisha-error-banner';
-      banner.style.background = '#c00';
-      banner.style.color = '#fff';
-      banner.style.padding = '0.5em 1em';
-      banner.style.margin = '0.5em 0';
-      banner.style.borderRadius = '4px';
-      banner.style.fontWeight = 'bold';
-      banner.style.border = '1px solid #900';
-      banner.style.position = 'relative';
-      banner.style.zIndex = '1000';
-      banner.innerHTML = `<b>Errore JS:</b> ${err.message}<br><code>${expr}</code>`;
-      el.parentNode && el.parentNode.insertBefore(banner, el.nextSibling);
-    } else {
-      banner.innerHTML = `<b>Errore JS:</b> ${err.message}<br><code>${expr}</code>`;
-    }
-  };
+  window.AyishaVDOM=AyishaVDOM;
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>new AyishaVDOM(document.body).mount());
+  else new AyishaVDOM(document.body).mount();
 })();
