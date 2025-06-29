@@ -50,14 +50,16 @@
         <button @click="userId=1">Reset User</button>
 
         <button @click="userId++">User++</button>
-        <button @click="fooBar++">User++</button>
-
+        
         <div @watch="userId=>pippo='esiste'" @log></div>
-
+        <div @watch="pippo=>ben=true" @log></div>
 
     <button @click="pippo = 'ciao'">Pippo</button>
+    <button @click="ben = false">Ben</button>
+
 
 {{pippo}}
+{{ben}}
 
       </div>
       <div @fetch="postsUrl" @result="aaa" @watch="postsUrl"></div>
@@ -112,8 +114,6 @@
 
 
   <init>
-    userId = 1;
-    pippo = 'ciao'
     state.postsUrl = `https://jsonplaceholder.typicode.com/posts?userId=${state.userId}`;
     state.posts = [];
     state.newTitle = '';

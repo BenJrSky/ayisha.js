@@ -75,16 +75,22 @@
     }
 
     // @reactivity - Make state reactive
-    _makeReactive() {
-      this.state = new Proxy(this.state, {
-        set: (obj, prop, val) => {
-          obj[prop] = val;
-          (this.watchers[prop] || []).forEach(fn => fn(val));
-          this.render();
-          return true;
-        }
-      });
+_makeReactive() {
+  this.state = new Proxy(this.state, {
+    set: (obj, prop, val) => {
+      const old = obj[prop];
+      // se uguali (anche come oggetti), non scattare watcher né render
+      if (JSON.stringify(old) === JSON.stringify(val)) {
+        obj[prop] = val;
+        return true;
+      }
+      obj[prop] = val;
+      (this.watchers[prop] || []).forEach(fn => fn(val));
+      this.render();
+      return true;
     }
+  });
+}
 
     // @watch - Add watcher for a property
     addWatcher(prop, fn) {
@@ -651,7 +657,7 @@
           let url = null, method = 'GET', headers = {}, payload = null;
           try {
             url = this._evalExpr(fetchExpr, ctx);
-          } catch {}
+          } catch { }
           // Se la fetch è una subdirettiva con assegnazione (es: url=...), estrai url
           if (!url && typeof fetchExpr === 'string') {
             const m = fetchExpr.match(/([\w$]+)\s*=\s*(.+)/);
@@ -671,7 +677,7 @@
             let asString = '';
             try {
               asString = this._evalAttrValue(fetchExpr, ctx);
-            } catch {}
+            } catch { }
             if (asString && typeof asString === 'string' && asString !== '[object Object]') {
               urlHtml = `<span style=\"color:#0ff\">${asString}</span>`;
             } else {
@@ -893,8 +899,8 @@
             dir === '@model' || dir === '@focus' || dir === '@blur' || dir === '@change' ||
             dir === '@input' || dir === '@class' || dir === '@text'
           ) && (
-            evt === 'click' || evt === 'hover' || evt === 'focus' || evt === 'input' || evt === 'change' || evt === 'blur'
-          );
+              evt === 'click' || evt === 'hover' || evt === 'focus' || evt === 'input' || evt === 'change' || evt === 'blur'
+            );
           if (isEvent) {
             if (dir === '@fetch') {
               el.addEventListener(eventName, e => {
@@ -1104,28 +1110,35 @@
         }
       }
 
-      // @watch (generic, not fetch)
+      // @watch (generic, non-fetch)
       if (vNode.directives['@watch'] && !vNode.directives['@fetch']) {
         vNode.directives['@watch'].split(',').forEach(watchExpr => {
           watchExpr = watchExpr.trim();
-          let match = watchExpr.match(/^(\w+)\s*=>\s*(.+)$/) || watchExpr.match(/^(\w+)\s*:\s*(.+)$/);
+          const match = watchExpr.match(/^(\w+)\s*=>\s*(.+)$/)
+            || watchExpr.match(/^(\w+)\s*:\s*(.+)$/);
           if (match) {
             const prop = match[1];
             const code = match[2];
+
             this.addWatcher(prop, function (newVal) {
               const state = window.ayisha.state;
+
+              // ← NUOVA RIGA: assicuro che la var esista **al momento del callback**
+              window.ayisha._ensureVarInState(code);
+
               try {
-                const pushMatch = code.match(/state\.(\w+)\.push\s*\(/) || code.match(/(\w+)\.push\s*\(/);
+                // Se usa .push() inizializzo l’array
+                const pushMatch = code.match(/(\w+)\.push\s*\(/);
                 if (pushMatch) {
                   const arrName = pushMatch[1];
                   if (!state[arrName]) state[arrName] = [];
                 }
+                // Eseguo il codice dentro with(state){…}
                 new Function('state', 'newVal', `
-                  with(state){ 
-                    const {${Object.keys(state).join(',')}} = state;
-                    ${code}
-                  }
-                `)(state, newVal);
+            with(state){
+              ${code}
+            }
+          `)(state, newVal);
               } catch (e) {
                 console.error('Watcher error:', e, code);
               }
@@ -1392,7 +1405,7 @@
   };
 
   // Funzione di utilità per mostrare un banner di errore rosso vicino all'elemento
-  AyishaVDOM.prototype._showAyishaError = function(el, err, expr) {
+  AyishaVDOM.prototype._showAyishaError = function (el, err, expr) {
     if (!el) return;
     let banner = el.parentNode && el.parentNode.querySelector('.ayisha-error-banner');
     if (!banner) {
