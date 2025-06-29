@@ -84,13 +84,21 @@
       <form>
         <input @model="newTitle" placeholder="Titolo">
         <input @model="newBody" placeholder="Contenuto">
-        <button type="button" @click="addPost()">Aggiungi Post</button>
+        <button type="button" @click="posts.push({title:newTitle,body:newBody}); newTitle=null; newBody=null">Aggiungi Post</button>
       </form>
       <div @if="lastPost">
         <h4>Ultimo post aggiunto:</h4>
         <pre @text="JSON.stringify(lastPost, null, 2)"></pre>
       </div>
     </div>
+
+    <ul>
+            <li @for="item in posts" @key="item.id">
+                <span @text="item.title"></span></span>
+                <button @click="state.posts = state.posts.filter(i => i.id !== item.id)"
+                    style="margin-left: 10px;">Remove</button>
+            </li>
+        </ul>
 
     <div class="example">
       <h2>Funzionalità Avanzate</h2>

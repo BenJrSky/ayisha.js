@@ -1337,7 +1337,7 @@ _makeReactive() {
         const varName = m[1];
         if (!(varName in this.state)) {
           // Se è un assegnamento stringa
-          let valMatch = expr.match(/=\s*['"](.*)['"]/);
+          let valMatch = expr.match(/=\s*['"](.*)['\"]/);
           if (valMatch) this.state[varName] = valMatch[1];
           // Se è un assegnamento numerico
           else if (/=\s*\d+/.test(expr)) this.state[varName] = parseInt(expr.split('=')[1]);
@@ -1348,12 +1348,12 @@ _makeReactive() {
       m = expr.match(/([\w$]+)\s*\+\+/);
       if (m) {
         const varName = m[1];
-        if (!(varName in this.state)) this.state[varName] = 1;
+        if (!(varName in this.state) || this.state[varName] == null) this.state[varName] = 1;
       }
       m = expr.match(/([\w$]+)\s*\+=/);
       if (m) {
         const varName = m[1];
-        if (!(varName in this.state)) this.state[varName] = 1;
+        if (!(varName in this.state) || this.state[varName] == null) this.state[varName] = 1;
       }
       // foo.push(...)
       m = expr.match(/([\w$]+)\.push\s*\(/);
