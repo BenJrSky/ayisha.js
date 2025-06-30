@@ -70,7 +70,29 @@
 
     ensureVarInState(expr) {
       if (typeof expr !== 'string') return;
-      
+
+      // Support for nested object creation: form.email, foo.bar.baz
+      const createNested = path => {
+        if (!Array.isArray(path) || !path.length) return;
+        let obj = this.state;
+        for (let i = 0; i < path.length; i++) {
+          const key = path[i];
+          if (!(key in obj) || obj[key] == null) {
+            // If last, assign undefined, else assign {}
+            obj[key] = (i === path.length - 1) ? undefined : {};
+          }
+          obj = obj[key];
+        }
+      };
+
+      // Match nested property access (form.email, foo.bar.baz)
+      const nestedMatch = expr.match(/([\w$]+(?:\.[\w$]+)+)/);
+      if (nestedMatch) {
+        const path = nestedMatch[1].split('.');
+        createNested(path);
+      }
+
+      // Existing logic for assignments, increments, push, etc.
       let m = expr.match(/([\w$]+)\s*=/);
       if (m) {
         const varName = m[1];
@@ -81,19 +103,19 @@
           else this.state[varName] = undefined;
         }
       }
-      
+
       m = expr.match(/([\w$]+)\s*\+\+/);
       if (m) {
         const varName = m[1];
         if (!(varName in this.state) || this.state[varName] == null) this.state[varName] = 1;
       }
-      
+
       m = expr.match(/([\w$]+)\s*\+=/);
       if (m) {
         const varName = m[1];
         if (!(varName in this.state) || this.state[varName] == null) this.state[varName] = 1;
       }
-      
+
       m = expr.match(/([\w$]+)\.push\s*\(/);
       if (m) {
         const varName = m[1];
