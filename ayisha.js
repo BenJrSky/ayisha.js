@@ -522,16 +522,93 @@
 
     bindValidation(el, rulesStr) {
       const rules = rulesStr.split(',').map(r => r.trim());
+      // Quick validators
+      const validators = {
+        email: {
+          test: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
+          msg: 'Invalid email address'
+        },
+        cf: {
+          test: v => /^[A-Z0-9]{16}$/.test(v),
+          msg: 'Invalid tax code'
+        },
+        required: {
+          test: v => v && v.length > 0,
+          msg: 'This field is required'
+        },
+        minLength: {
+          test: (v, n) => v.length >= n,
+          msg: n => `Minimum ${n} characters required`
+        }
+        // Add more quick rules here if needed
+      };
+      // Error element
+      let errorEl = null;
+      const showError = msg => {
+        if (!errorEl) {
+          errorEl = document.createElement('div');
+          errorEl.className = 'ayisha-validate-error';
+          errorEl.style.color = '#c00';
+          errorEl.style.fontSize = '0.9em';
+          errorEl.style.marginTop = '0.2em';
+          el.insertAdjacentElement('afterend', errorEl);
+        }
+        errorEl.textContent = msg;
+      };
+      const clearError = () => {
+        if (errorEl) errorEl.textContent = '';
+      };
       el.addEventListener('input', () => {
         let valid = true;
-        rules.forEach(rule => {
-          if (rule === 'required' && !el.value) valid = false;
-          if (rule.startsWith('minLength')) {
+        let errorMsg = '';
+        for (const rule of rules) {
+          if (rule === 'required') {
+            if (!validators.required.test(el.value)) {
+              valid = false;
+              errorMsg = validators.required.msg;
+              break;
+            }
+          } else if (rule.startsWith('minLength')) {
             const m = parseInt(rule.split(':')[1], 10);
-            if (el.value.length < m) valid = false;
+            if (!validators.minLength.test(el.value, m)) {
+              valid = false;
+              errorMsg = validators.minLength.msg(m);
+              break;
+            }
+          } else if (rule === 'email') {
+            if (!validators.email.test(el.value)) {
+              valid = false;
+              errorMsg = validators.email.msg;
+              break;
+            }
+          } else if (rule === 'cf') {
+            if (!validators.cf.test(el.value)) {
+              valid = false;
+              errorMsg = validators.cf.msg;
+              break;
+            }
+          } else if (rule.startsWith('regex:')) {
+            const regexStr = rule.slice(6);
+            let pattern = regexStr;
+            let flags = '';
+            // Support regex:/pattern/flags
+            const match = regexStr.match(/^\/(.*)\/(\w*)$/);
+            if (match) {
+              pattern = match[1];
+              flags = match[2];
+            }
+            const re = new RegExp(pattern, flags);
+            if (!re.test(el.value)) {
+              valid = false;
+              errorMsg = 'Invalid format';
+              break;
+            }
           }
-        });
+          // Add more custom rules here
+        }
         el.classList.toggle('invalid', !valid);
+        if (!valid) showError(errorMsg);
+        else clearError();
       });
     }
 
