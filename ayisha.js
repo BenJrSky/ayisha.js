@@ -524,15 +524,13 @@
     }
 
     bindModel(el, key, ctx) {
-      // Assicura che la variabile esista nello state prima del binding
       this.evaluator.ensureVarInState(key, true);
-      // Se la variabile esiste ma non è stringa, forzala a stringa
       let ref = this.evaluator.state;
       if (key.includes('.')) {
         const path = key.split('.');
         for (let i = 0; i < path.length - 1; i++) ref = ref[path[i]];
         const last = path[path.length - 1];
-        if (typeof ref[last] !== 'string') ref[last] = '';
+        if (typeof ref[last] !== 'string') ref[last] = ''; 
       } else {
         if (typeof this.evaluator.state[key] !== 'string') this.evaluator.state[key] = '';
       }
