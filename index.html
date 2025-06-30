@@ -28,9 +28,16 @@
 <body>
   <component @src="components/navbar.html"></component>
 
-  <div @if="posts">
+  <div @if="posts.length == 0">
     <p>Nessun post trovato.</p>
   </div>
+
+
+  <div @if="userId">
+    <p>User {{userId}}</p>
+  </div>
+
+  <component @src="test.html"></component>
 
 
   <div class="container">

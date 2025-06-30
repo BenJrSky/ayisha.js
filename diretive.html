@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ayisha.js - Tutte le direttive e sub-direttive</title>
+  <script src="ayisha.js"></script>
+  <style>
+    .example-block { border:1px solid #ccc; margin:1em 0; padding:1em; border-radius:6px; background:#fafaff; }
+    .example-block h3 { margin-top:0; }
+    .ayisha-error-banner { background: #c00; color: #fff; padding: 0.5em 1em; border-radius: 4px; margin: 0.5em 0; font-weight: bold; }
+    .ayisha-console-wrapper { background: #222; color: #fff; padding: 1em; border-radius: 4px; margin-top: 1em; font-size: 0.95em; font-family: monospace; border: 1px solid #444; }
+    .liked { color: red; }
+  </style>
+</head>
+<body>
+  <h1>Ayisha.js - Tutte le direttive e sub-direttive</h1>
+  <init>
+    state.foo = 1;
+    state.bar = 'test';
+    state.arr = [1,2,3];
+    state.obj = {a:1, b:2};
+    state.cond = true;
+    state.text = 'Ciao!';
+    state.classTest = false;
+    state.styleTest = 'blue';
+    state.email = '';
+    state.password = '';
+    state.page = 'home';
+    state.filter = '';
+    state.userId = 1;
+    state.user = null;
+    state.posts = [];
+    state.liked = false;
+    state.anim = false;
+    state.focused = false;
+    state.result = null;
+    state.data = null;
+    state.inputVal = '';
+    state.changeVal = '';
+    state.blurVal = '';
+    state.hoverVal = '';
+    state.setVal = '';
+    state.modelVal = '';
+    state.fetchVal = '';
+    state.log = [];
+  </init>
+
+  <div class="example-block">
+    <h3>@if, @show, @hide</h3>
+    <button @click="cond = !cond">Toggle cond ({{cond}})</button>
+    <div @if="cond">Mostrato se cond=true</div>
+    <div @show="cond">Show via CSS (cond=true)</div>
+    <div @hide="cond">Hide via CSS (cond=true)</div>
+  </div>
+
+  <div class="example-block">
+    <h3>@for, @key</h3>
+    <ul>
+      <li @for="item, i in result4" @key="i">Item {{i}}: {{item}}</li>
+    </ul>
+  </div>
+
+  <div class="example-block">
+    <h3>@model, @model:input, @model:change, @model:focus, @model:blur</h3>
+    <input @model="modelVal" placeholder="@model">
+    <input @model:input="inputVal" placeholder="@model:input">
+    <input @model:change="changeVal" placeholder="@model:change">
+    <input @model:focus="focused" placeholder="@model:focus">
+    <input @model:blur="blurVal" placeholder="@model:blur">
+    <div>modelVal: {{modelVal}}, inputVal: {{inputVal}}, changeVal: {{changeVal}}, focused: {{focused}}, blurVal: {{blurVal}}</div>
+  </div>
+
+  <div class="example-block">
+    <h3>@click, @hover, @focus, @input, @change, @blur</h3>
+    <button @click="foo++">@click (foo={{foo}})</button>
+    <button @hover="bar='hovered'">@hover (bar={{bar}})</button>
+    <input @focus="focusTest=true" @blur="focusTest=false" placeholder="@focus/@blur">
+    <input @input="inputVal=$event.target.value" placeholder="@input">
+    <input @change="changeVal=$event.target.value" placeholder="@change">
+    <div>focusTest: {{focusTest}}, inputVal: {{inputVal}}, changeVal: {{changeVal}}</div>
+  </div>
+
+  <div class="example-block">
+    <h3>@text, @text:click, @text:hover, @text:input, @text:focus, @text:blur</h3>
+    <span @text="text"></span>
+    <span @text:click="'Clicked!'">(click me)</span>
+    <span @text:hover="'Hovered!'">(hover me)</span>
+    <input @text:input="inputVal" placeholder="@text:input">
+    <input @text:focus="'Focused!'" placeholder="@text:focus">
+    <input @text:blur="'Blurred!'" placeholder="@text:blur">
+  </div>
+
+  <div class="example-block">
+    <h3>@class, @class:click, @class:hover, @class:input, @class:change, @class:focus, @class:blur</h3>
+    <button @class="{liked: liked}" @click="liked=!liked">Toggle Like</button>
+    <button @class:click="{liked: true}">@class:click</button>
+    <button @class:hover="{liked: true}">@class:hover</button>
+    <input @class:input="{liked: inputVal==='like'}" placeholder="@class:input">
+    <input @class:change="{liked: changeVal==='like'}" placeholder="@class:change">
+    <input @class:focus="{liked: focused}" placeholder="@class:focus">
+    <input @class:blur="{liked: blurVal==='like'}" placeholder="@class:blur">
+  </div>
+
+  <div class="example-block">
+    <h3>@style</h3>
+    <div @style="{color: styleTest}">Testo colorato ({{styleTest}})</div>
+    <input @model="styleTest" placeholder="Colore">
+  </div>
+
+  <div class="example-block">
+    <h3>@validate</h3>
+    <input @model="email" @validate="required,email" placeholder="Email">
+    <input @model="password" @validate="required,minLength:6" type="password" placeholder="Password">
+  </div>
+
+  <div class="example-block">
+    <h3>@set:click, @set:input, @set:change, @set:focus, @set:blur</h3>
+    <button @set:click="setVal='clicked'">@set:click</button>
+    <input @set:input="setVal='input'" placeholder="@set:input">
+    <input @set:change="setVal='change'" placeholder="@set:change">
+    <input @set:focus="setVal='focus'" placeholder="@set:focus">
+    <input @set:blur="setVal='blur'" placeholder="@set:blur">
+    <div>setVal: {{setVal}}</div>
+  </div>
+@@@
+  <div class="example-block">
+    <h3>@fetch, @fetch:click, @fetch:hover, @fetch:input, @fetch:change</h3>
+    <div @fetch="'https://jsonplaceholder.typicode.com/users/1'" @result="data">@fetch (users/1): {{data && data.name}}</div>
+    <button @fetch:click="'https://jsonplaceholder.typicode.com/posts?userId=1'" @result="result">@fetch:click</button>
+    <span>Result: {{result && result.length}}</span>
+    <button @fetch:hover="'https://jsonplaceholder.typicode.com/posts?userId=2'" @result="result2">@fetch:hover</button>
+    <input @fetch:input="'https://jsonplaceholder.typicode.com/posts?userId=3'" @result="result3" placeholder="@fetch:input">
+    <input @fetch:change="'https://jsonplaceholder.typicode.com/posts?userId=4'" @result="result4" placeholder="@fetch:change">
+    <div>result2: {{result2 && result2.length}}, result3: {{result3 && result3.length}}, result4: {{result4 && result4.length}}</div>
+  </div>
+
+  <div class="example-block">
+    <h3>@result</h3>
+    <div>@result: {{result}}</div>
+  </div>
+
+  <div class="example-block">
+    <h3>@watch</h3>
+    <input @model="userId" type="number" min="1" max="10" placeholder="User ID">
+    <div @fetch="`https://jsonplaceholder.typicode.com/users/${userId}`" @result="user" @watch="userId">User: {{user && user.name}}</div>
+    <div @watch="userId: log.push('UserId changed to ' + userId)"></div>
+    <ul>
+      <li @for="entry in log" @text="entry"></li>
+    </ul>
+  </div>
+
+  <div class="example-block">
+    <h3>@component, @src</h3>
+    <component @src="components/posts.html"></component>
+  </div>
+
+  <div class="example-block">
+    <h3>@switch, @case, @default</h3>
+    <select @model="page">
+      <option value="home">Home</option>
+      <option value="about">About</option>
+    </select>
+    <div @switch="page">
+      <div @case="'home'">Home page</div>
+      <div @case="'about'">About page</div>
+      <div @default>Other</div>
+    </div>
+  </div>
+
+  <div class="example-block">
+    <h3>@source, @map, @filter, @reduce, @initial</h3>
+    <div @source="arr" @map="item*2" @result="doubled"></div>
+    <div @source="arr" @filter="item>1" @result="filtered"></div>
+    <div @source="arr" @reduce="(acc, item) => acc+item" @initial="0" @result="sum"></div>
+    <div>doubled: {{doubled}}, filtered: {{filtered}}, sum: {{sum}}</div>
+  </div>
+
+  <div class="example-block">
+    <h3>@animate</h3>
+    <div @animate="fade-in">Animazione fade-in</div>
+  </div>
+
+  <div class="example-block">
+    <h3>@state, @log</h3>
+    <div @state></div>
+  </div>
+
+</body>
+</html>
