@@ -951,7 +951,7 @@
                         <div class="form-group">
                             <label>Codice Fiscale (solo lettere e numeri, 16 caratteri):</label>
                             <input name="cf" @model="codiceFiscale" 
-                                   @validate="required,regex:/^[A-Z0-9]{16}$/,minLength:16,maxLength:16"
+                                   @validate="/^[A-Z0-9]{16}$/"
                                    placeholder="RSSMRA80A01H501M" 
                                    style="text-transform: uppercase;">
                             <div @if="!cf_valid" class="validation-message error">
@@ -1067,65 +1067,6 @@
             </p>
         </div>
     </footer>
-
-    <!-- Initialize Ayisha.js state -->
-    <init>
-        // Counter example
-        state.count = 0;
-
-        // Todo example
-        state.todos = [
-            { id: 1, text: 'Impara Ayisha.js', done: false },
-            { id: 2, text: 'Crea un progetto fantastico', done: false }
-        ];
-        state.newTodo = '';
-
-        // Conditional rendering example
-        state.showAlert = false;
-
-        // Form example
-        state.form = { 
-            name: '', 
-            email: '', 
-            phone: '',
-            submitted: false 
-        };
-
-        // Advanced validation example
-        state.codiceFiscale = '';
-        state.eta = '';
-
-        // Playground
-        state.playgroundName = '';
-        state.playgroundCount = 0;
-
-        // Navigation scroll effect
-        window.addEventListener('scroll', () => {
-            const navbar = document.getElementById('navbar');
-            if (window.scrollY > 100) {
-                navbar.classList.add('scrolled');
-            } else {
-                navbar.classList.remove('scrolled');
-            }
-        });
-
-        // Smooth scroll for navigation links
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const targetId = link.getAttribute('href');
-                const targetSection = document.querySelector(targetId);
-                if (targetSection) {
-                    targetSection.scrollIntoView({ 
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
-            });
-        });
-    </init>
-
-    <!-- Include Ayisha.js (put the modular code here or link to ayisha.js file) -->
     <script src="ayisha.js"></script>
 </body>
 </html>

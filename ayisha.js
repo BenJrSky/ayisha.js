@@ -71,28 +71,24 @@
     ensureVarInState(expr) {
       if (typeof expr !== 'string') return;
 
-      // Support for nested object creation: form.email, foo.bar.baz
-      const createNested = path => {
-        if (!Array.isArray(path) || !path.length) return;
+      // Gestione variabili annidate tipo form.name o foo.bar.baz
+      const dotMatch = expr.match(/([\w$][\w\d$]*(?:\.[\w$][\w\d$]*)+)/);
+      if (dotMatch) {
+        const path = dotMatch[1].split('.');
         let obj = this.state;
         for (let i = 0; i < path.length; i++) {
           const key = path[i];
-          if (!(key in obj) || obj[key] == null) {
-            // If last, assign undefined, else assign {}
+          if (!(key in obj)) {
+            // Se è l'ultimo, lascia undefined, altrimenti crea oggetto
             obj[key] = (i === path.length - 1) ? undefined : {};
+          } else if (i < path.length - 1 && typeof obj[key] !== 'object') {
+            // Se esiste ma non è oggetto, sovrascrivi
+            obj[key] = {};
           }
           obj = obj[key];
         }
-      };
-
-      // Match nested property access (form.email, foo.bar.baz)
-      const nestedMatch = expr.match(/([\w$]+(?:\.[\w$]+)+)/);
-      if (nestedMatch) {
-        const path = nestedMatch[1].split('.');
-        createNested(path);
       }
 
-      // Existing logic for assignments, increments, push, etc.
       let m = expr.match(/([\w$]+)\s*=/);
       if (m) {
         const varName = m[1];
@@ -528,6 +524,9 @@
     }
 
     bindModel(el, key, ctx) {
+      // Assicura che la variabile esista nello state prima del binding
+      this.evaluator.ensureVarInState(key);
+      
       const update = () => {
         const val = this.evaluator.evalExpr(key, ctx);
         if (el.type === 'checkbox') el.checked = !!val;
@@ -537,101 +536,151 @@
       this.modelBindings.push({ el, update });
       update();
       el.addEventListener('input', () => {
-        new Function('state', 'ctx', 'value', `with(state){with(ctx||{}){${key}=value}}`)(this.evaluator.state, ctx, el.value);
+        // Assicura di nuovo che la variabile esista prima dell'assegnamento
+        this.evaluator.ensureVarInState(key);
+        try {
+          new Function('state', 'ctx', 'value', `with(state){with(ctx||{}){${key}=value}}`)(this.evaluator.state, ctx, el.value);
+        } catch (error) {
+          console.error('Error in model binding:', error, 'key:', key);
+          // Fallback: try to set the value directly
+          this.evaluator.evalExpr(`${key} = "${el.value}"`, ctx);
+        }
         this.renderCallback();
       });
     }
 
-    bindValidation(el, rulesStr) {
+    bindValidation(el, rulesStr, modelVar = null) {
       const rules = rulesStr.split(',').map(r => r.trim());
-      // Quick validators
-      const validators = {
-        email: {
-          test: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
-          msg: 'Invalid email address'
-        },
-        cf: {
-          test: v => /^[A-Z0-9]{16}$/.test(v),
-          msg: 'Invalid tax code'
-        },
-        required: {
-          test: v => v && v.length > 0,
-          msg: 'This field is required'
-        },
-        minLength: {
-          test: (v, n) => v.length >= n,
-          msg: n => `Minimum ${n} characters required`
-        }
-        // Add more quick rules here if needed
-      };
-      // Error element
-      let errorEl = null;
-      const showError = msg => {
-        if (!errorEl) {
-          errorEl = document.createElement('div');
-          errorEl.className = 'ayisha-validate-error';
-          errorEl.style.color = '#c00';
-          errorEl.style.fontSize = '0.9em';
-          errorEl.style.marginTop = '0.2em';
-          el.insertAdjacentElement('afterend', errorEl);
-        }
-        errorEl.textContent = msg;
-      };
-      const clearError = () => {
-        if (errorEl) errorEl.textContent = '';
-      };
-      el.addEventListener('input', () => {
+      
+      if (!modelVar) {
+        console.warn('@validate requires @model to be present on the same element');
+        return;
+      }
+      
+      // Assicura che state._validate esista
+      if (!this.evaluator.state._validate) {
+        this.evaluator.state._validate = {};
+      }
+      
+      // Inizializza la validazione a false
+      this.evaluator.state._validate[modelVar] = false;
+      
+      const validate = () => {
         let valid = true;
-        let errorMsg = '';
+        
         for (const rule of rules) {
           if (rule === 'required') {
-            if (!validators.required.test(el.value)) {
+            if (!el.value || !el.value.trim()) {
               valid = false;
-              errorMsg = validators.required.msg;
               break;
             }
-          } else if (rule.startsWith('minLength')) {
-            const m = parseInt(rule.split(':')[1], 10);
-            if (!validators.minLength.test(el.value, m)) {
+          } 
+          else if (rule.startsWith('minLength:')) {
+            const minLen = parseInt(rule.split(':')[1], 10);
+            if (el.value.length < minLen) {
               valid = false;
-              errorMsg = validators.minLength.msg(m);
-              break;
-            }
-          } else if (rule === 'email') {
-            if (!validators.email.test(el.value)) {
-              valid = false;
-              errorMsg = validators.email.msg;
-              break;
-            }
-          } else if (rule === 'cf') {
-            if (!validators.cf.test(el.value)) {
-              valid = false;
-              errorMsg = validators.cf.msg;
-              break;
-            }
-          } else if (rule.startsWith('regex:')) {
-            const regexStr = rule.slice(6);
-            let pattern = regexStr;
-            let flags = '';
-            // Support regex:/pattern/flags
-            const match = regexStr.match(/^\/(.*)\/(\w*)$/);
-            if (match) {
-              pattern = match[1];
-              flags = match[2];
-            }
-            const re = new RegExp(pattern, flags);
-            if (!re.test(el.value)) {
-              valid = false;
-              errorMsg = 'Invalid format';
               break;
             }
           }
-          // Add more custom rules here
+          else if (rule.startsWith('maxLength:')) {
+            const maxLen = parseInt(rule.split(':')[1], 10);
+            if (el.value.length > maxLen) {
+              valid = false;
+              break;
+            }
+          }
+          else if (rule.startsWith('min:')) {
+            const minVal = parseFloat(rule.split(':')[1]);
+            const val = parseFloat(el.value);
+            if (isNaN(val) || val < minVal) {
+              valid = false;
+              break;
+            }
+          }
+          else if (rule.startsWith('max:')) {
+            const maxVal = parseFloat(rule.split(':')[1]);
+            const val = parseFloat(el.value);
+            if (isNaN(val) || val > maxVal) {
+              valid = false;
+              break;
+            }
+          }
+          else if (rule === 'email') {
+            const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            if (el.value && !emailRegex.test(el.value)) {
+              valid = false;
+              break;
+            }
+          }
+          else if (rule === 'phone') {
+            const phoneRegex = /^(\+39|0039|39)?[\s\-]?([0-9]{2,3})[\s\-]?([0-9]{6,7})$/;
+            if (el.value && !phoneRegex.test(el.value)) {
+              valid = false;
+              break;
+            }
+          }
+          else if (rule === 'url') {
+            const urlRegex = /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/;
+            if (el.value && !urlRegex.test(el.value)) {
+              valid = false;
+              break;
+            }
+          }
+          else if (rule.startsWith('/') && rule.endsWith('/')) {
+            // Regex diretta: /pattern/
+            try {
+              const pattern = rule.slice(1, -1); // Rimuove i delimitatori /
+              const regex = new RegExp(pattern);
+              if (el.value && !regex.test(el.value)) {
+                valid = false;
+                break;
+              }
+            } catch (e) {
+              console.error('Invalid regex pattern:', rule, e);
+              valid = false;
+              break;
+            }
+          }
+          else if (rule.startsWith('regex:')) {
+            // Supporto alternativo: regex:/pattern/ o regex:pattern
+            try {
+              let pattern = rule.substring(6); // Rimuove 'regex:'
+              if (pattern.startsWith('/') && pattern.endsWith('/')) {
+                pattern = pattern.slice(1, -1);
+              }
+              const regex = new RegExp(pattern);
+              if (el.value && !regex.test(el.value)) {
+                valid = false;
+                break;
+              }
+            } catch (e) {
+              console.error('Invalid regex pattern:', rule, e);
+              valid = false;
+              break;
+            }
+          }
         }
+        
+        // Aggiorna state._validate[variabile]
+        this.evaluator.state._validate[modelVar] = valid;
+        
+        // Applica classi CSS
         el.classList.toggle('invalid', !valid);
-        if (!valid) showError(errorMsg);
-        else clearError();
+        el.classList.toggle('valid', valid && el.value.length > 0);
+        
+        return valid;
+      };
+      
+      // Validazione iniziale
+      validate();
+      
+      // Validazione su input e blur
+      el.addEventListener('input', () => {
+        validate();
+        this.renderCallback();
       });
+      
+      el.addEventListener('blur', validate);
     }
 
     updateBindings() {
@@ -734,8 +783,8 @@
       return this.bindingManager.bindModel(el, key, ctx);
     }
 
-    _bindValidation(el, rulesStr) {
-      return this.bindingManager.bindValidation(el, rulesStr);
+    _bindValidation(el, rulesStr, modelVar = null) {
+      return this.bindingManager.bindValidation(el, rulesStr, modelVar);
     }
 
     _showAyishaError(el, err, expr) {
@@ -1222,7 +1271,8 @@
 
       // @validate
       if (vNode.directives['@validate']) {
-        this.bindingManager.bindValidation(el, vNode.directives['@validate']);
+        const modelVar = vNode.directives['@model'] || null;
+        this.bindingManager.bindValidation(el, vNode.directives['@validate'], modelVar);
       }
 
       // @link
