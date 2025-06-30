@@ -68,7 +68,7 @@
       return /\{\{.*?\}\}|\{[\w$.]+\}/.test(expr);
     }
 
-    ensureVarInState(expr) {
+    ensureVarInState(expr, forceString = false) {
       if (typeof expr !== 'string') return;
 
       // Gestione variabili annidate tipo form.name o foo.bar.baz
@@ -80,7 +80,7 @@
           const key = path[i];
           if (!(key in obj)) {
             // Se è l'ultimo, lascia undefined, altrimenti crea oggetto
-            obj[key] = (i === path.length - 1) ? undefined : {};
+            obj[key] = (i === path.length - 1) ? (forceString ? '' : undefined) : {};
           } else if (i < path.length - 1 && typeof obj[key] !== 'object') {
             // Se esiste ma non è oggetto, sovrascrivi
             obj[key] = {};
@@ -96,7 +96,7 @@
           let valMatch = expr.match(/=\s*['"](.*)['\"]/);
           if (valMatch) this.state[varName] = valMatch[1];
           else if (/=\s*\d+/.test(expr)) this.state[varName] = parseInt(expr.split('=')[1]);
-          else this.state[varName] = undefined;
+          else this.state[varName] = forceString ? '' : undefined;
         }
       }
 
@@ -525,8 +525,17 @@
 
     bindModel(el, key, ctx) {
       // Assicura che la variabile esista nello state prima del binding
-      this.evaluator.ensureVarInState(key);
-      
+      this.evaluator.ensureVarInState(key, true);
+      // Se la variabile esiste ma non è stringa, forzala a stringa
+      let ref = this.evaluator.state;
+      if (key.includes('.')) {
+        const path = key.split('.');
+        for (let i = 0; i < path.length - 1; i++) ref = ref[path[i]];
+        const last = path[path.length - 1];
+        if (typeof ref[last] !== 'string') ref[last] = '';
+      } else {
+        if (typeof this.evaluator.state[key] !== 'string') this.evaluator.state[key] = '';
+      }
       const update = () => {
         const val = this.evaluator.evalExpr(key, ctx);
         if (el.type === 'checkbox') el.checked = !!val;
@@ -537,7 +546,17 @@
       update();
       el.addEventListener('input', () => {
         // Assicura di nuovo che la variabile esista prima dell'assegnamento
-        this.evaluator.ensureVarInState(key);
+        this.evaluator.ensureVarInState(key, true);
+        // Forza sempre stringa
+        let ref = this.evaluator.state;
+        if (key.includes('.')) {
+          const path = key.split('.');
+          for (let i = 0; i < path.length - 1; i++) ref = ref[path[i]];
+          const last = path[path.length - 1];
+          if (typeof ref[last] !== 'string') ref[last] = '';
+        } else {
+          if (typeof this.evaluator.state[key] !== 'string') this.evaluator.state[key] = '';
+        }
         try {
           new Function('state', 'ctx', 'value', `with(state){with(ctx||{}){${key}=value}}`)(this.evaluator.state, ctx, el.value);
         } catch (error) {
@@ -865,7 +884,11 @@
       if (!vNode) return null;
 
       // Ensure variables exist in state
-      Object.values(vNode.directives || {}).forEach(expr => this.evaluator.ensureVarInState(expr));
+      Object.entries(vNode.directives || {}).forEach(([dir, expr]) => {
+        // For @model, force string initialization
+        if (dir === '@model') this.evaluator.ensureVarInState(expr, true);
+        else this.evaluator.ensureVarInState(expr);
+      });
       Object.values(vNode.subDirectives || {}).forEach(ev => Object.values(ev).forEach(expr => this.evaluator.ensureVarInState(expr)));
 
       // Error handling for unknown directives
@@ -1512,7 +1535,7 @@
           if (typeof val === 'object') return `<pre style=\"color:#fff;background:#333;padding:0.5em;border-radius:3px;overflow:auto;width:100%;\">${JSON.stringify(val, null, 2)}</pre>`;
           return `<span style=\"color:#0f0\">${String(val)}</span>`;
         } catch (err) {
-          return `<span style=\"color:#f55\">Errore: ${err.message}</span>`;
+          return `<span style=\"color:#f55">Errore: ${err.message}</span>`;
         }
       };
 
