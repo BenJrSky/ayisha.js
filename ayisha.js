@@ -68,8 +68,17 @@
       return /\{\{.*?\}\}|\{[\w$.]+\}/.test(expr);
     }
 
-    ensureVarInState(expr, forceString = false) {
+    ensureVarInState(expr, forceString = false, inputType = null) {
       if (typeof expr !== 'string') return;
+
+      // Patch: If inputType is 'number', always initialize as 0 if not present
+      if (inputType === 'number') {
+        const varName = expr.split('.')[0];
+        if (!(varName in this.state)) {
+          this.state[varName] = 0;
+          //console.log(`🧠 ensureVarInState: ${varName} = 0 (input[type=number])`);
+        }
+      }
 
       // CORREZIONE: Sistema intelligente di deduzione del tipo
       this.smartInitializeVariable(expr, forceString);
@@ -82,7 +91,7 @@
         for (let i = 0; i < path.length; i++) {
           const key = path[i];
           if (!(key in obj)) {
-            obj[key] = (i === path.length - 1) ? (forceString ? '' : undefined) : {};
+            obj[key] = (i === path.length - 1) ? (forceString ? undefined : undefined) : {};
           } else if (i < path.length - 1 && typeof obj[key] !== 'object') {
             obj[key] = {};
           }
@@ -98,10 +107,11 @@
       const numericOps = expr.match(/([\w$]+)(\+\+|--|\+=|\-=|\*=|\/=)/);
       if (numericOps) {
         const varName = numericOps[1];
-        if (!(varName in this.state)) {
-          this.state[varName] = 0;
-          console.log(`🧠 Smart init: ${varName} = 0 (detected numeric operation)`);
-        }
+        if (!(varName in this.state)) this.state[varName] = 0;
+        let currentValue = this.state[varName];
+        currentValue = (currentValue === '' || currentValue === undefined || currentValue === null) ? 0 : currentValue * 1;
+        if (isNaN(currentValue)) currentValue = 0;
+        this.state[varName] = currentValue;
         return;
       }
 
@@ -143,8 +153,8 @@
       if (stringOps) {
         const varName = stringOps[1];
         if (!(varName in this.state)) {
-          this.state[varName] = '';
-          console.log(`🧠 Smart init: ${varName} = '' (detected string operation)`);
+          this.state[varName] = undefined;
+          console.log(`🧠 Smart init: ${varName} = undefined (detected string operation)`);
         }
         return;
       }
@@ -154,7 +164,7 @@
       if (assignment) {
         const varName = assignment[1];
         const value = assignment[2].trim();
-        
+
         if (!(varName in this.state)) {
           if (/^\d+$/.test(value)) {
             this.state[varName] = parseInt(value);
@@ -172,8 +182,8 @@
             this.state[varName] = {};
             console.log(`🧠 Smart init: ${varName} = {} (detected object literal)`);
           } else if (forceString) {
-            this.state[varName] = '';
-            console.log(`🧠 Smart init: ${varName} = '' (forced string)`);
+            this.state[varName] = undefined;
+            console.log(`🧠 Smart init: ${varName} = undefined (forced string)`);
           }
         }
         return;
@@ -184,25 +194,18 @@
       if (singleVar) {
         const varName = singleVar[1];
         if (!(varName in this.state)) {
-          // Deduzione dal nome della variabile
           if (/count|total|index|id|size|length|number|num/i.test(varName)) {
             this.state[varName] = 0;
-            console.log(`🧠 Smart init: ${varName} = 0 (name suggests number)`);
           } else if (/items|list|array|data|results|errors/i.test(varName)) {
             this.state[varName] = [];
-            console.log(`🧠 Smart init: ${varName} = [] (name suggests array)`);
           } else if (/show|hide|is|has|can|should|valid|enable/i.test(varName)) {
             this.state[varName] = false;
-            console.log(`🧠 Smart init: ${varName} = false (name suggests boolean)`);
           } else if (/user|config|form|settings/i.test(varName)) {
             this.state[varName] = {};
-            console.log(`🧠 Smart init: ${varName} = {} (name suggests object)`);
           } else if (forceString) {
-            this.state[varName] = '';
-            console.log(`🧠 Smart init: ${varName} = '' (default string)`);
+            this.state[varName] = undefined;
           } else {
             this.state[varName] = undefined;
-            console.log(`🧠 Smart init: ${varName} = undefined (no hints)`);
           }
         }
       }
@@ -210,7 +213,6 @@
 
     ensureArrayVariable(varName) {
       if (!(varName in this.state) || !Array.isArray(this.state[varName])) {
-        // Usa una funzione helper per creare array in modo sicuro
         this.safeSetArrayVariable(varName, []);
       }
     }
@@ -382,7 +384,7 @@
     makeReactive() {
       // Segna lo stato come reattivo
       this.state._isReactive = true;
-      
+
       this.state = new Proxy(this.state, {
         set: (obj, prop, val) => {
           // CORREZIONE: Riduce il debug solo per proprietà specifiche
@@ -390,7 +392,7 @@
           if (isDebugMode) {
             console.log(`🔄 PROXY SET: ${prop} =`, val, `(type: ${typeof val})`);
           }
-          
+
           const old = obj[prop];
           if (JSON.stringify(old) === JSON.stringify(val)) {
             obj[prop] = val;
@@ -399,23 +401,23 @@
             }
             return true;
           }
-          
+
           // CORREZIONE: Prevenzione loop infiniti
           if (prop === 'userUrl' && this._settingUserUrl) {
             console.warn(`🚨 Prevented userUrl loop!`);
             return true;
           }
-          
+
           if (prop === 'userUrl') {
             this._settingUserUrl = true;
             setTimeout(() => { this._settingUserUrl = false; }, 100);
           }
-          
+
           obj[prop] = val;
           if (isDebugMode) {
             console.log(`✅ Proxy: ${prop} set to`, val, `- verification:`, obj[prop]);
           }
-          
+
           // Esegui watcher solo se sono pronti e non siamo in un loop
           if (this.watchersReady && this.watchers[prop] && !this._executingWatcher) {
             this._executingWatcher = true;
@@ -430,7 +432,7 @@
               this._executingWatcher = false;
             }, 0);
           }
-          
+
           this.renderCallback();
           return true;
         }
@@ -692,15 +694,25 @@
     }
 
     bindModel(el, key, ctx) {
-      this.evaluator.ensureVarInState(key, true);
+      // Patch: Pass input type to ensureVarInState
+      this.evaluator.ensureVarInState(key, true, el.type === 'number' ? 'number' : null);
       let ref = this.evaluator.state;
       if (key.includes('.')) {
         const path = key.split('.');
         for (let i = 0; i < path.length - 1; i++) ref = ref[path[i]];
         const last = path[path.length - 1];
-        if (typeof ref[last] !== 'string') ref[last] = '';
+        // Patch: For number input, always initialize as 0 if not present
+        if (el.type === 'number') {
+          if (typeof ref[last] !== 'number') ref[last] = 0;
+        } else {
+          if (typeof ref[last] !== 'string') ref[last] = undefined;
+        }
       } else {
-        if (typeof this.evaluator.state[key] !== 'string') this.evaluator.state[key] = '';
+        if (el.type === 'number') {
+          if (typeof this.evaluator.state[key] !== 'number') this.evaluator.state[key] = 0;
+        } else {
+          if (typeof this.evaluator.state[key] !== 'string') this.evaluator.state[key] = undefined;
+        }
       }
 
       const update = () => {
@@ -727,24 +739,30 @@
       update();
 
       el.addEventListener('input', () => {
-        // Assicura di nuovo che la variabile esista prima dell'assegnamento
-        this.evaluator.ensureVarInState(key, true);
-        // Forza sempre stringa
+        this.evaluator.ensureVarInState(key, true, el.type === 'number' ? 'number' : null);
         let ref = this.evaluator.state;
+        let value = el.value;
+        // Se input type=number, salva come numero (o null se vuoto)
+        if (el.type === 'number') {
+          value = value === '' ? undefined : Number(value);
+        }
         if (key.includes('.')) {
           const path = key.split('.');
           for (let i = 0; i < path.length - 1; i++) ref = ref[path[i]];
           const last = path[path.length - 1];
-          if (typeof ref[last] !== 'string') ref[last] = '';
+          if (el.type === 'number') {
+            ref[last] = value;
+          } else {
+            if (typeof ref[last] !== 'string') ref[last] = '';
+            ref[last] = value;
+          }
         } else {
-          if (typeof this.evaluator.state[key] !== 'string') this.evaluator.state[key] = '';
-        }
-        try {
-          new Function('state', 'ctx', 'value', `with(state){with(ctx||{}){${key}=value}}`)(this.evaluator.state, ctx, el.value);
-        } catch (error) {
-          console.error('Error in model binding:', error, 'key:', key);
-          // Fallback: try to set the value directly
-          this.evaluator.evalExpr(`${key} = "${el.value}"`, ctx);
+          if (el.type === 'number') {
+            this.evaluator.state[key] = value;
+          } else {
+            if (typeof this.evaluator.state[key] !== 'string') this.evaluator.state[key] = '';
+            this.evaluator.state[key] = value;
+          }
         }
         this.renderCallback();
       });
@@ -943,7 +961,7 @@
           console.error('Init error:', e);
         }
       });
-      
+
       // CORREZIONE: Dopo aver eseguito i blocchi init, forza i tipi corretti per variabili numeriche
       const shouldBeNumbers = ['userId', 'count', 'total', 'index', 'sinistra', 'destra', 'clicks', 'enterPresses', 'debounceCount', 'fontSize', 'sum'];
       shouldBeNumbers.forEach(varName => {
@@ -966,11 +984,11 @@
     _preInitializeEssentialVariables() {
       // CORREZIONE: Inizializza solo le variabili critiche del framework
       // Non più liste infinite di variabili!
-      
+
       // Solo le variabili essenziali per il funzionamento del framework
       if (!this.state._validate) this.state._validate = {};
       if (!this.state.currentPage) this.state.currentPage = '';
-      
+
       console.log('🔧 Initialized only essential framework variables');
     }
 
@@ -1279,7 +1297,7 @@
         });
         return frag;
       }
-      
+
       // Sintassi originale: "item in items"
       match = vNode.directives['@for'].match(/(\w+) in (.+)/);
       if (match) {
@@ -1510,163 +1528,84 @@
           if (this.evaluator.hasInterpolation(expr)) {
             codeToRun = this.evaluator.evalAttrValue(expr, ctx);
           }
-          
+
           let processedCode = codeToRun.replace(/\bstate\./g, '');
-          
+
           console.log(`🚀 CLICK EVENT:`, {
             button: el.textContent?.trim(),
             expression: expr,
             processed: processedCode,
-            currentState: {...this.state}
+            currentState: { ...this.state }
           });
-          
+
           try {
             // CORREZIONE: Gestione specifica per casi comuni
-            
+
             // 1. Incrementi semplici: userId++, count++, etc.
             const incrementMatch = processedCode.match(/^(\w+)\+\+$/);
             if (incrementMatch) {
               const varName = incrementMatch[1];
-              
-              // Verifica che la variabile esista nello state
               if (!(varName in this.state)) {
-                console.error(`❌ Variable ${varName} not found in state!`, {
-                  availableVars: Object.keys(this.state),
-                  stateContent: this.state
-                });
-                this.state[varName] = 0; // Crea se non esiste
+                this.state[varName] = 0;
               }
-              
               let currentValue = this.state[varName];
-              let originalValue = currentValue; // Salva per il log
-              
-              console.log(`🔍 INCREMENT DEBUG - ${varName}:`, {
-                exists: varName in this.state,
-                original: originalValue,
-                type: typeof originalValue
-              });
-              
-              // Se è stringa vuota o undefined, inizializza a 0
-              if (currentValue === '' || currentValue === undefined || currentValue === null) {
-                currentValue = 0;
-              } else if (typeof currentValue === 'string') {
-                // Se è una stringa numerica, convertila
-                const parsed = parseInt(currentValue, 10);
-                currentValue = isNaN(parsed) ? 0 : parsed;
-              } else if (typeof currentValue !== 'number') {
-                currentValue = 0;
-              }
-              
+              let originalValue = currentValue;
+              // Conversione numerica forzata
+              currentValue = (currentValue === '' || currentValue === undefined || currentValue === null) ? 0 : currentValue * 1;
+              if (isNaN(currentValue)) currentValue = 0;
               const newValue = currentValue + 1;
-              
-              // CORREZIONE CRITICA: Bypassa il proxy reattivo per evitare problemi
               try {
-                // Metodo 1: Assegnazione diretta tramite Object.defineProperty
                 Object.defineProperty(this.state, varName, {
                   value: newValue,
                   writable: true,
                   configurable: true,
                   enumerable: true
                 });
-                console.log(`🔧 Used Object.defineProperty for ${varName}`);
               } catch (err) {
-                console.log(`⚠️ defineProperty failed, trying direct assignment:`, err);
-                // Metodo 2: Assegnazione normale
                 this.state[varName] = newValue;
               }
-              
-              // Verifica che l'assegnazione sia riuscita
-              const verification = this.state[varName];
-              console.log(`✅ Incremented ${varName}:`, {
-                from: currentValue,
-                to: newValue,
-                originalWas: originalValue,
-                actualNewValue: verification,
-                success: verification === newValue
-              });
-              
-              // Se l'assegnazione è fallita, prova un approccio più aggressivo
-              if (verification !== newValue) {
-                console.log(`🚨 Assignment failed! Trying alternative approach...`);
-                
-                // Accedi direttamente al target del proxy
-                const proxyTarget = this.state.__proto__ || this.state;
-                if (proxyTarget && proxyTarget !== this.state) {
-                  proxyTarget[varName] = newValue;
-                  console.log(`🔧 Used proxy target, new value:`, this.state[varName]);
-                } else {
-                  // Ultimo tentativo: forza attraverso il reactivity system
-                  this.reactivitySystem.state[varName] = newValue;
-                  console.log(`🔧 Used reactivity system, new value:`, this.state[varName]);
-                }
-              }
-              
-              // Forza re-render immediato
               setTimeout(() => this.render(), 0);
               return;
             }
-            
+
             // 2. Decrementi semplici: count--, etc.
             const decrementMatch = processedCode.match(/^(\w+)--$/);
             if (decrementMatch) {
               const varName = decrementMatch[1];
               // CORREZIONE: Stessa logica robusta per i decrementi
               let currentValue = this.state[varName];
-              
-              if (currentValue === '' || currentValue === undefined || currentValue === null) {
-                currentValue = 0;
-              } else if (typeof currentValue === 'string') {
-                const parsed = parseInt(currentValue, 10);
-                currentValue = isNaN(parsed) ? 0 : parsed;
-              } else if (typeof currentValue !== 'number') {
-                currentValue = 0;
-              }
-              
+              currentValue = (currentValue === '' || currentValue === undefined || currentValue === null) ? 0 : currentValue * 1;
+              if (isNaN(currentValue)) currentValue = 0;
               this.state[varName] = currentValue - 1;
-              console.log(`✅ Decremented ${varName} from ${currentValue} to:`, this.state[varName]);
               this.render();
               return;
             }
-            
+
             // 2.5. Operazioni aritmetiche: count += 1, etc.
-            const arithMatch = processedCode.match(/^(\w+)\s*([+\-*\/])\s*=\s*(.+)$/);
+            const arithMatch = processedCode.match(/^(\w+)\s*([+\-*\/])=\s*(.+)$/);
             if (arithMatch) {
               const [, varName, operator, valueExpr] = arithMatch;
               try {
                 let currentValue = this.state[varName];
                 let operandValue = this.evaluator.evalExpr(valueExpr, ctx);
-                
-                // Normalizza il valore corrente
-                if (currentValue === '' || currentValue === undefined || currentValue === null) {
-                  currentValue = 0;
-                } else if (typeof currentValue === 'string') {
-                  const parsed = parseFloat(currentValue);
-                  currentValue = isNaN(parsed) ? 0 : parsed;
-                } else if (typeof currentValue !== 'number') {
-                  currentValue = 0;
-                }
-                
-                // Normalizza l'operando
-                if (typeof operandValue === 'string') {
-                  const parsed = parseFloat(operandValue);
-                  operandValue = isNaN(parsed) ? 0 : parsed;
-                }
-                
+                // Conversione numerica forzata
+                currentValue = (currentValue === '' || currentValue === undefined || currentValue === null) ? 0 : currentValue * 1;
+                if (isNaN(currentValue)) currentValue = 0;
+                operandValue = (operandValue === '' || operandValue === undefined || operandValue === null) ? 0 : operandValue * 1;
+                if (isNaN(operandValue)) operandValue = 0;
                 switch (operator) {
                   case '+': this.state[varName] = currentValue + operandValue; break;
                   case '-': this.state[varName] = currentValue - operandValue; break;
                   case '*': this.state[varName] = currentValue * operandValue; break;
                   case '/': this.state[varName] = operandValue !== 0 ? currentValue / operandValue : currentValue; break;
                 }
-                
-                console.log(`✅ Arithmetic ${varName} ${operator}= ${operandValue}, result:`, this.state[varName]);
                 this.render();
                 return;
               } catch (err) {
-                console.log('Arithmetic operation failed, trying general execution');
+                // fallback
               }
             }
-            
+
             // 3. Filter operations con contesto: items = items.filter(...)
             const filterMatch = processedCode.match(/^(\w+)\s*=\s*\1\.filter\((\w+)\s*=>\s*\2\.(\w+)\s*!==\s*(\w+)\.(\w+)\)$/);
             if (filterMatch && ctx) {
@@ -1679,7 +1618,7 @@
                 return;
               }
             }
-            
+
             // 4. Assegnazioni dirette: variable = value
             const assignMatch = processedCode.match(/^(\w+)\s*=\s*(.+)$/);
             if (assignMatch) {
@@ -1694,7 +1633,7 @@
                 console.log('Assignment failed, trying general execution');
               }
             }
-            
+
             // 5. Fallback: esecuzione generale
             console.log('🔄 Using general execution for:', processedCode);
             const func = new Function('state', 'ctx', `
@@ -1703,7 +1642,7 @@
               }
             `);
             func(this.state, ctx || {});
-            
+
           } catch (err) {
             console.error('❌ Click execution failed:', err, 'Code:', processedCode);
             this.errorHandler.showAyishaError(el, err, processedCode);
@@ -1882,7 +1821,7 @@
           const varName = matchAssign[1];
           let valueExpr = matchAssign[2].trim();
           let interpolated = this.evaluator.evalAttrValue(valueExpr, ctx);
-          if (!(varName in this.state)) this.state[varName] = '';
+          if (!(varName in this.state)) this.state[varName] = undefined;
           this.state[varName] = interpolated;
           this.fetchManager.setupFetch(varName, vNode.directives['@result'] || 'result', ctx, e, true);
         } else {
@@ -1896,7 +1835,7 @@
             const cleanCode = codeToRun.replace(/\bstate\./g, '');
             new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
               (this.state, ctx, e);
-          } catch (err) {
+                   } catch (err) {
             // Fallback: prova con il codice originale
             try {
               new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${codeToRun}}}`)
@@ -1956,7 +1895,7 @@
       if (!el._ayishaOriginalText) {
         el._ayishaOriginalText = el.textContent || el.innerText || '';
       }
-      
+
       if (evt === 'click') {
         el.addEventListener('click', e => {
           el.textContent = this.evaluator.evalExpr(getInterpolatedExpr(), ctx, e);
@@ -1985,7 +1924,7 @@
             try {
               // CORREZIONE FINALE: Garantisci sempre che le variabili esistano
               window.ayisha.evaluator.ensureVarInState(code);
-              
+
               // Esecuzione ultra-sicura del codice
               new Function('state', 'newVal', `
                 with(state) { 
@@ -2269,7 +2208,7 @@
 
     mount() {
       // ORDINE CRITICO CORRETTO:
-      
+
       // 1. Parse del DOM PRIMA di tutto
       if (this.root.childNodes.length > 1) {
         const fragVNode = { tag: 'fragment', attrs: {}, directives: {}, subDirectives: {}, children: [] };
