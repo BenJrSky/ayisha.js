@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="it">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -47,8 +48,15 @@
         }
 
         @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-20px);
+            }
         }
 
         .hero-content {
@@ -60,13 +68,20 @@
             font-size: 4rem;
             font-weight: 800;
             margin-bottom: 1rem;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
             animation: slideInFromTop 1s ease-out;
         }
 
         @keyframes slideInFromTop {
-            0% { transform: translateY(-100px); opacity: 0; }
-            100% { transform: translateY(0); opacity: 1; }
+            0% {
+                transform: translateY(-100px);
+                opacity: 0;
+            }
+
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
         }
 
         .hero p {
@@ -77,8 +92,15 @@
         }
 
         @keyframes slideInFromBottom {
-            0% { transform: translateY(50px); opacity: 0; }
-            100% { transform: translateY(0); opacity: 0.9; }
+            0% {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+
+            100% {
+                transform: translateY(0);
+                opacity: 0.9;
+            }
         }
 
         .cta-buttons {
@@ -86,28 +108,33 @@
         }
 
         @keyframes fadeIn {
-            0% { opacity: 0; }
-            100% { opacity: 1; }
+            0% {
+                opacity: 0;
+            }
+
+            100% {
+                opacity: 1;
+            }
         }
 
         .btn {
             display: inline-block;
             padding: 15px 30px;
             margin: 10px;
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.2);
             color: white;
             text-decoration: none;
             border-radius: 50px;
             font-weight: 600;
             transition: all 0.3s ease;
             backdrop-filter: blur(10px);
-            border: 2px solid rgba(255,255,255,0.3);
+            border: 2px solid rgba(255, 255, 255, 0.3);
         }
 
         .btn:hover {
-            background: rgba(255,255,255,0.3);
+            background: rgba(255, 255, 255, 0.3);
             transform: translateY(-3px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
         }
 
         .btn-primary {
@@ -126,7 +153,7 @@
             top: 0;
             left: 0;
             right: 0;
-            background: rgba(0,0,0,0.1);
+            background: rgba(0, 0, 0, 0.1);
             backdrop-filter: blur(10px);
             z-index: 1000;
             padding: 1rem 0;
@@ -134,7 +161,7 @@
         }
 
         .nav.scrolled {
-            background: rgba(0,0,0,0.9);
+            background: rgba(0, 0, 0, 0.9);
         }
 
         .nav-content {
@@ -206,7 +233,7 @@
             background: white;
             padding: 2rem;
             border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             text-align: center;
             transition: transform 0.3s ease;
         }
@@ -307,7 +334,7 @@
             margin: 5px 0;
             background: white;
             border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
         .todo-item.completed {
@@ -320,7 +347,7 @@
             padding: 1rem;
             margin: 1rem 0;
             border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             display: flex;
             align-items: center;
             gap: 1rem;
@@ -499,6 +526,7 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Navigation -->
     <nav class="nav" id="navbar">
@@ -543,19 +571,22 @@
                 <div class="feature-card">
                     <div class="feature-icon">⚡</div>
                     <h3 class="feature-title">Reattività</h3>
-                    <p>Ogni cambiamento nello stato aggiorna automaticamente l'interfaccia. Niente più DOM manipulation manuale!</p>
+                    <p>Ogni cambiamento nello stato aggiorna automaticamente l'interfaccia. Niente più DOM manipulation
+                        manuale!</p>
                 </div>
 
                 <div class="feature-card">
                     <div class="feature-icon">🎯</div>
                     <h3 class="feature-title">Direttive</h3>
-                    <p>Usa attributi speciali direttamente nell'HTML: @if, @for, @click, @model, @fetch e molte altre.</p>
+                    <p>Usa attributi speciali direttamente nell'HTML: @if, @for, @click, @model, @fetch e molte altre.
+                    </p>
                 </div>
 
                 <div class="feature-card">
                     <div class="feature-icon">🧩</div>
                     <h3 class="feature-title">Componenti</h3>
-                    <p>Includi parti di pagina da file esterni o creale inline per un codice modulare e riutilizzabile.</p>
+                    <p>Includi parti di pagina da file esterni o creale inline per un codice modulare e riutilizzabile.
+                    </p>
                 </div>
 
                 <div class="feature-card">
@@ -590,7 +621,8 @@
             <div class="features-grid">
                 <div class="feature-card">
                     <h4>🎛️ Controllo di Flusso</h4>
-                    <p><code>@if</code>, <code>@show</code>, <code>@hide</code>, <code>@for</code>, <code>@switch</code>, <code>@case</code>, <code>@default</code></p>
+                    <p><code>@if</code>, <code>@show</code>, <code>@hide</code>, <code>@for</code>,
+                        <code>@switch</code>, <code>@case</code>, <code>@default</code></p>
                 </div>
 
                 <div class="feature-card">
@@ -600,12 +632,14 @@
 
                 <div class="feature-card">
                     <h4>🖱️ Eventi</h4>
-                    <p><code>@click</code>, <code>@hover</code>, <code>@focus</code>, <code>@blur</code>, <code>@change</code>, <code>@input</code></p>
+                    <p><code>@click</code>, <code>@hover</code>, <code>@focus</code>, <code>@blur</code>,
+                        <code>@change</code>, <code>@input</code></p>
                 </div>
 
                 <div class="feature-card">
                     <h4>🌐 HTTP</h4>
-                    <p><code>@fetch</code>, <code>@result</code>, <code>@method</code>, <code>@headers</code>, <code>@payload</code></p>
+                    <p><code>@fetch</code>, <code>@result</code>, <code>@method</code>, <code>@headers</code>,
+                        <code>@payload</code></p>
                 </div>
 
                 <div class="feature-card">
@@ -625,7 +659,8 @@
 
                 <div class="feature-card">
                     <h4>🔧 Utilità</h4>
-                    <p><code>@set</code>, <code>@validate</code> (con regex, email, phone, min/max), <code>@animate</code>, <code>@state</code>, <code>@log</code></p>
+                    <p><code>@set</code>, <code>@validate</code> (con regex, email, phone, min/max),
+                        <code>@animate</code>, <code>@state</code>, <code>@log</code></p>
                 </div>
 
                 <div class="feature-card">
@@ -646,16 +681,16 @@
                 <h3 class="example-title">1. Counter Reattivo</h3>
                 <div class="demo-container">
                     <div class="demo-code">&lt;div class="counter-demo"&gt;
-  &lt;h3&gt;Counter: &lt;span class="counter-display"&gt;{{count}}&lt;/span&gt;&lt;/h3&gt;
-  &lt;button class="btn-demo" @click="count++"&gt;+&lt;/button&gt;
-  &lt;button class="btn-demo" @click="count--"&gt;-&lt;/button&gt;
-  &lt;button class="btn-demo" @click="count = 0"&gt;Reset&lt;/button&gt;
-&lt;/div&gt;
+                        &lt;h3&gt;Counter: &lt;span class="counter-display"&gt;{{count}}&lt;/span&gt;&lt;/h3&gt;
+                        &lt;button class="btn-demo" @click="count++"&gt;+&lt;/button&gt;
+                        &lt;button class="btn-demo" @click="count--"&gt;-&lt;/button&gt;
+                        &lt;button class="btn-demo" @click="count = 0"&gt;Reset&lt;/button&gt;
+                        &lt;/div&gt;
 
-&lt;init&gt;
-  state.count = 0;
-&lt;/init&gt;</div>
-<init>count=0</init>
+                        &lt;init&gt;
+                        state.count = 0;
+                        &lt;/init&gt;</div>
+                    <init>count=0</init>
                     <div class="demo-result">
                         <div class="counter-demo">
                             <h3>Counter: <span class="counter-display">{{count}}</span></h3>
@@ -672,35 +707,37 @@
                 <h3 class="example-title">2. Todo List con @for e @model</h3>
                 <div class="demo-container">
                     <div class="demo-code">&lt;div class="todo-demo"&gt;
-  &lt;input @model="newTodo" placeholder="Nuovo todo..."&gt;
-  &lt;button class="btn-demo" 
-          @click="newTodo.trim() && todos.push({id: Date.now(), text: newTodo, done: false}); newTodo = ''"&gt;
-    Aggiungi
-  &lt;/button&gt;
-  
-  &lt;div @for="todo in todos" class="todo-item" @class="{completed: todo.done}"&gt;
-    &lt;span&gt;{{todo.text}}&lt;/span&gt;
-    &lt;button class="btn-demo" @click="todo.done = !todo.done"&gt;
-      {{todo.done ? '↶' : '✓'}}
-    &lt;/button&gt;
-  &lt;/div&gt;
-&lt;/div&gt;
+                        &lt;input @model="newTodo" placeholder="Nuovo todo..."&gt;
+                        &lt;button class="btn-demo"
+                        @click="newTodo.trim() && todos.push({id: Date.now(), text: newTodo, done: false}); newTodo =
+                        ''"&gt;
+                        Aggiungi
+                        &lt;/button&gt;
 
-&lt;init&gt;
-  state.todos = [];
-  state.newTodo = '';
-&lt;/init&gt;</div>
+                        &lt;div @for="todo in todos" class="todo-item" @class="{completed: todo.done}"&gt;
+                        &lt;span&gt;{{todo.text}}&lt;/span&gt;
+                        &lt;button class="btn-demo" @click="todo.done = !todo.done"&gt;
+                        {{todo.done ? '↶' : '✓'}}
+                        &lt;/button&gt;
+                        &lt;/div&gt;
+                        &lt;/div&gt;
+
+                        &lt;init&gt;
+                        state.todos = [];
+                        state.newTodo = '';
+                        &lt;/init&gt;</div>
                     <div class="demo-result">
                         <div class="todo-demo">
                             <div class="form-group">
-                                <input @model="newTodo" placeholder="Nuovo todo..." style="width: 70%; display: inline-block;">
-                                <button class="btn-demo" 
-                                        @click="newTodo.trim() && todos.push({id: Date.now(), text: newTodo, done: false}); newTodo = ''" 
-                                        style="width: 25%; margin-left: 5%;">
+                                <input @model="newTodo" placeholder="Nuovo todo..."
+                                    style="width: 70%; display: inline-block;">
+                                <button class="btn-demo"
+                                    @click="newTodo.trim() && todos.push({id: Date.now(), text: newTodo, done: false}); newTodo = ''"
+                                    style="width: 25%; margin-left: 5%;">
                                     Aggiungi
                                 </button>
                             </div>
-                            
+
                             <div @for="todo in todos" class="todo-item" @class="{completed: todo.done}">
                                 <span>{{todo.text}}</span>
                                 <button class="btn-demo" @click="todo.done = !todo.done">
@@ -717,31 +754,30 @@
                 <h3 class="example-title">3. HTTP Requests con @fetch</h3>
                 <div class="demo-container">
                     <div class="demo-code">&lt;div&gt;
-  &lt;button class="btn-demo" 
-          @fetch:click="'https://jsonplaceholder.typicode.com/users'" 
-          @result="users"&gt;
-    Carica Utenti
-  &lt;/button&gt;
-  
-  &lt;div @if="users" @for="user in users" class="user-card"&gt;
-    &lt;div class="user-avatar"&gt;{{user.name.charAt(0)}}&lt;/div&gt;
-    &lt;div&gt;
-      &lt;strong&gt;{{user.name}}&lt;/strong&gt;&lt;br&gt;
-      &lt;small&gt;{{user.email}}&lt;/small&gt;
-    &lt;/div&gt;
-  &lt;/div&gt;
-&lt;/div&gt;</div>
+                        &lt;button class="btn-demo"
+                        @fetch:click="'https://jsonplaceholder.typicode.com/users'"
+                        @result="users"&gt;
+                        Carica Utenti
+                        &lt;/button&gt;
+
+                        &lt;div @if="users" @for="user in users" class="user-card"&gt;
+                        &lt;div class="user-avatar"&gt;{{user.name.charAt(0)}}&lt;/div&gt;
+                        &lt;div&gt;
+                        &lt;strong&gt;{{user.name}}&lt;/strong&gt;&lt;br&gt;
+                        &lt;small&gt;{{user.email}}&lt;/small&gt;
+                        &lt;/div&gt;
+                        &lt;/div&gt;
+                        &lt;/div&gt;</div>
                     <div class="demo-result">
-                        <button class="btn-demo" 
-                                @fetch:click="'https://jsonplaceholder.typicode.com/users'" 
-                                @result="users">
+                        <button class="btn-demo" @fetch:click="'https://jsonplaceholder.typicode.com/users'"
+                            @result="users">
                             Carica Utenti
                         </button>
-                        
+
                         <div @if="!users" class="loading">
                             Clicca il pulsante per caricare gli utenti...
                         </div>
-                        
+
                         <div @if="users" @for="user in users.slice(0, 3)" class="user-card">
                             <div class="user-avatar">{{user.name.charAt(0)}}</div>
                             <div>
@@ -758,39 +794,39 @@
                 <h3 class="example-title">4. Rendering Condizionale con @if/@show/@hide</h3>
                 <div class="demo-container">
                     <div class="demo-code">&lt;div&gt;
-  &lt;button class="btn-demo" @click="showAlert = !showAlert"&gt;
-    {{showAlert ? 'Nascondi' : 'Mostra'}} Alert
-  &lt;/button&gt;
-  
-  &lt;div @if="showAlert" class="highlight"&gt;
-    &lt;strong&gt;@if:&lt;/strong&gt; Questo appare/scompare dal DOM
-  &lt;/div&gt;
-  
-  &lt;div @show="showAlert" class="highlight"&gt;
-    &lt;strong&gt;@show:&lt;/strong&gt; Questo si nasconde con CSS
-  &lt;/div&gt;
-  
-  &lt;div @hide="showAlert" class="highlight"&gt;
-    &lt;strong&gt;@hide:&lt;/strong&gt; Questo è visibile quando showAlert è false
-  &lt;/div&gt;
-&lt;/div&gt;
+                        &lt;button class="btn-demo" @click="showAlert = !showAlert"&gt;
+                        {{showAlert ? 'Nascondi' : 'Mostra'}} Alert
+                        &lt;/button&gt;
 
-&lt;init&gt;
-  state.showAlert = false;
-&lt;/init&gt;</div>
+                        &lt;div @if="showAlert" class="highlight"&gt;
+                        &lt;strong&gt;@if:&lt;/strong&gt; Questo appare/scompare dal DOM
+                        &lt;/div&gt;
+
+                        &lt;div @show="showAlert" class="highlight"&gt;
+                        &lt;strong&gt;@show:&lt;/strong&gt; Questo si nasconde con CSS
+                        &lt;/div&gt;
+
+                        &lt;div @hide="showAlert" class="highlight"&gt;
+                        &lt;strong&gt;@hide:&lt;/strong&gt; Questo è visibile quando showAlert è false
+                        &lt;/div&gt;
+                        &lt;/div&gt;
+
+                        &lt;init&gt;
+                        state.showAlert = false;
+                        &lt;/init&gt;</div>
                     <div class="demo-result">
                         <button class="btn-demo" @click="showAlert = !showAlert">
                             {{showAlert ? 'Nascondi' : 'Mostra'}} Alert
                         </button>
-                        
+
                         <div @if="showAlert" class="highlight">
                             <strong>@if:</strong> Questo appare/scompare dal DOM
                         </div>
-                        
+
                         <div @show="showAlert" class="highlight">
                             <strong>@show:</strong> Questo si nasconde con CSS
                         </div>
-                        
+
                         <div @hide="showAlert" class="highlight">
                             <strong>@hide:</strong> Questo è visibile quando showAlert è false
                         </div>
@@ -803,67 +839,66 @@
                 <h3 class="example-title">5. Form con Validazione Avanzata</h3>
                 <div class="demo-container">
                     <div class="demo-code">&lt;form&gt;
-  &lt;div class="form-group"&gt;
-    &lt;label&gt;Nome (richiesto, min 3 caratteri):&lt;/label&gt;
-    &lt;input name="nome" @model="form.name" 
-           @validate="required,minLength:3" 
-           placeholder="Il tuo nome"&gt;
-    &lt;div @if="!nome_valid" class="validation-message error"&gt;
-      Errori: {{nome_errors.join(', ')}}
-    &lt;/div&gt;
-    &lt;div @if="nome_valid && form.name" class="validation-message success"&gt;
-      ✓ Nome valido
-    &lt;/div&gt;
-  &lt;/div&gt;
-  
-  &lt;div class="form-group"&gt;
-    &lt;label&gt;Email (formato valido richiesto):&lt;/label&gt;
-    &lt;input name="email" @model="form.email" 
-           @validate="required,email"
-           type="email" 
-           placeholder="tua@email.com"&gt;
-    &lt;div @if="!email_valid" class="validation-message error"&gt;
-      Errori: {{email_errors.join(', ')}}
-    &lt;/div&gt;
-    &lt;div @if="email_valid && form.email" class="validation-message success"&gt;
-      ✓ Email valida
-    &lt;/div&gt;
-  &lt;/div&gt;
+                        &lt;div class="form-group"&gt;
+                        &lt;label&gt;Nome (richiesto, min 3 caratteri):&lt;/label&gt;
+                        &lt;input name="nome" @model="form.name"
+                        @validate="required,minLength:3"
+                        placeholder="Il tuo nome"&gt;
+                        &lt;div @if="!nome_valid" class="validation-message error"&gt;
+                        Errori: {{nome_errors.join(', ')}}
+                        &lt;/div&gt;
+                        &lt;div @if="nome_valid && form.name" class="validation-message success"&gt;
+                        ✓ Nome valido
+                        &lt;/div&gt;
+                        &lt;/div&gt;
 
-  &lt;div class="form-group"&gt;
-    &lt;label&gt;Telefono (opzionale, formato italiano):&lt;/label&gt;
-    &lt;input name="telefono" @model="form.phone" 
-           @validate="phone"
-           placeholder="+39 123 4567890"&gt;
-    &lt;div @if="form.phone && !telefono_valid" class="validation-message error"&gt;
-      Errori: {{telefono_errors.join(', ')}}
-    &lt;/div&gt;
-    &lt;div @if="telefono_valid && form.phone" class="validation-message success"&gt;
-      ✓ Telefono valido
-    &lt;/div&gt;
-  &lt;/div&gt;
-  
-  &lt;button type="button" class="btn-demo" 
-          @click="nome_valid && email_valid && (form.submitted = true)"
-          @class="{disabled: !nome_valid || !email_valid}"&gt;
-    Invia {{nome_valid && email_valid ? '✓' : '✗'}}
-  &lt;/button&gt;
-  
-  &lt;div @if="form.submitted" class="highlight"&gt;
-    Form inviato! Nome: {{form.name}}, Email: {{form.email}}
-    &lt;span @if="form.phone"&gt;, Tel: {{form.phone}}&lt;/span&gt;
-  &lt;/div&gt;
-&lt;/form&gt;
+                        &lt;div class="form-group"&gt;
+                        &lt;label&gt;Email (formato valido richiesto):&lt;/label&gt;
+                        &lt;input name="email" @model="form.email"
+                        @validate="required,email"
+                        type="email"
+                        placeholder="tua@email.com"&gt;
+                        &lt;div @if="!email_valid" class="validation-message error"&gt;
+                        Errori: {{email_errors.join(', ')}}
+                        &lt;/div&gt;
+                        &lt;div @if="email_valid && form.email" class="validation-message success"&gt;
+                        ✓ Email valida
+                        &lt;/div&gt;
+                        &lt;/div&gt;
 
-&lt;init&gt;
-  state.form = { name: '', email: '', phone: '', submitted: false };
-&lt;/init&gt;</div>
+                        &lt;div class="form-group"&gt;
+                        &lt;label&gt;Telefono (opzionale, formato italiano):&lt;/label&gt;
+                        &lt;input name="telefono" @model="form.phone"
+                        @validate="phone"
+                        placeholder="+39 123 4567890"&gt;
+                        &lt;div @if="form.phone && !telefono_valid" class="validation-message error"&gt;
+                        Errori: {{telefono_errors.join(', ')}}
+                        &lt;/div&gt;
+                        &lt;div @if="telefono_valid && form.phone" class="validation-message success"&gt;
+                        ✓ Telefono valido
+                        &lt;/div&gt;
+                        &lt;/div&gt;
+
+                        &lt;button type="button" class="btn-demo"
+                        @click="nome_valid && email_valid && (form.submitted = true)"
+                        @class="{disabled: !nome_valid || !email_valid}"&gt;
+                        Invia {{nome_valid && email_valid ? '✓' : '✗'}}
+                        &lt;/button&gt;
+
+                        &lt;div @if="form.submitted" class="highlight"&gt;
+                        Form inviato! Nome: {{form.name}}, Email: {{form.email}}
+                        &lt;span @if="form.phone"&gt;, Tel: {{form.phone}}&lt;/span&gt;
+                        &lt;/div&gt;
+                        &lt;/form&gt;
+
+                        &lt;init&gt;
+                        state.form = { name: '', email: '', phone: '', submitted: false };
+                        &lt;/init&gt;</div>
                     <div class="demo-result">
                         <div class="form-group">
                             <label>Nome (richiesto, min 3 caratteri):</label>
-                            <input name="nome" @model="form.name" 
-                                   @validate="required,minLength:3" 
-                                   placeholder="Il tuo nome">
+                            <input name="nome" @model="form.name" @validate="required,minLength:3"
+                                placeholder="Il tuo nome">
                             <div @if="!nome_valid" class="validation-message error">
                                 Errori: {{nome_errors.join(', ')}}
                             </div>
@@ -871,13 +906,11 @@
                                 ✓ Nome valido
                             </div>
                         </div>
-                        
+
                         <div class="form-group">
                             <label>Email (formato valido richiesto):</label>
-                            <input name="email" @model="form.email" 
-                                   @validate="email"
-                                   type="email" 
-                                   placeholder="tua@email.com">
+                            <input name="email" @model="form.email" @validate="email" type="email"
+                                placeholder="tua@email.com">
                             <div @if="!email_valid" class="validation-message error">
                                 Errori: {{email_errors.join(', ')}}
                             </div>
@@ -888,9 +921,7 @@
 
                         <div class="form-group">
                             <label>Telefono (opzionale, formato italiano):</label>
-                            <input name="telefono" @model="form.phone" 
-                                   @validate="phone"
-                                   placeholder="+39 123 4567890">
+                            <input name="telefono" @model="form.phone" @validate="phone" placeholder="+39 123 4567890">
                             <div @if="form.phone && !telefono_valid" class="validation-message error">
                                 Errori: {{telefono_errors.join(', ')}}
                             </div>
@@ -898,13 +929,13 @@
                                 ✓ Telefono valido
                             </div>
                         </div>
-                        
-                        <button type="button" class="btn-demo" 
-                                @click="nome_valid && email_valid && (form.submitted = true)"
-                                @class="{disabled: !nome_valid || !email_valid}">
+
+                        <button type="button" class="btn-demo"
+                            @click="nome_valid && email_valid && (form.submitted = true)"
+                            @class="{disabled: !nome_valid || !email_valid}">
                             Invia {{nome_valid && email_valid ? '✓' : '✗'}}
                         </button>
-                        
+
                         <div @if="form.submitted" class="highlight">
                             Form inviato! Nome: {{form.name}}, Email: {{form.email}}
                             <span @if="form.phone">, Tel: {{form.phone}}</span>
@@ -918,43 +949,41 @@
                 <h3 class="example-title">6. Validazione con Regex Personalizzata</h3>
                 <div class="demo-container">
                     <div class="demo-code">&lt;div class="form-group"&gt;
-  &lt;label&gt;Codice Fiscale (solo lettere e numeri, 16 caratteri):&lt;/label&gt;
-  &lt;input name="cf" @model="codiceFiscale" 
-         @validate="required,regex:/^[A-Z0-9]{16}$/,minLength:16,maxLength:16"
-         placeholder="RSSMRA80A01H501M" 
-         style="text-transform: uppercase;"&gt;
-  &lt;div @if="!cf_valid" class="validation-message error"&gt;
-    Errori: {{cf_errors.join(', ')}}
-  &lt;/div&gt;
-  &lt;div @if="cf_valid" class="validation-message success"&gt;
-    ✓ Codice Fiscale valido
-  &lt;/div&gt;
-&lt;/div&gt;
+                        &lt;label&gt;Codice Fiscale (solo lettere e numeri, 16 caratteri):&lt;/label&gt;
+                        &lt;input name="cf" @model="codiceFiscale"
+                        @validate="required,regex:/^[A-Z0-9]{16}$/,minLength:16,maxLength:16"
+                        placeholder="RSSMRA80A01H501M"
+                        style="text-transform: uppercase;"&gt;
+                        &lt;div @if="!cf_valid" class="validation-message error"&gt;
+                        Errori: {{cf_errors.join(', ')}}
+                        &lt;/div&gt;
+                        &lt;div @if="cf_valid" class="validation-message success"&gt;
+                        ✓ Codice Fiscale valido
+                        &lt;/div&gt;
+                        &lt;/div&gt;
 
-&lt;div class="form-group"&gt;
-  &lt;label&gt;Età (numero tra 18 e 99):&lt;/label&gt;
-  &lt;input name="age" type="number" @model="eta" 
-         @validate="required,min:18,max:99"
-         placeholder="25"&gt;
-  &lt;div @if="!age_valid" class="validation-message error"&gt;
-    Errori: {{age_errors.join(', ')}}
-  &lt;/div&gt;
-  &lt;div @if="age_valid" class="validation-message success"&gt;
-    ✓ Età valida
-  &lt;/div&gt;
-&lt;/div&gt;
+                        &lt;div class="form-group"&gt;
+                        &lt;label&gt;Età (numero tra 18 e 99):&lt;/label&gt;
+                        &lt;input name="age" type="number" @model="eta"
+                        @validate="required,min:18,max:99"
+                        placeholder="25"&gt;
+                        &lt;div @if="!age_valid" class="validation-message error"&gt;
+                        Errori: {{age_errors.join(', ')}}
+                        &lt;/div&gt;
+                        &lt;div @if="age_valid" class="validation-message success"&gt;
+                        ✓ Età valida
+                        &lt;/div&gt;
+                        &lt;/div&gt;
 
-&lt;init&gt;
-  state.codiceFiscale = '';
-  state.eta = '';
-&lt;/init&gt;</div>
+                        &lt;init&gt;
+                        state.codiceFiscale = '';
+                        state.eta = '';
+                        &lt;/init&gt;</div>
                     <div class="demo-result">
                         <div class="form-group">
                             <label>Codice Fiscale (solo lettere e numeri, 16 caratteri):</label>
-                            <input name="cf" @model="codiceFiscale" 
-                                   @validate="/^[A-Z0-9]{16}$/"
-                                   placeholder="RSSMRA80A01H501M" 
-                                   style="text-transform: uppercase;">
+                            <input name="cf" @model="codiceFiscale" @validate="/^[A-Z0-9]{16}$/"
+                                placeholder="RSSMRA80A01H501M" style="text-transform: uppercase;">
                             <div @if="!cf_valid" class="validation-message error">
                                 Errori: {{cf_errors.join(', ')}}
                             </div>
@@ -965,9 +994,8 @@
 
                         <div class="form-group">
                             <label>Età (numero tra 18 e 99):</label>
-                            <input name="age" type="number" @model="eta" 
-                                   @validate="required,min:18,max:99"
-                                   placeholder="25">
+                            <input name="age" type="number" @model="eta" @validate="required,min:18,max:99"
+                                placeholder="25">
                             <div @if="!age_valid" class="validation-message error">
                                 Errori: {{age_errors.join(', ')}}
                             </div>
@@ -994,46 +1022,46 @@
                 <div class="demo-container">
                     <div class="demo-code">&lt;!-- Prova qui il tuo codice Ayisha.js --&gt;
 
-&lt;div class="playground-area"&gt;
-  &lt;h3&gt;Playground Ayisha.js&lt;/h3&gt;
-  
-  &lt;div class="form-group"&gt;
-    &lt;label&gt;Il tuo nome:&lt;/label&gt;
-    &lt;input @model="playgroundName" placeholder="Scrivi qui..."&gt;
-  &lt;/div&gt;
-  
-  &lt;div @if="playgroundName"&gt;
-    &lt;p&gt;Ciao, &lt;strong&gt;{{playgroundName}}&lt;/strong&gt;!&lt;/p&gt;
-    &lt;button class="btn-demo" @click="playgroundCount++"&gt;
-      Cliccato {{playgroundCount}} volte
-    &lt;/button&gt;
-  &lt;/div&gt;
-  
-  &lt;div @if="playgroundCount > 5" class="highlight"&gt;
-    🎉 Hai cliccato più di 5 volte!
-  &lt;/div&gt;
-&lt;/div&gt;
+                        &lt;div class="playground-area"&gt;
+                        &lt;h3&gt;Playground Ayisha.js&lt;/h3&gt;
 
-&lt;init&gt;
-  state.playgroundName = '';
-  state.playgroundCount = 0;
-&lt;/init&gt;</div>
+                        &lt;div class="form-group"&gt;
+                        &lt;label&gt;Il tuo nome:&lt;/label&gt;
+                        &lt;input @model="playgroundName" placeholder="Scrivi qui..."&gt;
+                        &lt;/div&gt;
+
+                        &lt;div @if="playgroundName"&gt;
+                        &lt;p&gt;Ciao, &lt;strong&gt;{{playgroundName}}&lt;/strong&gt;!&lt;/p&gt;
+                        &lt;button class="btn-demo" @click="playgroundCount++"&gt;
+                        Cliccato {{playgroundCount}} volte
+                        &lt;/button&gt;
+                        &lt;/div&gt;
+
+                        &lt;div @if="playgroundCount > 5" class="highlight"&gt;
+                        🎉 Hai cliccato più di 5 volte!
+                        &lt;/div&gt;
+                        &lt;/div&gt;
+
+                        &lt;init&gt;
+                        state.playgroundName = '';
+                        state.playgroundCount = 0;
+                        &lt;/init&gt;</div>
                     <div class="demo-result">
                         <div class="playground-area">
                             <h3>Playground Ayisha.js</h3>
-                            
+
                             <div class="form-group">
                                 <label>Il tuo nome:</label>
                                 <input @model="playgroundName" placeholder="Scrivi qui...">
                             </div>
-                            
+
                             <div @if="playgroundName">
                                 <p>Ciao, <strong>{{playgroundName}}</strong>!</p>
                                 <button class="btn-demo" @click="playgroundCount++">
                                     Cliccato {{playgroundCount}} volte
                                 </button>
                             </div>
-                            
+
                             <div @if="playgroundCount > 5" class="highlight">
                                 🎉 Hai cliccato più di 5 volte!
                             </div>
@@ -1070,4 +1098,5 @@
     </footer>
     <script src="ayisha.js"></script>
 </body>
+
 </html>

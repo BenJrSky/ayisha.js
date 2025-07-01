@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ayisha.js Tutorial & Confronto</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      font-family: 'Montserrat', Arial, sans-serif;
+      background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);
+      color: #222;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #6366f1;
+      color: #fff;
+      padding: 2rem 1rem 1rem 1rem;
+      text-align: center;
+      border-radius: 0 0 2rem 2rem;
+      box-shadow: 0 4px 24px #6366f133;
+    }
+    header h1 {
+      font-size: 2.5rem;
+      margin: 0 0 0.5rem 0;
+      letter-spacing: 2px;
+    }
+    header p {
+      font-size: 1.2rem;
+      margin: 0;
+      opacity: 0.9;
+    }
+    .container {
+      max-width: 900px;
+      margin: 2rem auto;
+      background: #fff;
+      border-radius: 1.5rem;
+      box-shadow: 0 2px 16px #6366f122;
+      padding: 2rem;
+    }
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 2rem;
+      font-size: 1rem;
+    }
+    .compare-table th, .compare-table td {
+      border: 1px solid #e0e7ff;
+      padding: 0.7rem 0.5rem;
+      text-align: center;
+    }
+    .compare-table th {
+      background: #6366f1;
+      color: #fff;
+      font-weight: 700;
+    }
+    .compare-table tr:nth-child(even) {
+      background: #f3f4f6;
+    }
+    .badge {
+      display: inline-block;
+      background: #6366f1;
+      color: #fff;
+      border-radius: 1rem;
+      padding: 0.2rem 0.8rem;
+      font-size: 0.9rem;
+      margin: 0 0.2rem;
+    }
+    .section-title {
+      font-size: 1.5rem;
+      margin: 2rem 0 1rem 0;
+      color: #6366f1;
+      letter-spacing: 1px;
+    }
+    .directive-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .directive-card {
+      background: #f1f5f9;
+      border-radius: 1rem;
+      box-shadow: 0 1px 6px #6366f111;
+      padding: 1rem;
+      flex: 1 1 260px;
+      min-width: 220px;
+      max-width: 320px;
+      transition: box-shadow 0.2s;
+      position: relative;
+    }
+    .directive-card:hover {
+      box-shadow: 0 4px 16px #6366f133;
+    }
+    .directive-card code {
+      background: #e0e7ff;
+      color: #3730a3;
+      border-radius: 0.5rem;
+      padding: 0.2rem 0.5rem;
+      font-size: 1rem;
+    }
+    .example-block {
+      background: #f3f4f6;
+      border-radius: 1rem;
+      padding: 1rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 1px 6px #6366f111;
+    }
+    .example-block h3 {
+      margin-top: 0;
+      color: #6366f1;
+    }
+    .ayisha-demo {
+      margin: 1rem 0;
+      padding: 1rem;
+      background: #fff;
+      border-radius: 1rem;
+      box-shadow: 0 1px 6px #6366f111;
+    }
+    input, button, select {
+      font-family: inherit;
+      font-size: 1rem;
+      border-radius: 0.5rem;
+      border: 1px solid #c7d2fe;
+      padding: 0.5rem 1rem;
+      margin: 0.2rem 0;
+      outline: none;
+      transition: border 0.2s;
+    }
+    input:focus, button:focus, select:focus {
+      border: 1.5px solid #6366f1;
+    }
+    button {
+      background: #6366f1;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-weight: 700;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #4338ca;
+    }
+    .note {
+      font-size: 0.95rem;
+      color: #6366f1;
+      margin-top: 0.5rem;
+    }
+    @media (max-width: 600px) {
+      .container { padding: 1rem; }
+      .directive-list { flex-direction: column; }
+    }
+  </style>
+  <script src="ayisha.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Ayisha.js <span class="badge">Ultra-light VDOM</span></h1>
+    <p>Un micro-framework moderno, reattivo e super semplice per web app e prototipi. <br>Zero build, zero dipendenze, solo HTML + JS.</p>
+  </header>
+  <div class="container">
+    <h2 class="section-title">Confronto con altri framework</h2>
+    <table class="compare-table">
+      <tr>
+        <th>Framework</th>
+        <th>Dimensione</th>
+        <th>Reattività</th>
+        <th>Direttive</th>
+        <th>JSX/Template</th>
+        <th>Learning Curve</th>
+        <th>Build/Tooling</th>
+      </tr>
+      <tr><td><b>Ayisha.js</b></td><td>~20KB</td><td>✔️</td><td>✔️</td><td>HTML</td><td>Facilissima</td><td>No</td></tr>
+      <tr><td>React</td><td>~100KB</td><td>✔️</td><td>✖️</td><td>JSX</td><td>Media</td><td>Sì</td></tr>
+      <tr><td>Vue</td><td>~33KB</td><td>✔️</td><td>✔️</td><td>HTML</td><td>Bassa</td><td>Opzionale</td></tr>
+      <tr><td>Svelte</td><td>~2KB (compilato)</td><td>✔️</td><td>✔️</td><td>HTML</td><td>Bassa</td><td>Sì</td></tr>
+      <tr><td>Angular</td><td>~150KB</td><td>✔️</td><td>✔️</td><td>HTML</td><td>Alta</td><td>Sì</td></tr>
+      <tr><td>jQuery</td><td>~30KB</td><td>✖️</td><td>✖️</td><td>HTML</td><td>Bassa</td><td>No</td></tr>
+      <tr><td>Altri (Preact, Alpine...)</td><td>2-10KB</td><td>✔️</td><td>✔️</td><td>HTML/JSX</td><td>Bassa</td><td>Opzionale</td></tr>
+    </table>
+
+    <h2 class="section-title">Tutte le direttive e sottodirettive</h2>
+    <div class="directive-list" id="directives-list">
+      <!-- Popolato da Ayisha.js -->
+    </div>
+
+    <h2 class="section-title">Tutorial interattivo</h2>
+    <div class="example-block">
+      <h3>1. Ciao! Come ti chiami?</h3>
+      <div class="ayisha-demo">
+        <input type="text" placeholder="Il tuo nome" @model="nome">
+        <button @click="state.nome = state.nome.trim()">Conferma</button>
+        <div class="note">Ciao <b>{{nome || 'amico/a'}}</b>! 👋</div>
+      </div>
+    </div>
+    <div class="example-block">
+      <h3>2. Binding, condizioni e cicli</h3>
+      <div class="ayisha-demo">
+        <input type="number" min="1" max="10" @model="count" value="1">
+        <button @click="state.count++">Aumenta</button>
+        <button @click="state.count = 1">Reset</button>
+        <div class="note">Hai scelto: <b>{{count}}</b></div>
+        <ul>
+          <li @for="i in Array(count).fill(0).map((_,i)=>i+1)">Elemento {{i}}</li>
+        </ul>
+        <div @if="count > 5" class="note">Wow, più di 5 elementi!</div>
+      </div>
+    </div>
+    <div class="example-block">
+      <h3>3. Fetch e dati dinamici</h3>
+      <div class="ayisha-demo">
+        <button @fetch="'https://jsonplaceholder.typicode.com/users'" @result="utenti">Carica utenti</button>
+        <ul>
+          <li @for="user in utenti">👤 {{user.name}} (<a href="mailto:{{user.email}}">{{user.email}}</a>)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="example-block">
+      <h3>4. Componenti e routing</h3>
+      <div class="ayisha-demo">
+        <nav>
+          <button @link="home">Home</button>
+          <button @link="about">About</button>
+          <button @link="info">Info</button>
+          <button @link="contatti">Contatti</button>
+        </nav>
+        <div @page="home">
+          <h4>Benvenuto nella Home!</h4>
+         
+        </div>
+        <div @page="about">
+          <h4>Cos'è Ayisha.js?</h4>
+          <p>Ayisha.js è un micro-framework VDOM per web app, senza build, con sintassi HTML e direttive ispirate a Vue/Angular.</p>
+        </div>
+        <div @page="info">
+          <h4>Info</h4>
+          <ul>
+            <li>Ultra leggero: solo 20KB</li>
+            <li>Zero build, zero dipendenze</li>
+            <li>Direttive semplici e potenti</li>
+            <li>Routing SPA nativo</li>
+            <li>Componenti HTML riutilizzabili</li>
+          </ul>
+        </div>
+        <div @page="contatti">
+          <h4>Contatti</h4>
+          <p>Per domande o suggerimenti:</p>
+          <ul>
+            <li>Email: <a href="mailto:info@ayisha.dev">info@ayisha.dev</a></li>
+            <li>GitHub: <a href="https://github.com/devben/ayisha.js" target="_blank">ayisha.js</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="example-block">
+      <h3>5. Validazione, animazioni e altro</h3>
+      <div class="ayisha-demo">
+        <input type="email" placeholder="Email" @model="email" @validate="email">
+        <button @click="state.email = ''">Reset</button>
+        <div class="note" @if="_validate && !_validate.email && _validate.email.length">Inserisci una email valida!</div>
+        <div class="fadeIn" @if="_validate && _validate.email && _validate.email.length">Email valida: <b>{{email}}</b></div>
+        <div class="fadeIn" @if="!_validate.email">Questa Email non è valida: <b>{{email}}</b></div>
+      </div>
+    </div>
+    <div class="example-block">
+      <h3>6. Stato, log e debug</h3>
+      <div class="ayisha-demo">
+        <div @state></div>
+        <div @log></div>
+      </div>
+    </div>
+    <div class="note">Scorri la pagina per vedere tutte le direttive e prova a modificarle dal vivo!</div>
+  </div>
+</body>
+</html>
