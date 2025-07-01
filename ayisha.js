@@ -751,7 +751,7 @@
   }
 
   /**
-   * Module: Central Logger - CORRETTI I BUG DI VISUALIZZAZIONE
+   * Module: Central Logger
    */
   class CentralLogger {
     constructor() {
@@ -926,13 +926,13 @@
 
       console.log('🔧 Creating new log panel...');
 
-      // CORRETTO: Rimuovi eventuali elementi esistenti
+      // Rimuovi eventuali elementi esistenti
       const existingButton = document.getElementById('ayisha-debug-button');
       const existingPanel = document.getElementById('ayisha-log-panel');
       if (existingButton) existingButton.remove();
       if (existingPanel) existingPanel.remove();
 
-      // Create toggle button con styling migliorato
+      // Create toggle button
       this.toggleButton = document.createElement('button');
       this.toggleButton.textContent = '📊 Debug Log';
       this.toggleButton.id = 'ayisha-debug-button';
@@ -971,7 +971,7 @@
         this.togglePanel();
       });
       
-      // Create log panel con styling migliorato
+      // Create log panel
       this.logPanel = document.createElement('div');
       this.logPanel.className = 'ayisha-central-log';
       this.logPanel.id = 'ayisha-log-panel';
@@ -1023,6 +1023,7 @@
         font-weight: bold !important;
         transition: background 0.2s ease !important;
       `;
+      
       clearButton.addEventListener('click', (e) => {
         e.preventDefault();
         console.log('🗑️ Clearing all logs...');
@@ -1051,37 +1052,16 @@
         background: rgba(0, 20, 40, 0.95) !important;
       `;
 
-      // CORRETTO: Custom scrollbar per una migliore esperienza
-      const style = document.createElement('style');
-      style.textContent = `
-        .log-content::-webkit-scrollbar {
-          width: 8px;
-        }
-        .log-content::-webkit-scrollbar-track {
-          background: rgba(255,255,255,0.1);
-          border-radius: 4px;
-        }
-        .log-content::-webkit-scrollbar-thumb {
-          background: #0066cc;
-          border-radius: 4px;
-        }
-        .log-content::-webkit-scrollbar-thumb:hover {
-          background: #0088ff;
-        }
-      `;
-      document.head.appendChild(style);
-
       this.logPanel.appendChild(header);
       this.logPanel.appendChild(content);
 
-      // CORRETTO: Append al body in modo sicuro
+      // Append al body
       if (document.body) {
         document.body.appendChild(this.toggleButton);
         document.body.appendChild(this.logPanel);
         this.panelCreated = true;
         console.log('✅ Debug button and panel added to body');
       } else {
-        // Se il body non è ancora pronto, attendi
         document.addEventListener('DOMContentLoaded', () => {
           document.body.appendChild(this.toggleButton);
           document.body.appendChild(this.logPanel);
@@ -1090,7 +1070,6 @@
         });
       }
 
-      // CORRETTO: Update iniziale
       setTimeout(() => {
         this._updateLogPanel();
         console.log('📋 Initial log panel update completed');
@@ -1196,7 +1175,6 @@
         content.appendChild(logEntry);
       });
 
-      // Auto-scroll to top for newest entries
       content.scrollTop = 0;
       console.log('✅ Log panel updated successfully');
     }
@@ -1251,28 +1229,7 @@
         return html;
       }
       
-      let html = `
-        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-          <span style="color: #66ccff; font-weight: bold;">${log.type} &lt;${log.tag}&gt;</span>
-          <span style="color: #999; font-size: 10px;">${time}</span>
-        </div>
-      `;
-
-      if (log.executionTime) {
-        html += `<div style="color: #999; font-size: 10px; margin-bottom: 4px;">⏱️ ${log.executionTime}</div>`;
-      }
-
-      if (log.subDirective) {
-        html += `<div style="color: #ffcc66; margin-bottom: 4px;"><strong>Sub-directive:</strong> ${log.subDirective}</div>`;
-      }
-
-      if (log.data) {
-        html += this._generateDirectiveSpecificHTML(log);
-      } else {
-        html += `<div style="color: #cccccc;">No specific data available</div>`;
-      }
-
-      return html;
+      return `<div style="color: #cccccc;">Generic log entry</div>`;
     }
 
     _getStatusColor(status) {
@@ -1378,59 +1335,6 @@
         }
       } catch (error) {
         html = `<div style="color: #ff6b6b; font-size: 9px;">Error rendering directive data: ${error.message}</div>`;
-      }
-
-      return html;
-    }
-
-    _generateDirectiveSpecificHTML(log) {
-      if (!log.data) return '<div style="color: #999;">No legacy data available</div>';
-      
-      const data = log.data;
-      let html = '';
-
-      switch (log.type) {
-        case '@for':
-          html += `
-            <div style="color: #ffcc66;"><strong>Array Info:</strong></div>
-            <div style="margin-left: 12px; color: #cccccc;">
-              • Expression: ${data.expression}<br>
-              • Variable: ${data.arrayVariable} (${data.arrayType})<br>
-              • Length: ${data.length} items<br>
-              • Status: ${data.status}<br>
-              • Item: ${data.itemVariable}${data.indexVariable ? `, Index: ${data.indexVariable}` : ''}<br>
-              • Performance: ${data.performance}
-            </div>
-          `;
-          if (data.error) {
-            html += `<div style="color: #ff6b6b; margin-left: 12px;">❌ ${data.error}</div>`;
-          }
-          break;
-
-        case '@fetch':
-          html += `
-            <div style="color: #ffcc66;"><strong>Network Request:</strong></div>
-            <div style="margin-left: 12px; color: #cccccc;">
-              • URL: ${data.url}<br>
-              • Method: ${data.method}<br>
-              • Status: ${data.status}<br>
-              • Result: ${data.resultVariable}<br>
-              • Response Size: ${data.responseSize}<br>
-              • Last Fetch: ${data.lastFetch}
-            </div>
-          `;
-          if (data.error) {
-            html += `<div style="color: #ff6b6b; margin-left: 12px;">❌ ${data.error}</div>`;
-          }
-          break;
-
-        default:
-          html += `
-            <div style="color: #ffcc66;"><strong>Generic Log:</strong></div>
-            <div style="margin-left: 12px; color: #cccccc;">
-              • Status: ${data.status}
-            </div>
-          `;
       }
 
       return html;
@@ -1794,7 +1698,7 @@
       const real = this._renderVNode(this._vdom, this.state);
 
       if (this.root === document.body) {
-        // CORRETTO: Preserva il debug panel durante il re-render
+        // Preserva il debug panel durante il re-render
         const debugButton = document.getElementById('ayisha-debug-button');
         const debugPanel = document.getElementById('ayisha-log-panel');
         
@@ -1844,7 +1748,306 @@
 
       window.scrollTo(scrollX, scrollY);
       this.bindingManager.updateBindings();
+      
+      // Aggiungi gli indicatori @log come sibling dopo il rendering completo
+      this._addLogIndicators();
+      
       this._isRendering = false;
+    }
+
+    _addLogIndicators() {
+      // Trova tutti gli elementi con data-ayisha-log e aggiungi i log come sibling
+      const logElements = this.root.querySelectorAll('[data-ayisha-log="true"]');
+      
+      logElements.forEach(el => {
+        // Rimuovi eventuali log esistenti
+        const existingLog = el.nextElementSibling;
+        if (existingLog && existingLog.classList.contains('ayisha-log-display')) {
+          existingLog.remove();
+        }
+
+        try {
+          const savedDirectiveInfo = JSON.parse(el.getAttribute('data-ayisha-log-info') || '{}');
+          
+          // Crea il display del log
+          const logDisplay = document.createElement('div');
+          logDisplay.className = 'ayisha-log-display';
+          logDisplay.style.cssText = `
+            background: rgba(0, 20, 40, 0.95) !important;
+            color: #fff !important;
+            padding: 8px 12px !important;
+            margin: 4px 0 !important;
+            border-radius: 6px !important;
+            font-family: 'JetBrains Mono', 'Courier New', monospace !important;
+            font-size: 11px !important;
+            border-left: 4px solid #0066cc !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+            max-width: 400px !important;
+            overflow-x: auto !important;
+            line-height: 1.4 !important;
+          `;
+          
+          // Genera il contenuto del log usando i dati salvati
+          const logContent = this._generateInlineLogContent(el, savedDirectiveInfo);
+          logDisplay.innerHTML = logContent;
+          
+          // Inserisci come sibling successivo
+          if (el.parentNode) {
+            el.parentNode.insertBefore(logDisplay, el.nextSibling);
+          }
+          
+        } catch (error) {
+          console.error('❌ Error creating log display:', error);
+        }
+      });
+
+      // Gestisci gli elementi con errori di log
+      const logErrorElements = this.root.querySelectorAll('[data-ayisha-log-error]');
+      
+      logErrorElements.forEach(el => {
+        const errorMessage = el.getAttribute('data-ayisha-log-error');
+        
+        const errorDisplay = document.createElement('div');
+        errorDisplay.className = 'ayisha-log-error-display';
+        errorDisplay.style.cssText = `
+          background: rgba(255, 0, 0, 0.9) !important;
+          color: white !important;
+          padding: 8px 12px !important;
+          margin: 4px 0 !important;
+          border-radius: 6px !important;
+          font-family: monospace !important;
+          font-size: 11px !important;
+          font-weight: bold !important;
+        `;
+        errorDisplay.innerHTML = `❌ Log Error: ${errorMessage}`;
+        
+        // Inserisci come sibling successivo
+        if (el.parentNode) {
+          el.parentNode.insertBefore(errorDisplay, el.nextSibling);
+        }
+      });
+    }
+
+    _generateInlineLogContent(el, savedDirectiveInfo) {
+      // Usa le informazioni delle direttive salvate al momento della configurazione
+      const vNode = {
+        tag: savedDirectiveInfo.tag || el.tagName.toLowerCase(),
+        directives: savedDirectiveInfo.directives || {},
+        subDirectives: savedDirectiveInfo.subDirectives || {}
+      };
+      
+      const ctx = {};
+      
+      let html = `<div style="color: #66ccff; font-weight: bold; margin-bottom: 6px;">📊 &lt;${vNode.tag}&gt;</div>`;
+      
+      let hasTrackedDirectives = false;
+      let directiveCount = 0;
+
+      // Processa ogni direttiva con i logger dedicati
+      Object.keys(vNode.directives).forEach(directive => {
+        if (directive === '@log') return; // Non mostrare @log stesso
+        
+        directiveCount++;
+        
+        if (this.centralLogger.loggers[directive]) {
+          hasTrackedDirectives = true;
+          try {
+            const logData = this.centralLogger.loggers[directive].log(vNode, ctx, this.state);
+            html += this._formatDirectiveLog(directive, logData.data);
+          } catch (error) {
+            html += `<div style="color: #ff6b6b; margin: 2px 0;">
+              <span style="color: #ff9999;">${directive}</span>: 
+              <span style="color: #ffcccc;">❌ ${error.message}</span>
+            </div>`;
+          }
+        } else {
+          // Direttiva non tracciata - mostra solo valore base
+          html += `<div style="color: #999; margin: 2px 0;">
+            <span style="color: #ccc;">${directive}</span>: 
+            <span style="color: #aaa;">${this._truncateValue(vNode.directives[directive])}</span>
+            <span style="color: #777; font-size: 10px;"> [untracked]</span>
+          </div>`;
+        }
+      });
+
+      // Processa le sub-direttive
+      Object.entries(vNode.subDirectives || {}).forEach(([directive, events]) => {
+        Object.keys(events).forEach(event => {
+          directiveCount++;
+          const fullDirective = `${directive}:${event}`;
+          if (this.centralLogger.loggers[directive]) {
+            hasTrackedDirectives = true;
+            try {
+              const logData = this.centralLogger.loggers[directive].log(vNode, ctx, this.state);
+              html += this._formatDirectiveLog(fullDirective, logData.data, true);
+            } catch (error) {
+              html += `<div style="color: #ff6b6b; margin: 2px 0;">
+                <span style="color: #ff9999;">${fullDirective}</span>: 
+                <span style="color: #ffcccc;">❌ ${error.message}</span>
+              </div>`;
+            }
+          } else {
+            html += `<div style="color: #999; margin: 2px 0;">
+              <span style="color: #ccc;">${fullDirective}</span>: 
+              <span style="color: #aaa;">${this._truncateValue(events[event])}</span>
+              <span style="color: #777; font-size: 10px;"> [untracked]</span>
+            </div>`;
+          }
+        });
+      });
+
+      // Se non ci sono direttive tracciate ma ci sono direttive totali
+      if (directiveCount === 0) {
+        html += `<div style="color: #ff9966; font-style: italic; margin: 4px 0;">
+          ⚠️ Element has @log but no other directives
+        </div>`;
+      } else if (!hasTrackedDirectives) {
+        html += `<div style="color: #ffa726; font-style: italic; margin: 4px 0;">
+          Found ${directiveCount} directive(s) but none are tracked by loggers
+        </div>`;
+      }
+
+      // Informazioni sull'elemento
+      if (savedDirectiveInfo.elementInfo) {
+        const info = savedDirectiveInfo.elementInfo;
+        if (info.className || info.id) {
+          html += `<div style="color: #666; font-size: 10px; margin-top: 4px; padding-top: 2px; border-top: 1px solid #333;">
+            ${info.className ? `Class: ${info.className}` : ''}${info.className && info.id ? ' | ' : ''}${info.id ? `ID: ${info.id}` : ''}
+          </div>`;
+        }
+      }
+
+      // Timestamp
+      html += `<div style="color: #666; font-size: 10px; margin-top: 4px; border-top: 1px solid #333; padding-top: 2px;">
+        ${new Date().toLocaleTimeString()}
+      </div>`;
+
+      return html;
+    }
+
+    _formatDirectiveLog(directiveType, data, isSubDirective = false) {
+      const icon = isSubDirective ? '📎' : '📋';
+      const color = this._getDirectiveColor(directiveType.split(':')[0]);
+      
+      let html = `<div style="margin: 4px 0; padding: 4px; background: rgba(255,255,255,0.03); border-radius: 3px;">`;
+      html += `<div style="color: ${color}; font-weight: bold; font-size: 11px; margin-bottom: 2px;">
+        ${icon} ${directiveType}
+      </div>`;
+
+      if (!data) {
+        html += `<div style="color: #999;">No data available</div>`;
+        html += `</div>`;
+        return html;
+      }
+
+      // Formato specifico per ogni tipo di direttiva
+      switch (directiveType.split(':')[0]) {
+        case '@for':
+          html += `<div style="color: #cccccc; font-size: 10px; line-height: 1.3;">
+            Array: <strong style="color: #ffcc66;">${data.arrayVariable || 'unknown'}</strong> (${data.length || 0} items)<br>
+            Status: <span style="color: ${this._getStatusColor(data.status)};">${data.status || 'unknown'}</span><br>
+            Item var: <span style="color: #66ccff;">${data.itemVariable || 'unknown'}</span>
+            ${data.indexVariable ? `, Index var: <span style="color: #66ccff;">${data.indexVariable}</span>` : ''}
+          </div>`;
+          break;
+
+        case '@fetch':
+          const url = data.url || '';
+          html += `<div style="color: #cccccc; font-size: 10px; line-height: 1.3;">
+            URL: <strong style="color: #66ff66;">${url.slice(0, 35)}${url.length > 35 ? '...' : ''}</strong><br>
+            Result var: <span style="color: #ffcc66;">${data.resultVariable || 'result'}</span><br>
+            Status: <span style="color: ${this._getStatusColor(data.status)};">${data.status || 'unknown'}</span><br>
+            Size: <span style="color: #ccc;">${data.responseSize || 'N/A'}</span>
+          </div>`;
+          break;
+
+        case '@model':
+          const value = data.currentValue;
+          const displayValue = typeof value === 'string' 
+            ? `"${value.slice(0, 20)}${value.length > 20 ? '...' : ''}"` 
+            : JSON.stringify(value);
+          html += `<div style="color: #cccccc; font-size: 10px; line-height: 1.3;">
+            Variable: <strong style="color: #66ccff;">${data.variable || 'unknown'}</strong><br>
+            Value: <span style="color: #ffcc66;">${displayValue}</span> 
+            <span style="color: #999;">(${data.valueType})</span><br>
+            ${data.validation ? `Validation: <span style="color: ${this._getStatusColor(data.validation.status)};">${data.validation.status}</span>` : 'No validation'}
+          </div>`;
+          break;
+
+        case '@if':
+        case '@show':
+        case '@hide':
+          const condition = data.condition || '';
+          html += `<div style="color: #cccccc; font-size: 10px; line-height: 1.3;">
+            Condition: <strong style="color: #ffcc66;">${condition.slice(0, 25)}${condition.length > 25 ? '...' : ''}</strong><br>
+            Result: <span style="color: #66ccff;">${data.result}</span> → 
+            <span style="color: ${data.isVisible ? '#66bb6a' : '#ff6b6b'};">${data.isVisible ? 'Visible' : 'Hidden'}</span>
+          </div>`;
+          break;
+
+        case '@click':
+          const action = data.action || '';
+          html += `<div style="color: #cccccc; font-size: 10px; line-height: 1.3;">
+            Action: <strong style="color: #ffcc66;">${action.slice(0, 25)}${action.length > 25 ? '...' : ''}</strong><br>
+            Clicks: <span style="color: #66ccff;">${data.clickCount || 0}</span><br>
+            Last: <span style="color: #999;">${data.lastClick || 'Never'}</span>
+          </div>`;
+          break;
+
+        case '@component':
+          const source = data.source || '';
+          html += `<div style="color: #cccccc; font-size: 10px; line-height: 1.3;">
+            Source: <strong style="color: #66ccff;">${source.slice(0, 30)}${source.length > 30 ? '...' : ''}</strong><br>
+            Status: <span style="color: ${this._getStatusColor(data.status)};">${data.status || 'unknown'}</span><br>
+            Cached: <span style="color: ${data.cached ? '#66bb6a' : '#ff9800'};">${data.cached ? 'Yes' : 'No'}</span>
+          </div>`;
+          break;
+
+        default:
+          html += `<div style="color: #cccccc; font-size: 10px;">
+            Expression: <span style="color: #ffcc66;">${data.expression || 'N/A'}</span><br>
+            Status: <span style="color: #999;">${data.status || 'unknown'}</span>
+          </div>`;
+      }
+
+      if (data.error) {
+        html += `<div style="color: #ff6b6b; font-size: 9px; margin-top: 2px; padding: 2px; background: rgba(255,0,0,0.1); border-radius: 2px;">
+          💥 ${data.error}
+        </div>`;
+      }
+
+      html += `</div>`;
+      return html;
+    }
+
+    _getDirectiveColor(type) {
+      const colors = {
+        '@for': '#ff9800',
+        '@fetch': '#4caf50', 
+        '@model': '#2196f3',
+        '@if': '#9c27b0',
+        '@show': '#9c27b0',
+        '@hide': '#9c27b0',
+        '@click': '#f44336',
+        '@component': '#00bcd4',
+        'generic': '#666666'
+      };
+      return colors[type] || '#666666';
+    }
+
+    _getStatusColor(status) {
+      if (!status) return '#cccccc';
+      if (typeof status === 'string') {
+        if (status.includes('error') || status.includes('❌')) return '#ff6b6b';
+        if (status.includes('loading') || status.includes('⏳')) return '#ffa726';
+        if (status.includes('success') || status.includes('✅')) return '#66bb6a';
+      }
+      return '#cccccc';
+    }
+
+    _truncateValue(value, maxLength = 30) {
+      if (typeof value !== 'string') value = String(value);
+      return value.length > maxLength ? value.slice(0, maxLength) + '...' : value;
     }
 
     _renderVNode(vNode, ctx) {
@@ -2206,15 +2409,16 @@
         el.appendChild(wrapper);
       }
 
+      // @log come sibling invece che come figlio
       if (vNode.directives.hasOwnProperty('@log')) {
-        // CORRETTO: Assicurati che il logger sia inizializzato
+        // Assicurati che il logger sia inizializzato
         if (!this.centralLogger || !this.centralLogger.loggers || Object.keys(this.centralLogger.loggers).length === 0) {
           console.warn('⚠️ CentralLogger not initialized, initializing now...');
           this.centralLogger.initializeLoggers(this.evaluator, this.fetchManager, this.componentManager);
         }
         
         try {
-          // CORRETTO: Crea il panel se non esiste
+          // Crea il panel se non esiste
           if (!this.centralLogger.panelCreated) {
             this.centralLogger.createLogPanel();
           }
@@ -2227,28 +2431,18 @@
           
           this.centralLogger.addLog(elementInfo, vNode, ctx, this.state, el);
 
-          if (!el.querySelector('.ayisha-inline-log')) {
-  const inlineLog = document.createElement('div');
-  inlineLog.className = 'ayisha-inline-log';
-  inlineLog.style.cssText = `
-    background: #222; color: #fff; font-size: 12px; font-family: monospace;
-    border-radius: 4px; margin-top: 6px; padding: 6px 10px; opacity: 0.95;
-    border: 1px solid #444; max-width: 100%; overflow-x: auto;
-  `;
-  // Mostra solo l'ultimo log relativo a questo elemento
-  const lastLog = this.centralLogger.logs.find(l =>
-    l.elementInfo && l.elementInfo.tagName === el.tagName &&
-    l.elementInfo.className === el.className &&
-    l.elementInfo.id === el.id
-  );
-  if (lastLog) {
-    inlineLog.innerHTML = this.centralLogger._generateIntelligentLogHTML(lastLog);
-  } else {
-    inlineLog.textContent = 'No log data';
-  }
-  el.appendChild(inlineLog);
-}
+          // CORREZIONE: Salva le informazioni complete delle direttive originali
+          const directiveInfo = {
+            tag: vNode.tag,
+            directives: { ...vNode.directives },
+            subDirectives: { ...vNode.subDirectives },
+            elementInfo
+          };
           
+          el.setAttribute('data-ayisha-log', 'true');
+          el.setAttribute('data-ayisha-log-info', JSON.stringify(directiveInfo));
+          
+          // Se l'elemento ha @click, configura il logger specifico
           if (vNode.directives['@click']) {
             const clickLogger = this.centralLogger.loggers['@click'];
             if (clickLogger) {
@@ -2261,83 +2455,12 @@
             }
           }
           
-          // CORRETTO: Migliora l'indicatore visivo
-          const indicator = document.createElement('span');
-          indicator.textContent = '📊';
-          indicator.style.cssText = `
-            position: absolute !important;
-            top: -8px !important;
-            right: -8px !important;
-            background: #0066cc !important;
-            color: white !important;
-            border-radius: 50% !important;
-            width: 18px !important;
-            height: 18px !important;
-            font-size: 11px !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            cursor: pointer !important;
-            z-index: 10001 !important;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
-            border: 2px solid white !important;
-            transition: all 0.2s ease !important;
-          `;
-          indicator.title = 'Element is logged - click Debug Log button to view details';
-          indicator.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.centralLogger.togglePanel();
-          });
-          
-          indicator.addEventListener('mouseover', () => {
-            indicator.style.transform = 'scale(1.2) !important';
-            indicator.style.background = '#0088ff !important';
-          });
-          
-          indicator.addEventListener('mouseout', () => {
-            indicator.style.transform = 'scale(1) !important';
-            indicator.style.background = '#0066cc !important';
-          });
-          
-          // CORRETTO: Assicurati che l'elemento sia positioned correttamente
-          const position = getComputedStyle(el).position;
-          if (position === 'static') {
-            el.style.position = 'relative';
-          }
-          
-          el.appendChild(indicator);
-          
-          console.log('✅ @log activated for element:', el.tagName, 'with directives:', Object.keys(vNode.directives));
+          console.log('✅ @log configured for element:', el.tagName, 'with directives:', Object.keys(vNode.directives));
           
         } catch (error) {
           console.error('❌ Error in @log directive:', error);
-          // Crea un indicatore di errore visibile
-          const errorIndicator = document.createElement('span');
-          errorIndicator.textContent = '❌';
-          errorIndicator.style.cssText = `
-            position: absolute !important;
-            top: -8px !important;
-            right: -8px !important;
-            background: #ff0000 !important;
-            color: white !important;
-            border-radius: 50% !important;
-            width: 18px !important;
-            height: 18px !important;
-            font-size: 11px !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            z-index: 10001 !important;
-            border: 2px solid white !important;
-          `;
-          errorIndicator.title = `Log error: ${error.message}`;
-          
-          const position = getComputedStyle(el).position;
-          if (position === 'static') {
-            el.style.position = 'relative';
-          }
-          
-          el.appendChild(errorIndicator);
+          // Crea un indicatore di errore che verrà aggiunto come sibling
+          el.setAttribute('data-ayisha-log-error', error.message);
         }
       }
     }
@@ -2358,7 +2481,7 @@
           let processedCode = codeToRun.replace(/\bstate\./g, '');
 
           try {
-            const contextObjMatch = processedCode.match(/^(\w+)\.\w+(\+\+|--|=.+)$/);
+            const contextObjMatch = processedCode.match(/^(\w+)\.(\w+)(\+\+|--|=.+)$/);
             if (contextObjMatch) {
               const [, objName, propName, operation] = contextObjMatch;
 
@@ -2883,30 +3006,33 @@
           transition: height 0.3s ease-in-out;
         }
         
-        /* CORRETTO: Stili aggiuntivi per @log indicators */
-        .ayisha-log-indicator {
-          position: absolute !important;
-          top: -8px !important;
-          right: -8px !important;
-          background: #0066cc !important;
-          color: white !important;
-          border-radius: 50% !important;
-          width: 18px !important;
-          height: 18px !important;
+        /* Stili per @log display come sibling */
+        .ayisha-log-display {
+          background: rgba(0, 20, 40, 0.95) !important;
+          color: #fff !important;
+          padding: 8px 12px !important;
+          margin: 4px 0 !important;
+          border-radius: 6px !important;
+          font-family: 'JetBrains Mono', 'Courier New', monospace !important;
           font-size: 11px !important;
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-          cursor: pointer !important;
-          z-index: 10001 !important;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
-          border: 2px solid white !important;
-          transition: all 0.2s ease !important;
+          border-left: 4px solid #0066cc !important;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+          max-width: 400px !important;
+          overflow-x: auto !important;
+          line-height: 1.4 !important;
+          display: block !important;
         }
         
-        .ayisha-log-indicator:hover {
-          transform: scale(1.2) !important;
-          background: #0088ff !important;
+        .ayisha-log-error-display {
+          background: rgba(255, 0, 0, 0.9) !important;
+          color: white !important;
+          padding: 8px 12px !important;
+          margin: 4px 0 !important;
+          border-radius: 6px !important;
+          font-family: monospace !important;
+          font-size: 11px !important;
+          font-weight: bold !important;
+          display: block !important;
         }
       `;
       document.head.appendChild(style);
