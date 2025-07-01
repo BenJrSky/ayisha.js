@@ -71,19 +71,17 @@
     ensureVarInState(expr, forceString = false, inputType = null) {
       if (typeof expr !== 'string') return;
 
-      // Patch: If inputType is 'number', always initialize as 0 if not present
-      if (inputType === 'number') {
-        const varName = expr.split('.')[0];
-        if (!(varName in this.state)) {
+      // FIXED: Only initialize if variable doesn't exist
+      const varName = expr.split('.')[0];
+      if (!(varName in this.state)) {
+        if (inputType === 'number') {
           this.state[varName] = 0;
-          //console.log(`🧠 ensureVarInState: ${varName} = 0 (input[type=number])`);
+        } else {
+          this.state[varName] = undefined;
         }
       }
 
-      // CORREZIONE: Sistema intelligente di deduzione del tipo
-      this.smartInitializeVariable(expr, forceString);
-
-      // Gestione variabili annidate tipo form.name o foo.bar.baz
+      // Handle nested variables like form.name or foo.bar.baz
       const dotMatch = expr.match(/([\w$][\w\d$]*(?:\.[\w$][\w\d$]*)+)/);
       if (dotMatch) {
         const path = dotMatch[1].split('.');
@@ -91,7 +89,7 @@
         for (let i = 0; i < path.length; i++) {
           const key = path[i];
           if (!(key in obj)) {
-            obj[key] = (i === path.length - 1) ? (forceString ? undefined : undefined) : {};
+            obj[key] = (i === path.length - 1) ? undefined : {};
           } else if (i < path.length - 1 && typeof obj[key] !== 'object') {
             obj[key] = {};
           }
@@ -100,139 +98,10 @@
       }
     }
 
-    smartInitializeVariable(expr, forceString = false) {
-      // SISTEMA INTELLIGENTE: Deduce il tipo dal contesto
-
-      // 1. Operazioni numeriche: var++, var--, var+=, var*=, etc.
-      const numericOps = expr.match(/([\w$]+)(\+\+|--|\+=|\-=|\*=|\/=)/);
-      if (numericOps) {
-        const varName = numericOps[1];
-        if (!(varName in this.state)) this.state[varName] = 0;
-        let currentValue = this.state[varName];
-        currentValue = (currentValue === '' || currentValue === undefined || currentValue === null) ? 0 : currentValue * 1;
-        if (isNaN(currentValue)) currentValue = 0;
-        this.state[varName] = currentValue;
-        return;
-      }
-
-      // 2. Array operations: var.push, var.filter, var.map, etc.
-      const arrayOps = expr.match(/([\w$]+)\.(push|pop|shift|unshift|filter|map|reduce|forEach|length|slice|splice)/);
-      if (arrayOps) {
-        const varName = arrayOps[1];
-        if (!(varName in this.state)) {
-          this.state[varName] = [];
-          console.log(`🧠 Smart init: ${varName} = [] (detected array operation)`);
-        }
-        return;
-      }
-
-      // 3. Boolean operations: var = true/false, !var, var && something
-      const boolOps = expr.match(/([\w$]+)\s*=\s*(true|false)|!([\w$]+)|([\w$]+)\s*(&&|\|\|)/);
-      if (boolOps) {
-        const varName = boolOps[1] || boolOps[3] || boolOps[4];
-        if (varName && !(varName in this.state)) {
-          this.state[varName] = false;
-          console.log(`🧠 Smart init: ${varName} = false (detected boolean operation)`);
-        }
-        return;
-      }
-
-      // 4. Object property access: var.property
-      const objAccess = expr.match(/([\w$]+)\.[\w$]+(?!\()/);
-      if (objAccess) {
-        const varName = objAccess[1];
-        if (!(varName in this.state)) {
-          this.state[varName] = {};
-          console.log(`🧠 Smart init: ${varName} = {} (detected object property access)`);
-        }
-        return;
-      }
-
-      // 5. String operations: var.toLowerCase, var.includes, var + 'string'
-      const stringOps = expr.match(/([\w$]+)\.(toLowerCase|toUpperCase|includes|indexOf|substring|slice|trim)/);
-      if (stringOps) {
-        const varName = stringOps[1];
-        if (!(varName in this.state)) {
-          this.state[varName] = undefined;
-          console.log(`🧠 Smart init: ${varName} = undefined (detected string operation)`);
-        }
-        return;
-      }
-
-      // 6. Assignments with type hints: var = 123, var = "string", var = []
-      const assignment = expr.match(/([\w$]+)\s*=\s*(.+)/);
-      if (assignment) {
-        const varName = assignment[1];
-        const value = assignment[2].trim();
-
-        if (!(varName in this.state)) {
-          if (/^\d+$/.test(value)) {
-            this.state[varName] = parseInt(value);
-            console.log(`🧠 Smart init: ${varName} = ${parseInt(value)} (detected numeric literal)`);
-          } else if (/^['"].*['"]$/.test(value)) {
-            this.state[varName] = value.slice(1, -1);
-            console.log(`🧠 Smart init: ${varName} = "${value.slice(1, -1)}" (detected string literal)`);
-          } else if (value === 'true' || value === 'false') {
-            this.state[varName] = value === 'true';
-            console.log(`🧠 Smart init: ${varName} = ${value} (detected boolean literal)`);
-          } else if (value === '[]') {
-            this.state[varName] = [];
-            console.log(`🧠 Smart init: ${varName} = [] (detected array literal)`);
-          } else if (value === '{}') {
-            this.state[varName] = {};
-            console.log(`🧠 Smart init: ${varName} = {} (detected object literal)`);
-          } else if (forceString) {
-            this.state[varName] = undefined;
-            console.log(`🧠 Smart init: ${varName} = undefined (forced string)`);
-          }
-        }
-        return;
-      }
-
-      // 7. Single variable reference: se è da solo, cerca indizi dal nome
-      const singleVar = expr.match(/^\s*([\w$]+)\s*$/);
-      if (singleVar) {
-        const varName = singleVar[1];
-        if (!(varName in this.state)) {
-          if (/count|total|index|id|size|length|number|num/i.test(varName)) {
-            this.state[varName] = 0;
-          } else if (/items|list|array|data|results|errors/i.test(varName)) {
-            this.state[varName] = [];
-          } else if (/show|hide|is|has|can|should|valid|enable/i.test(varName)) {
-            this.state[varName] = false;
-          } else if (/user|config|form|settings/i.test(varName)) {
-            this.state[varName] = {};
-          } else if (forceString) {
-            this.state[varName] = undefined;
-          } else {
-            this.state[varName] = undefined;
-          }
-        }
-      }
-    }
-
-    ensureArrayVariable(varName) {
-      if (!(varName in this.state) || !Array.isArray(this.state[varName])) {
-        this.safeSetArrayVariable(varName, []);
-      }
-    }
-
     safeSetArrayVariable(varName, value) {
       try {
-        // Se il proxy reattivo non è ancora attivo, usa Object.defineProperty
-        if (!this.state._isReactive) {
-          Object.defineProperty(this.state, varName, {
-            value: value,
-            writable: true,
-            configurable: true,
-            enumerable: true
-          });
-        } else {
-          // Se il proxy è attivo, assegna normalmente
-          this.state[varName] = value;
-        }
+        this.state[varName] = value;
       } catch (error) {
-        // Fallback: forza Object.defineProperty
         Object.defineProperty(this.state, varName, {
           value: value,
           writable: true,
@@ -379,61 +248,47 @@
       this.watchers = {};
       this.renderCallback = renderCallback;
       this.watchersReady = false;
+      this._isUpdating = false; // FIXED: Prevent cascade updates
     }
 
     makeReactive() {
-      // Segna lo stato come reattivo
       this.state._isReactive = true;
 
       this.state = new Proxy(this.state, {
         set: (obj, prop, val) => {
-          // CORREZIONE: Riduce il debug solo per proprietà specifiche
-          const isDebugMode = ['userId', 'count', 'items'].includes(prop);
-          if (isDebugMode) {
-            console.log(`🔄 PROXY SET: ${prop} =`, val, `(type: ${typeof val})`);
+          // FIXED: Prevent cascade effects during updates
+          if (this._isUpdating) {
+            obj[prop] = val;
+            return true;
           }
 
           const old = obj[prop];
           if (JSON.stringify(old) === JSON.stringify(val)) {
             obj[prop] = val;
-            if (isDebugMode) {
-              console.log(`📝 Proxy: ${prop} unchanged, set anyway`);
-            }
             return true;
           }
 
-          // CORREZIONE: Prevenzione loop infiniti
-          if (prop === 'userUrl' && this._settingUserUrl) {
-            console.warn(`🚨 Prevented userUrl loop!`);
-            return true;
-          }
-
-          if (prop === 'userUrl') {
-            this._settingUserUrl = true;
-            setTimeout(() => { this._settingUserUrl = false; }, 100);
-          }
-
+          // FIXED: Set flag to prevent cascade
+          this._isUpdating = true;
           obj[prop] = val;
-          if (isDebugMode) {
-            console.log(`✅ Proxy: ${prop} set to`, val, `- verification:`, obj[prop]);
+
+          // Execute watchers only if ready and for the specific property
+          if (this.watchersReady && this.watchers[prop]) {
+            this.watchers[prop].forEach(fn => {
+              try {
+                fn(val);
+              } catch (error) {
+                console.error('Watcher execution error:', error, 'for property:', prop);
+              }
+            });
           }
 
-          // Esegui watcher solo se sono pronti e non siamo in un loop
-          if (this.watchersReady && this.watchers[prop] && !this._executingWatcher) {
-            this._executingWatcher = true;
-            setTimeout(() => {
-              this.watchers[prop].forEach(fn => {
-                try {
-                  fn(val);
-                } catch (error) {
-                  console.error('Watcher execution error:', error, 'for property:', prop, 'new value:', val);
-                }
-              });
-              this._executingWatcher = false;
-            }, 0);
-          }
+          // FIXED: Reset flag and render after all updates
+          setTimeout(() => {
+            this._isUpdating = false;
+            this.renderCallback();
+          }, 0);
 
-          this.renderCallback();
           return true;
         }
       });
@@ -694,14 +549,12 @@
     }
 
     bindModel(el, key, ctx) {
-      // Patch: Pass input type to ensureVarInState
       this.evaluator.ensureVarInState(key, true, el.type === 'number' ? 'number' : null);
       let ref = this.evaluator.state;
       if (key.includes('.')) {
         const path = key.split('.');
         for (let i = 0; i < path.length - 1; i++) ref = ref[path[i]];
         const last = path[path.length - 1];
-        // Patch: For number input, always initialize as 0 if not present
         if (el.type === 'number') {
           if (typeof ref[last] !== 'number') ref[last] = 0;
         } else {
@@ -722,13 +575,12 @@
         } else if (el.type === 'radio') {
           el.checked = val == el.value;
         } else if (el.type === 'color') {
-          // CORREZIONE: Gestione speciale per input color
           if (val && typeof val === 'string' && val.match(/^#[0-9A-Fa-f]{6}$/)) {
             el.value = val;
           } else if (val && typeof val === 'string' && val.match(/^[0-9A-Fa-f]{6}$/)) {
             el.value = '#' + val;
           } else {
-            el.value = '#000000'; // Default color
+            el.value = '#000000';
           }
         } else {
           if (el.value !== String(val)) el.value = val ?? '';
@@ -742,7 +594,6 @@
         this.evaluator.ensureVarInState(key, true, el.type === 'number' ? 'number' : null);
         let ref = this.evaluator.state;
         let value = el.value;
-        // Se input type=number, salva come numero (o null se vuoto)
         if (el.type === 'number') {
           value = value === '' ? undefined : Number(value);
         }
@@ -776,12 +627,10 @@
         return;
       }
 
-      // Assicura che state._validate esista
       if (!this.evaluator.state._validate) {
         this.evaluator.state._validate = {};
       }
 
-      // Inizializza la validazione a false
       this.evaluator.state._validate[modelVar] = false;
 
       const validate = () => {
@@ -831,74 +680,20 @@
               break;
             }
           }
-          else if (rule === 'phone') {
-            const phoneRegex = /^(\+39|0039|39)?[\s\-]?([0-9]{2,3})[\s\-]?([0-9]{6,7})$/;
-            if (el.value && !phoneRegex.test(el.value)) {
-              valid = false;
-              break;
-            }
-          }
-          else if (rule === 'url') {
-            const urlRegex = /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/;
-            if (el.value && !urlRegex.test(el.value)) {
-              valid = false;
-              break;
-            }
-          }
-          else if (rule.startsWith('/') && rule.endsWith('/')) {
-            // Regex diretta: /pattern/
-            try {
-              const pattern = rule.slice(1, -1); // Rimuove i delimitatori /
-              const regex = new RegExp(pattern);
-              if (el.value && !regex.test(el.value)) {
-                valid = false;
-                break;
-              }
-            } catch (e) {
-              console.error('Invalid regex pattern:', rule, e);
-              valid = false;
-              break;
-            }
-          }
-          else if (rule.startsWith('regex:')) {
-            // Supporto alternativo: regex:/pattern/ o regex:pattern
-            try {
-              let pattern = rule.substring(6); // Rimuove 'regex:'
-              if (pattern.startsWith('/') && pattern.endsWith('/')) {
-                pattern = pattern.slice(1, -1);
-              }
-              const regex = new RegExp(pattern);
-              if (el.value && !regex.test(el.value)) {
-                valid = false;
-                break;
-              }
-            } catch (e) {
-              console.error('Invalid regex pattern:', rule, e);
-              valid = false;
-              break;
-            }
-          }
         }
 
-        // Aggiorna state._validate[variabile]
         this.evaluator.state._validate[modelVar] = valid;
-
-        // Applica classi CSS
         el.classList.toggle('invalid', !valid);
         el.classList.toggle('valid', valid && el.value.length > 0);
 
         return valid;
       };
 
-      // Validazione iniziale
       validate();
-
-      // Validazione su input e blur
       el.addEventListener('input', () => {
         validate();
         this.renderCallback();
       });
-
       el.addEventListener('blur', validate);
     }
 
@@ -962,34 +757,21 @@
         }
       });
 
-      // CORREZIONE: Dopo aver eseguito i blocchi init, forza i tipi corretti per variabili numeriche
-      const shouldBeNumbers = ['userId', 'count', 'total', 'index', 'sinistra', 'destra', 'clicks', 'enterPresses', 'debounceCount', 'fontSize', 'sum'];
-      shouldBeNumbers.forEach(varName => {
-        if (varName in this.state) {
-          let value = this.state[varName];
-          if (typeof value === 'string' && value !== '') {
-            const parsed = parseFloat(value);
-            if (!isNaN(parsed)) {
-              this.state[varName] = parsed;
-              console.log(`🔧 Converted ${varName} from "${value}" to ${parsed}`);
-            }
-          } else if (value === '' || value === null || value === undefined) {
-            this.state[varName] = 0;
-            console.log(`🔧 Initialized ${varName} to 0`);
-          }
+      // FIXED: Removed aggressive type conversion
+      // Only ensure essential variables exist
+      const essentialVars = ['_validate', 'currentPage'];
+      essentialVars.forEach(varName => {
+        if (!(varName in this.state)) {
+          if (varName === '_validate') this.state[varName] = {};
+          else if (varName === 'currentPage') this.state[varName] = '';
         }
       });
     }
 
     _preInitializeEssentialVariables() {
-      // CORREZIONE: Inizializza solo le variabili critiche del framework
-      // Non più liste infinite di variabili!
-
-      // Solo le variabili essenziali per il funzionamento del framework
+      // FIXED: Only initialize framework-essential variables
       if (!this.state._validate) this.state._validate = {};
       if (!this.state.currentPage) this.state.currentPage = '';
-
-      console.log('🔧 Initialized only essential framework variables');
     }
 
     _makeReactive() {
@@ -1112,9 +894,8 @@
     _renderVNode(vNode, ctx) {
       if (!vNode) return null;
 
-      // Ensure variables exist in state
+      // FIXED: Only ensure variables for the actual expressions in use
       Object.entries(vNode.directives || {}).forEach(([dir, expr]) => {
-        // For @model, force string initialization
         if (dir === '@model') this.evaluator.ensureVarInState(expr, true);
         else this.evaluator.ensureVarInState(expr);
       });
@@ -1162,29 +943,6 @@
         return this.errorHandler.createErrorElement(msg);
       }
 
-      // Network/parsing errors
-      if (this.fetchManager.lastFetchUrl && this.fetchManager.fetched) {
-        let foundError = null;
-        let foundDir = null;
-        let foundUrl = null;
-        for (const dir in vNode.directives) {
-          const rk = vNode.directives['@result'] || 'result';
-          const url = this.fetchManager.lastFetchUrl[rk];
-          if (url && this.fetchManager.fetched[url] && this.fetchManager.fetched[url].error) {
-            foundError = this.fetchManager.fetched[url].error;
-            foundDir = dir;
-            foundUrl = url;
-            break;
-          }
-        }
-        if (foundError && foundDir) {
-          let allDirs = Object.entries(vNode.directives)
-            .map(([k, v]) => `<b>${k}</b>: <code>${String(v)}</code>`)
-            .join('<br>');
-          return this.errorHandler.createWarningElement(`${allDirs}<br><b>Error:</b> ${foundError}`);
-        }
-      }
-
       // Handle text nodes
       if (vNode.type === 'text') {
         return document.createTextNode(this.evaluator.evalText(vNode.text, ctx));
@@ -1228,18 +986,6 @@
       // Create DOM element
       const el = document.createElement(vNode.tag);
 
-      // CORREZIONE: Salva il testo originale per le direttive hover
-      if (vNode.subDirectives && vNode.subDirectives['@text'] && vNode.subDirectives['@text']['hover']) {
-        // Se c'è testo nei children, salvalo
-        const textContent = vNode.children
-          .filter(child => child.type === 'text')
-          .map(child => child.text)
-          .join('');
-        if (textContent) {
-          el._ayishaOriginalText = textContent;
-        }
-      }
-
       // Set attributes
       Object.entries(vNode.attrs).forEach(([k, v]) => {
         el.setAttribute(k, this.evaluator.evalAttrValue(v, ctx));
@@ -1260,30 +1006,12 @@
         if (node) el.appendChild(node);
       });
 
-      // CORREZIONE: Dopo aver aggiunto i children, salva il testo per hover se necessario
-      if (vNode.subDirectives && vNode.subDirectives['@text'] && vNode.subDirectives['@text']['hover']) {
-        if (!el._ayishaOriginalText) {
-          el._ayishaOriginalText = el.textContent || el.innerText || '';
-        }
-      }
-
-      // Handle logging wrapper
-      const logWrapper = this._createLogWrapper(vNode, ctx);
-      if (logWrapper) {
-        const frag = document.createDocumentFragment();
-        frag.appendChild(el);
-        frag.appendChild(logWrapper);
-        return frag;
-      }
-
       return el;
     }
 
     _handleForDirective(vNode, ctx) {
-      // CORREZIONE: Supporta sia "item in items" che "index, item in items"
       let match = vNode.directives['@for'].match(/(\w+),\s*(\w+) in (.+)/);
       if (match) {
-        // Sintassi: "i, item in items"
         const [, indexVar, itemVar, expr] = match;
         let arr = this.evaluator.evalExpr(expr, ctx) || [];
         if (typeof arr === 'object' && !Array.isArray(arr)) arr = Object.values(arr);
@@ -1298,7 +1026,6 @@
         return frag;
       }
 
-      // Sintassi originale: "item in items"
       match = vNode.directives['@for'].match(/(\w+) in (.+)/);
       if (match) {
         const [, it, expr] = match;
@@ -1308,7 +1035,6 @@
         arr.forEach((val, index) => {
           const clone = JSON.parse(JSON.stringify(vNode));
           delete clone.directives['@for'];
-          // CORREZIONE: Aggiungi sempre $index come variabile disponibile
           const subCtx = { ...ctx, [it]: val, $index: index };
           const node = this._renderVNode(clone, subCtx);
           if (node) frag.appendChild(node);
@@ -1336,7 +1062,6 @@
     _handleFunctionalDirectives(vNode, ctx) {
       let sourceData = this.evaluator.evalExpr(vNode.directives['@source'], ctx);
 
-      // CORREZIONE: Assicurati che sourceData sia sempre un array
       let arr = [];
       if (Array.isArray(sourceData)) {
         arr = sourceData;
@@ -1345,7 +1070,6 @@
       } else if (sourceData == null) {
         arr = [];
       } else {
-        // Se è un valore singolo, mettilo in un array
         arr = [sourceData];
       }
 
@@ -1412,7 +1136,7 @@
 
     _handleComponentDirective(vNode, ctx) {
       if (!vNode.directives['@src']) {
-        return this.errorHandler.createErrorElement(`Error: <b>&lt;component&gt;</b> requires the <b>@src</b> attribute (e.g. <code>&lt;component @src="file.html"&gt;</code>)`);
+        return this.errorHandler.createErrorElement(`Error: <b>&lt;component&gt;</b> requires the <b>@src</b> attribute`);
       }
 
       let srcUrl = null;
@@ -1432,11 +1156,7 @@
       }
 
       if (!srcUrl || srcUrl === 'undefined' || srcUrl === 'null') {
-        return this.errorHandler.createErrorElement(`Error: Invalid component URL (<b>${vNode.directives['@src']}</b>)`);
-      }
-
-      if (this.componentManager.getCachedComponent(srcUrl) && this.componentManager.getCachedComponent(srcUrl).includes('component-error')) {
-        return this.errorHandler.createErrorElement(`Error: component <b>${srcUrl}</b> not rendered or not found.`);
+        return this.errorHandler.createErrorElement(`Error: Invalid component URL`);
       }
 
       if (this.componentManager.getCachedComponent(srcUrl)) {
@@ -1475,13 +1195,7 @@
 
       const placeholder = document.createElement('div');
       placeholder.className = 'component-loading';
-      if (this.componentManager.isLoading(srcUrl)) {
-        placeholder.textContent = `Caricamento componente: ${srcUrl}`;
-      } else if (this.componentManager.getCachedComponent(srcUrl) && this.componentManager.getCachedComponent(srcUrl).includes('component-error')) {
-        placeholder.innerHTML = this.componentManager.getCachedComponent(srcUrl);
-      } else {
-        placeholder.textContent = `In attesa del componente: ${srcUrl}`;
-      }
+      placeholder.textContent = `Loading component: ${srcUrl}`;
       return placeholder;
     }
 
@@ -1516,7 +1230,7 @@
     }
 
     _handleStandardDirectives(el, vNode, ctx) {
-      // @click
+      // @click - FIXED: Isolated execution to prevent cross-variable interference
       if (vNode.directives['@click']) {
         el.addEventListener('click', e => {
           if (el.tagName === 'BUTTON') {
@@ -1529,125 +1243,60 @@
             codeToRun = this.evaluator.evalAttrValue(expr, ctx);
           }
 
+          // FIXED: Clean processing without state prefix issues
           let processedCode = codeToRun.replace(/\bstate\./g, '');
 
-          console.log(`🚀 CLICK EVENT:`, {
-            button: el.textContent?.trim(),
-            expression: expr,
-            processed: processedCode,
-            currentState: { ...this.state }
-          });
-
           try {
-            // CORREZIONE: Gestione specifica per casi comuni
-
-            // 1. Incrementi semplici: userId++, count++, etc.
+            // FIXED: More precise variable handling
             const incrementMatch = processedCode.match(/^(\w+)\+\+$/);
             if (incrementMatch) {
               const varName = incrementMatch[1];
               if (!(varName in this.state)) {
                 this.state[varName] = 0;
               }
-              let currentValue = this.state[varName];
-              let originalValue = currentValue;
-              // Conversione numerica forzata
-              currentValue = (currentValue === '' || currentValue === undefined || currentValue === null) ? 0 : currentValue * 1;
-              if (isNaN(currentValue)) currentValue = 0;
-              const newValue = currentValue + 1;
-              try {
-                Object.defineProperty(this.state, varName, {
-                  value: newValue,
-                  writable: true,
-                  configurable: true,
-                  enumerable: true
-                });
-              } catch (err) {
-                this.state[varName] = newValue;
-              }
-              setTimeout(() => this.render(), 0);
+              let currentValue = Number(this.state[varName]) || 0;
+              this.state[varName] = currentValue + 1;
               return;
             }
 
-            // 2. Decrementi semplici: count--, etc.
             const decrementMatch = processedCode.match(/^(\w+)--$/);
             if (decrementMatch) {
               const varName = decrementMatch[1];
-              // CORREZIONE: Stessa logica robusta per i decrementi
-              let currentValue = this.state[varName];
-              currentValue = (currentValue === '' || currentValue === undefined || currentValue === null) ? 0 : currentValue * 1;
-              if (isNaN(currentValue)) currentValue = 0;
+              let currentValue = Number(this.state[varName]) || 0;
               this.state[varName] = currentValue - 1;
-              this.render();
               return;
             }
 
-            // 2.5. Operazioni aritmetiche: count += 1, etc.
             const arithMatch = processedCode.match(/^(\w+)\s*([+\-*\/])=\s*(.+)$/);
             if (arithMatch) {
               const [, varName, operator, valueExpr] = arithMatch;
-              try {
-                let currentValue = this.state[varName];
-                let operandValue = this.evaluator.evalExpr(valueExpr, ctx);
-                // Conversione numerica forzata
-                currentValue = (currentValue === '' || currentValue === undefined || currentValue === null) ? 0 : currentValue * 1;
-                if (isNaN(currentValue)) currentValue = 0;
-                operandValue = (operandValue === '' || operandValue === undefined || operandValue === null) ? 0 : operandValue * 1;
-                if (isNaN(operandValue)) operandValue = 0;
-                switch (operator) {
-                  case '+': this.state[varName] = currentValue + operandValue; break;
-                  case '-': this.state[varName] = currentValue - operandValue; break;
-                  case '*': this.state[varName] = currentValue * operandValue; break;
-                  case '/': this.state[varName] = operandValue !== 0 ? currentValue / operandValue : currentValue; break;
-                }
-                this.render();
-                return;
-              } catch (err) {
-                // fallback
+              let currentValue = Number(this.state[varName]) || 0;
+              let operandValue = Number(this.evaluator.evalExpr(valueExpr, ctx)) || 0;
+              switch (operator) {
+                case '+': this.state[varName] = currentValue + operandValue; break;
+                case '-': this.state[varName] = currentValue - operandValue; break;
+                case '*': this.state[varName] = currentValue * operandValue; break;
+                case '/': this.state[varName] = operandValue !== 0 ? currentValue / operandValue : currentValue; break;
               }
+              return;
             }
 
-            // 3. Filter operations con contesto: items = items.filter(...)
-            const filterMatch = processedCode.match(/^(\w+)\s*=\s*\1\.filter\((\w+)\s*=>\s*\2\.(\w+)\s*!==\s*(\w+)\.(\w+)\)$/);
-            if (filterMatch && ctx) {
-              const [, arrayName, paramName, paramProp, contextVar, contextProp] = filterMatch;
-              if (ctx[contextVar] && this.state[arrayName]) {
-                const contextValue = ctx[contextVar][contextProp];
-                this.state[arrayName] = this.state[arrayName].filter(item => item[paramProp] !== contextValue);
-                console.log(`✅ Filtered ${arrayName}, removed item with ${paramProp}:`, contextValue);
-                this.render();
-                return;
-              }
-            }
-
-            // 4. Assegnazioni dirette: variable = value
             const assignMatch = processedCode.match(/^(\w+)\s*=\s*(.+)$/);
             if (assignMatch) {
               const [, varName, valueExpr] = assignMatch;
-              try {
-                const value = this.evaluator.evalExpr(valueExpr, ctx);
-                this.state[varName] = value;
-                console.log(`✅ Assigned ${varName} =`, value);
-                this.render();
-                return;
-              } catch (err) {
-                console.log('Assignment failed, trying general execution');
-              }
+              const value = this.evaluator.evalExpr(valueExpr, ctx);
+              this.state[varName] = value;
+              return;
             }
 
-            // 5. Fallback: esecuzione generale
-            console.log('🔄 Using general execution for:', processedCode);
-            const func = new Function('state', 'ctx', `
-              with(state) {
-                ${processedCode}
-              }
-            `);
+            // General execution as fallback
+            const func = new Function('state', 'ctx', `with(state) { ${processedCode} }`);
             func(this.state, ctx || {});
 
           } catch (err) {
-            console.error('❌ Click execution failed:', err, 'Code:', processedCode);
+            console.error('Click execution error:', err, 'Code:', processedCode);
             this.errorHandler.showAyishaError(el, err, processedCode);
           }
-          this.render();
         });
       }
 
@@ -1660,20 +1309,12 @@
             codeToRun = this.evaluator.evalAttrValue(rawExpr, ctx);
           }
           try {
-            // CORREZIONE: Gestione migliorata per espressioni con 'state.'
             const cleanCode = codeToRun.replace(/\bstate\./g, '');
             new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
               (this.state, ctx, e);
           } catch (err) {
-            // Fallback: prova con il codice originale
-            try {
-              new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${codeToRun}}}`)
-                (this.state, ctx, e);
-            } catch (err2) {
-              this.errorHandler.showAyishaError(el, err2, codeToRun);
-            }
+            this.errorHandler.showAyishaError(el, err, codeToRun);
           }
-          this.render();
         };
         el.addEventListener('mouseover', applyHover);
         el.addEventListener('mouseout', applyHover);
@@ -1741,7 +1382,6 @@
       if (vNode.directives['@animate']) {
         const animationClass = vNode.directives['@animate'];
         el.classList.add(animationClass);
-        // CORREZIONE: Se la classe è fade-in, assicurati che l'elemento sia visibile
         if (animationClass === 'fadeIn' || animationClass === 'fade-in') {
           el.style.opacity = '1';
           el.style.transition = 'opacity 0.3s ease-in-out';
@@ -1790,24 +1430,16 @@
               return;
             }
 
-            // Default: execute as pure JS code or interpolated
+            // Default: execute as pure JS code
             el.addEventListener(eventName, e => {
               let codeToRun = getInterpolatedExpr();
               try {
-                // CORREZIONE: Gestione migliorata per espressioni con 'state.'
                 const cleanCode = codeToRun.replace(/\bstate\./g, '');
                 new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
                   (this.state, ctx, e);
               } catch (err) {
-                // Fallback: prova con il codice originale
-                try {
-                  new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${codeToRun}}}`)
-                    (this.state, ctx, e);
-                } catch (err2) {
-                  this.errorHandler.showAyishaError(el, err2, codeToRun);
-                }
+                this.errorHandler.showAyishaError(el, err, codeToRun);
               }
-              this.render();
             });
           }
         });
@@ -1831,22 +1463,14 @@
             codeToRun = this.evaluator.evalAttrValue(expr, ctx);
           }
           try {
-            // CORREZIONE: Gestione migliorata per espressioni con 'state.'
             const cleanCode = codeToRun.replace(/\bstate\./g, '');
             new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
               (this.state, ctx, e);
-                   } catch (err) {
-            // Fallback: prova con il codice originale
-            try {
-              new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${codeToRun}}}`)
-                (this.state, ctx, e);
-            } catch (err2) {
-              this.errorHandler.showAyishaError(el, err2, codeToRun);
-            }
+          } catch (err) {
+            this.errorHandler.showAyishaError(el, err, codeToRun);
           }
           this.fetchManager.setupFetch(expr, vNode.directives['@result'] || 'result', ctx, e, true);
         }
-        this.render();
       });
     }
 
@@ -1891,7 +1515,6 @@
     }
 
     _handleTextSubDirective(el, evt, getInterpolatedExpr, ctx) {
-      // CORREZIONE: Salva il testo originale all'inizio del rendering
       if (!el._ayishaOriginalText) {
         el._ayishaOriginalText = el.textContent || el.innerText || '';
       }
@@ -1922,36 +1545,8 @@
           this.addWatcher(prop, function (newVal) {
             const state = window.ayisha.state;
             try {
-              // CORREZIONE FINALE: Garantisci sempre che le variabili esistano
               window.ayisha.evaluator.ensureVarInState(code);
-
-              // Esecuzione ultra-sicura del codice
-              new Function('state', 'newVal', `
-                with(state) { 
-                  // Garantisce che le variabili comuni esistano sempre
-                  if (!state.log || !Array.isArray(state.log)) {
-                    state.log = [];
-                  }
-                  if (!state.errors || !Array.isArray(state.errors)) {
-                    state.errors = [];
-                  }
-                  if (!state.items || !Array.isArray(state.items)) {
-                    state.items = [];
-                  }
-                  if (!state.data || !Array.isArray(state.data)) {
-                    state.data = [];
-                  }
-                  if (!state.results || !Array.isArray(state.results)) {
-                    state.results = [];
-                  }
-                  if (!state.posts || !Array.isArray(state.posts)) {
-                    state.posts = [];
-                  }
-                  
-                  // Ora esegui il codice
-                  ${code}
-                }
-              `)(state, newVal);
+              new Function('state', 'newVal', `with(state) { ${code} }`)(state, newVal);
             } catch (e) {
               console.error('Watcher error:', e, 'Code:', code, 'Prop:', prop, 'NewVal:', newVal);
             }
@@ -1975,29 +1570,7 @@
             const state = window.ayisha.state;
             window.ayisha.evaluator.ensureVarInState(code);
             try {
-              // Prepara le variabili array prima dell'esecuzione
-              new Function('state', 'newVal', `
-                with(state){
-                  // Variabili di sicurezza
-                  if (!state.log || !Array.isArray(state.log)) {
-                    state.log = [];
-                  }
-                  if (!state.errors || !Array.isArray(state.errors)) {
-                    state.errors = [];
-                  }
-                  if (!state.items || !Array.isArray(state.items)) {
-                    state.items = [];
-                  }
-                  if (!state.data || !Array.isArray(state.data)) {
-                    state.data = [];
-                  }
-                  if (!state.posts || !Array.isArray(state.posts)) {
-                    state.posts = [];
-                  }
-                  
-                  ${code}
-                }
-              `)(state, newVal);
+              new Function('state', 'newVal', `with(state){ ${code} }`)(state, newVal);
             } catch (e) {
               console.error('Generic watcher error:', e, 'Code:', code);
             }
@@ -2006,210 +1579,8 @@
       });
     }
 
-    _createLogWrapper(vNode, ctx) {
-      if (!vNode.directives.hasOwnProperty('@log')) return null;
-
-      const logWrapper = document.createElement('div');
-      logWrapper.className = 'ayisha-console-wrapper';
-      logWrapper.style.background = '#222';
-      logWrapper.style.color = '#fff';
-      logWrapper.style.padding = '1em';
-      logWrapper.style.borderRadius = '4px';
-      logWrapper.style.marginTop = '1em';
-      logWrapper.style.overflow = 'auto';
-      logWrapper.style.fontSize = '0.95em';
-      logWrapper.style.fontFamily = 'monospace';
-      logWrapper.style.border = '1px solid #444';
-
-      const title = document.createElement('div');
-      title.textContent = 'AYISHA LOG';
-      title.style.fontWeight = 'bold';
-      title.style.marginBottom = '0.5em';
-      title.style.letterSpacing = '1px';
-      logWrapper.appendChild(title);
-
-      const renderValue = (expr, ctx) => {
-        try {
-          const val = this.evaluator.evalExpr(expr, ctx);
-          if (typeof val === 'object') return `<pre style=\"color:#fff;background:#333;padding:0.5em;border-radius:3px;overflow:auto;width:100%;\">${JSON.stringify(val, null, 2)}</pre>`;
-          return `<span style=\"color:#0f0\">${String(val)}</span>`;
-        } catch (err) {
-          return `<span style=\"color:#f55">Errore: ${err.message}</span>`;
-        }
-      };
-
-      // Handle fetch info
-      this._addFetchInfoToLog(logWrapper, vNode, ctx);
-
-      // Handle directives
-      this._addDirectivesToLog(logWrapper, vNode, ctx, renderValue);
-
-      // Handle sub-directives
-      this._addSubDirectivesToLog(logWrapper, vNode, ctx, renderValue);
-
-      return logWrapper;
-    }
-
-    _addFetchInfoToLog(logWrapper, vNode, ctx) {
-      let fetchDir = null, fetchExpr = null;
-      Object.entries(vNode.directives).forEach(([dir, expr]) => {
-        if (dir.startsWith('@fetch')) {
-          fetchDir = dir;
-          fetchExpr = expr;
-        }
-      });
-      Object.entries(vNode.subDirectives).forEach(([dir, evs]) => {
-        if (dir === '@fetch') {
-          Object.entries(evs).forEach(([evt, expr]) => {
-            fetchDir = `${dir}:${evt}`;
-            fetchExpr = expr;
-          });
-        }
-      });
-
-      if (fetchDir) {
-        let url = null, method = 'GET', headers = {}, payload = null;
-        try {
-          url = this.evaluator.evalExpr(fetchExpr, ctx);
-        } catch { }
-
-        if (!url && typeof fetchExpr === 'string') {
-          const m = fetchExpr.match(/([\w$]+)\s*=\s*(.+)/);
-          if (m) url = this.evaluator.evalExpr(m[2], ctx);
-        }
-
-        if (vNode.directives['@method']) method = this.evaluator.evalExpr(vNode.directives['@method'], ctx) || 'GET';
-        if (vNode.directives['@headers']) headers = this.evaluator.evalExpr(vNode.directives['@headers'], ctx) || {};
-        if (vNode.directives['@payload']) payload = this.evaluator.evalExpr(vNode.directives['@payload'], ctx);
-
-        let urlHtml = '';
-        if (typeof url === 'string') {
-          urlHtml = `<span style=\"color:#0ff\">${url}</span>`;
-        } else if (url && typeof url === 'object') {
-          let asString = '';
-          try {
-            asString = this.evaluator.evalAttrValue(fetchExpr, ctx);
-          } catch { }
-          if (asString && typeof asString === 'string' && asString !== '[object Object]') {
-            urlHtml = `<span style=\"color:#0ff\">${asString}</span>`;
-          } else {
-            urlHtml = `<pre style=\"color:#0ff;background:#222;padding:0.3em;display:inline-block;max-width:400px;overflow:auto;\">${JSON.stringify(url, null, 2)}</pre>`;
-          }
-        } else {
-          urlHtml = '<i>undefined</i>';
-        }
-
-        let headersHtml = '';
-        if (headers && typeof headers === 'object' && Object.keys(headers).length) {
-          headersHtml = `<pre style=\"color:#0ff;background:#222;padding:0.3em;display:inline-block;max-width:400px;overflow:auto;\">${JSON.stringify(headers, null, 2)}</pre>`;
-        } else {
-          headersHtml = '{}';
-        }
-
-        let payloadHtml = '';
-        if (payload !== null && payload !== undefined) {
-          if (typeof payload === 'object') {
-            payloadHtml = `<pre style=\"color:#0ff;background:#222;padding:0.3em;display:inline-block;max-width:400px;overflow:auto;\">${JSON.stringify(payload, null, 2)}</pre>`;
-          } else {
-            payloadHtml = `<span style=\"color:#0ff\">${String(payload)}</span>`;
-          }
-        }
-
-        const fetchInfo = document.createElement('div');
-        fetchInfo.style.marginBottom = '0.5em';
-        fetchInfo.innerHTML = `<b style=\"color:#ffd700\">${fetchDir}</b><br>` +
-          `<b style=\"color:#aaa\">URL:</b> ${urlHtml}<br>` +
-          `<b style=\"color:#aaa\">Method:</b> <span style=\"color:#0ff\">${method}</span><br>` +
-          `<b style=\"color:#aaa\">Headers:</b> ${headersHtml}<br>` +
-          (payloadHtml ? `<b style=\"color:#aaa\">Payload:</b> ${payloadHtml}<br>` : '');
-        logWrapper.appendChild(fetchInfo);
-      }
-    }
-
-    _addDirectivesToLog(logWrapper, vNode, ctx, renderValue) {
-      Object.entries(vNode.directives).forEach(([dir, expr]) => {
-        if (dir === '@log') return;
-
-        let info = '';
-        if (dir === '@model') {
-          const val = this.evaluator.evalExpr(expr, ctx);
-          info = `<span style=\"color:#0ff\">(proprietà: <b>${expr}</b>, valore: <b>${val}</b>)</span>`;
-        } else if (dir === '@watch') {
-          info = `<span style=\"color:#0ff\">(osserva: <b>${expr}</b>)</span>`;
-        } else if (dir === '@text') {
-          const val = this.evaluator.evalExpr(expr, ctx);
-          info = `<span style=\"color:#0ff\">(valore: <b>${val}</b>)</span>`;
-        } else if (dir === '@class') {
-          const val = this.evaluator.evalExpr(expr, ctx);
-          info = `<span style=\"color:#0ff\">(classi: <b>${JSON.stringify(val)}</b>)</span>`;
-        } else if (dir === '@style') {
-          const val = this.evaluator.evalExpr(expr, ctx);
-          info = `<span style=\"color:#0ff\">(stili: <b>${JSON.stringify(val)}</b>)</span>`;
-        } else if (dir === '@validate') {
-          info = `<span style=\"color:#0ff\">(regole: <b>${expr}</b>)</span>`;
-        } else if (dir === '@result') {
-          const val = this.evaluator.evalExpr(expr, ctx);
-          info = `<span style=\"color:#0ff\">(variabile: <b>${expr}</b>, valore: <b>${JSON.stringify(val)}</b>)</span>`;
-        } else if (dir === '@for') {
-          info = `<span style=\"color:#0ff\">(iterazione: <b>${expr}</b>)</span>`;
-        } else if (dir === '@if' || dir === '@show' || dir === '@hide') {
-          const val = this.evaluator.evalExpr(expr, ctx);
-          info = `<span style=\"color:#0ff\">(condizione: <b>${expr}</b> = <b>${val}</b>)</span>`;
-        } else if (dir === '@component') {
-          info = `<span style=\"color:#0ff\">(componente: <b>${expr}</b>)</span>`;
-        } else if (dir === '@set') {
-          info = `<span style=\"color:#0ff\">(assegnazione: <b>${expr}</b>)</span>`;
-        } else if (dir === '@key') {
-          info = `<span style=\"color:#0ff\">(chiave: <b>${expr}</b>)</span>`;
-        } else if (dir === '@page') {
-          info = `<span style=\"color:#0ff\">(pagina: <b>${expr}</b>)</span>`;
-        } else if (dir === '@animate') {
-          info = `<span style=\"color:#0ff\">(animazione: <b>${expr}</b>)</span>`;
-        }
-
-        const row = document.createElement('div');
-        row.style.marginBottom = '0.5em';
-        row.innerHTML = `<b style=\"color:#ffd700\">${dir}</b>: <span>${renderValue(expr, ctx)}</span> ${info}`;
-        logWrapper.appendChild(row);
-      });
-    }
-
-    _addSubDirectivesToLog(logWrapper, vNode, ctx, renderValue) {
-      Object.entries(vNode.subDirectives).forEach(([dir, evs]) => {
-        if (dir === '@fetch') return;
-        Object.entries(evs).forEach(([evt, expr]) => {
-          let info = '';
-          if (dir === '@model') {
-            const val = this.evaluator.evalExpr(expr, ctx);
-            info = `<span style=\"color:#0ff\">(proprietà: <b>${expr}</b>, valore: <b>${val}</b>, evento: <b>${evt}</b>)</span>`;
-          } else if (dir === '@watch') {
-            info = `<span style=\"color:#0ff\">(osserva: <b>${expr}</b>, evento: <b>${evt}</b>)</span>`;
-          } else if (dir === '@text') {
-            const val = this.evaluator.evalExpr(expr, ctx);
-            info = `<span style=\"color:#0ff\">(valore: <b>${val}</b>, evento: <b>${evt}</b>)</span>`;
-          } else if (dir === '@class') {
-            const val = this.evaluator.evalExpr(expr, ctx);
-            info = `<span style=\"color:#0ff\">(classi: <b>${JSON.stringify(val)}</b>, evento: <b>${evt}</b>)</span>`;
-          } else if (dir === '@style') {
-            const val = this.evaluator.evalExpr(expr, ctx);
-            info = `<span style=\"color:#0ff\">(stili: <b>${JSON.stringify(val)}</b>, evento: <b>${evt}</b>)</span>`;
-          } else if (dir === '@set') {
-            info = `<span style=\"color:#0ff\">(assegnazione: <b>${expr}</b>, evento: <b>${evt}</b>)</span>`;
-          }
-
-          const key = `${dir}:${evt}`;
-          const row = document.createElement('div');
-          row.style.marginBottom = '0.5em';
-          row.innerHTML = `<b style=\"color:#ffd700\">${key}</b>: <span>${renderValue(expr, ctx)}</span> ${info}`;
-          logWrapper.appendChild(row);
-        });
-      });
-    }
-
     mount() {
-      // ORDINE CRITICO CORRETTO:
-
-      // 1. Parse del DOM PRIMA di tutto
+      // Parse DOM first
       if (this.root.childNodes.length > 1) {
         const fragVNode = { tag: 'fragment', attrs: {}, directives: {}, subDirectives: {}, children: [] };
         this.root.childNodes.forEach(child => {
@@ -2222,26 +1593,26 @@
         this._vdom = this.parse(this.root);
       }
 
-      // 2. PRIMO: Pre-inizializza TUTTE le variabili essenziali
+      // Initialize essential variables
       this._preInitializeEssentialVariables();
 
-      // 3. SECONDO: Attiva il sistema reattivo (ma watcher ancora disabilitati)
+      // Make reactive
       this._makeReactive();
 
-      // 4. TERZO: Esegui i blocchi init (ora le variabili esistono già)
+      // Run init blocks
       this._runInitBlocks();
 
-      // 5. QUARTO: Abilita i watcher (ora tutto è pronto)
+      // Enable watchers
       this.reactivitySystem.enableWatchers();
 
-      // 6. Setup routing
+      // Setup routing
       this._setupRouting();
       this.router.setupCurrentPageProperty();
 
-      // 7. Primo render
+      // First render
       this.render();
 
-      // 8. Event listeners
+      // Event listeners
       this.root.addEventListener('click', e => {
         let el = e.target;
         while (el && el !== this.root) {
@@ -2254,24 +1625,12 @@
         }
       }, true);
     }
-
-    // Logging methods
-    _logDirective(type, name, el, msg, example) {
-      if (!window.ayisha || !window.ayisha.logDirectives) return;
-      const level = window.ayisha.logLevel || 'warn';
-      const prefix = `[Ayisha.${type}]`;
-      const where = el && el.outerHTML ? `\nElemento: ${el.outerHTML.slice(0, 120)}...` : '';
-      const help = example ? `\nEsempio: ${example}` : '';
-      if (level === 'error') console.error(`${prefix} ${name}: ${msg}${where}${help}`);
-      else if (level === 'warn') console.warn(`${prefix} ${name}: ${msg}${where}${help}`);
-      else console.info(`${prefix} ${name}: ${msg}${where}${help}`);
-    }
   }
 
   // Set up global reference
   window.AyishaVDOM = AyishaVDOM;
 
-  // CORREZIONE: Aggiungi CSS per le animazioni se non esistono
+  // Add default animation styles
   const addDefaultAnimationStyles = () => {
     const existingStyle = document.getElementById('ayisha-default-animations');
     if (!existingStyle) {
@@ -2306,28 +1665,5 @@
     addDefaultAnimationStyles();
     new AyishaVDOM(document.body).mount();
   }
-
-  // Wrap directive logging for backwards compatibility
-  const _oldRenderVNode = AyishaVDOM.prototype._renderVNode;
-  AyishaVDOM.prototype._renderVNode = function (vNode, ctx) {
-    if (vNode && vNode.directives) {
-      Object.keys(vNode.directives).forEach(dir => {
-        if (!this.helpSystem.isValidDirective(dir)) {
-          this._logDirective('Direttiva', dir, null, 'Direttiva non riconosciuta.', null);
-        }
-      });
-    }
-    if (vNode && vNode.subDirectives) {
-      Object.entries(vNode.subDirectives).forEach(([dir, evs]) => {
-        Object.keys(evs).forEach(evt => {
-          const key = `${dir}:${evt}`;
-          if (!this.helpSystem.isValidDirective(key)) {
-            this._logDirective('SubDirettiva', key, null, 'Sub-direttiva non riconosciuta.', null);
-          }
-        });
-      });
-    }
-    return _oldRenderVNode.call(this, vNode, ctx);
-  };
 
 })();
