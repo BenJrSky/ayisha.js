@@ -71,13 +71,37 @@
     ensureVarInState(expr, forceString = false, inputType = null) {
       if (typeof expr !== 'string') return;
 
+      // FIXED: Restore smart array initialization
+      const arrayOps = expr.match(/([\w$]+)\.(push|pop|shift|unshift|filter|map|reduce|forEach|length|slice|splice)/);
+      if (arrayOps) {
+        const varName = arrayOps[1];
+        if (!(varName in this.state)) {
+          this.state[varName] = [];
+          console.log(`🧠 Smart init: ${varName} = [] (detected array operation)`);
+        }
+        return;
+      }
+
       // FIXED: Only initialize if variable doesn't exist
       const varName = expr.split('.')[0];
       if (!(varName in this.state)) {
         if (inputType === 'number') {
           this.state[varName] = 0;
-        } else {
+        } else if (forceString) {
           this.state[varName] = undefined;
+        } else {
+          // Smart initialization based on variable name patterns
+          if (/items|list|array|data|results|errors|posts|todos|users/.test(varName)) {
+            this.state[varName] = [];
+          } else if (/count|total|index|id|size|length|number|num/.test(varName)) {
+            this.state[varName] = 0;
+          } else if (/show|hide|is|has|can|should|valid|enable/.test(varName)) {
+            this.state[varName] = false;
+          } else if (/user|config|form|settings/.test(varName)) {
+            this.state[varName] = {};
+          } else {
+            this.state[varName] = undefined;
+          }
         }
       }
 
@@ -1247,6 +1271,18 @@
           let processedCode = codeToRun.replace(/\bstate\./g, '');
 
           try {
+            // FIXED: Pre-scan for array operations and ensure arrays exist
+            const arrayMatches = processedCode.match(/([\w$]+)\.(push|pop|shift|unshift|filter|map|reduce|forEach|slice|splice)/g);
+            if (arrayMatches) {
+              arrayMatches.forEach(match => {
+                const varName = match.split('.')[0];
+                if (!(varName in this.state) || !Array.isArray(this.state[varName])) {
+                  this.state[varName] = [];
+                  console.log(`🔧 Auto-initialized array: ${varName} = []`);
+                }
+              });
+            }
+
             // FIXED: More precise variable handling
             const incrementMatch = processedCode.match(/^(\w+)\+\+$/);
             if (incrementMatch) {
@@ -1456,28 +1492,31 @@
 
     _handleFetchSubDirective(el, eventName, expr, vNode, ctx) {
       el.addEventListener(eventName, e => {
-        let matchAssign = expr.match(/^([\w$]+)\s*=\s*(.+)$/);
-        if (matchAssign && this.evaluator.hasInterpolation(expr)) {
-          const varName = matchAssign[1];
-          let valueExpr = matchAssign[2].trim();
-          let interpolated = this.evaluator.evalAttrValue(valueExpr, ctx);
-          if (!(varName in this.state)) this.state[varName] = undefined;
-          this.state[varName] = interpolated;
-          this.fetchManager.setupFetch(varName, vNode.directives['@result'] || 'result', ctx, e, true);
-        } else {
-          this.evaluator.ensureVarInState(expr);
-          let codeToRun = expr;
-          if (this.evaluator.hasInterpolation(expr)) {
-            codeToRun = this.evaluator.evalAttrValue(expr, ctx);
+        // FIXED: Simplified logic - just pass the expression to setupFetch
+        // setupFetch can handle URLs, variables, and interpolated expressions
+        
+        const resultVar = vNode.directives['@result'] || 'result';
+        
+        try {
+          // Try to evaluate as expression first (for variables)
+          let url = this.evaluator.evalExpr(expr, ctx);
+          if (url === undefined) {
+            // If evaluation fails, use the raw expression (for direct URLs)
+            url = expr;
           }
-          try {
-            const cleanCode = codeToRun.replace(/\bstate\./g, '');
-            new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
-              (this.state, ctx, e);
-          } catch (err) {
-            this.errorHandler.showAyishaError(el, err, codeToRun);
-          }
-          this.fetchManager.setupFetch(expr, vNode.directives['@result'] || 'result', ctx, e, true);
+          
+          console.log('🌐 Fetch click triggered:', {
+            expression: expr,
+            evaluatedUrl: url,
+            resultVar: resultVar
+          });
+          
+          this.fetchManager.setupFetch(url, resultVar, ctx, e, true);
+          
+        } catch (err) {
+          // Fallback: use raw expression
+          console.log('🌐 Fetch fallback - using raw expression:', expr);
+          this.fetchManager.setupFetch(expr, resultVar, ctx, e, true);
         }
       });
     }
