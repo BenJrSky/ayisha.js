@@ -1549,9 +1549,10 @@
 
             // General execution as fallback
             console.log('🔄 Fallback execution:', processedCode);
-            const func = new Function('state', 'ctx', `with(state) { ${processedCode} }`);
+            const func = new Function('state', 'ctx', `with(state){with(ctx||{}){${processedCode}}}`);
             func(this.state, ctx || {});
-
+            // Forza sempre un re-render dopo la fallback execution
+            setTimeout(() => this.render(), 0);
           } catch (err) {
             console.error('Click execution error:', err, 'Code:', processedCode);
             this.errorHandler.showAyishaError(el, err, processedCode);
