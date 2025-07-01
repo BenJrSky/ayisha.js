@@ -356,18 +356,18 @@
         history.replaceState({}, '', '/');
         p = '';
       }
-      this.state.currentPage = p;
+      this.state._currentPage = p;
 
       window.addEventListener('popstate', () => {
-        this.state.currentPage = location.pathname.replace(/^\//, '') || '';
+        this.state._currentPage = location.pathname.replace(/^\//, '') || '';
         this.renderCallback();
       });
     }
 
     setupCurrentPageProperty() {
       const self = this;
-      let cp = this.state.currentPage;
-      Object.defineProperty(this.state, 'currentPage', {
+      let cp = this.state._currentPage;
+      Object.defineProperty(this.state, '_currentPage', {
         get() { return cp; },
         set(v) {
           if (cp !== v) {
@@ -822,11 +822,11 @@
       });
 
       // Only ensure essential variables exist
-      const essentialVars = ['_validate', 'currentPage'];
+      const essentialVars = ['_validate', '_currentPage'];
       essentialVars.forEach(varName => {
         if (!(varName in this.state)) {
           if (varName === '_validate') this.state[varName] = {};
-          else if (varName === 'currentPage') this.state[varName] = '';
+          else if (varName === '_currentPage') this.state[varName] = '';
         }
       });
     }
@@ -834,7 +834,7 @@
     _preInitializeEssentialVariables() {
       // FIXED: Only initialize framework-essential variables
       if (!this.state._validate) this.state._validate = {};
-      if (!this.state.currentPage) this.state.currentPage = '';
+      if (!this.state._currentPage) this.state._currentPage = '';
     }
 
     _makeReactive() {
@@ -887,6 +887,21 @@
     _loadExternalComponent(url) {
       return this.componentManager.loadExternalComponent(url);
     }
+
+    // Utility: trova la prima direttiva @page nel VDOM
+_findFirstPageDirective(vNode) {
+  if (!vNode) return null;
+  if (vNode.directives && vNode.directives['@page']) {
+    return vNode;
+  }
+  if (vNode.children && vNode.children.length) {
+    for (const child of vNode.children) {
+      const found = this._findFirstPageDirective(child);
+      if (found) return found;
+    }
+  }
+  return null;
+}
 
     render() {
       if (this._isRendering) return;
@@ -959,7 +974,7 @@
 
       // Gestione @page: escludi subito i nodi che non corrispondono
       if (vNode.directives && vNode.directives['@page'] !== undefined) {
-        if (this.state.currentPage !== vNode.directives['@page']) {
+        if (this.state._currentPage !== vNode.directives['@page']) {
           return null;
         }
       }
@@ -1356,7 +1371,7 @@
 
           try {
             // FIXED: Handle operations on loop context objects (like post.likes++)
-            const contextObjMatch = processedCode.match(/^(\w+)\.(\w+)(\+\+|--|=.+)$/);
+            const contextObjMatch = processedCode.match(/^(\w+)\.\w+(\+\+|--|=.+)$/);
             if (contextObjMatch) {
               const [, objName, propName, operation] = contextObjMatch;
 
@@ -1389,7 +1404,7 @@
                       }
                     }
                   }
-                }
+                } 
               } 
             }
 
@@ -1565,12 +1580,12 @@
         el.setAttribute('href', vNode.directives['@link']);
         el.addEventListener('click', e => {
           e.preventDefault();
-          this.state.currentPage = vNode.directives['@link'];
+          this.state._currentPage = vNode.directives['@link'];
         });
       }
 
       // @page
-      if (vNode.directives['@page'] && this.state.currentPage !== vNode.directives['@page']) {
+      if (vNode.directives['@page'] && this.state._currentPage !== vNode.directives['@page']) {
         return null;
       }
 
@@ -1853,6 +1868,12 @@
         this._vdom = this.parse(this.root);
       }
 
+      // Imposta currentPage alla prima @page se non è già valorizzata
+      if (!this.state._currentPage) {
+        const firstPage = this._findFirstPageDirective(this._vdom);
+        if (firstPage) this.state._currentPage = firstPage;
+      }
+
       // Initialize essential variables
       this._preInitializeEssentialVariables();
 
@@ -1878,7 +1899,7 @@
         while (el && el !== this.root) {
           if (el.hasAttribute('@link')) {
             e.preventDefault();
-            this.state.currentPage = el.getAttribute('@link');
+            this.state._currentPage = el.getAttribute('@link');
             this.render(); 
             return;
           }
@@ -1903,7 +1924,7 @@
         }
         
         @keyframes ayishaFadeIn {
-          from { opacity: 0; }
+          from { opacity:   0; }
           to { opacity: 1; }
         }
         
