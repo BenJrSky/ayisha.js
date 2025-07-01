@@ -71,6 +71,9 @@
     ensureVarInState(expr, forceString = false) {
       if (typeof expr !== 'string') return;
 
+      // CORREZIONE: Sistema intelligente di deduzione del tipo
+      this.smartInitializeVariable(expr, forceString);
+
       // Gestione variabili annidate tipo form.name o foo.bar.baz
       const dotMatch = expr.match(/([\w$][\w\d$]*(?:\.[\w$][\w\d$]*)+)/);
       if (dotMatch) {
@@ -79,43 +82,161 @@
         for (let i = 0; i < path.length; i++) {
           const key = path[i];
           if (!(key in obj)) {
-            // Se è l'ultimo, lascia undefined, altrimenti crea oggetto
             obj[key] = (i === path.length - 1) ? (forceString ? '' : undefined) : {};
           } else if (i < path.length - 1 && typeof obj[key] !== 'object') {
-            // Se esiste ma non è oggetto, sovrascrivi
             obj[key] = {};
           }
           obj = obj[key];
         }
       }
+    }
 
-      let m = expr.match(/([\w$]+)\s*=/);
-      if (m) {
-        const varName = m[1];
+    smartInitializeVariable(expr, forceString = false) {
+      // SISTEMA INTELLIGENTE: Deduce il tipo dal contesto
+
+      // 1. Operazioni numeriche: var++, var--, var+=, var*=, etc.
+      const numericOps = expr.match(/([\w$]+)(\+\+|--|\+=|\-=|\*=|\/=)/);
+      if (numericOps) {
+        const varName = numericOps[1];
         if (!(varName in this.state)) {
-          let valMatch = expr.match(/=\s*['"](.*)['\"]/);
-          if (valMatch) this.state[varName] = valMatch[1];
-          else if (/=\s*\d+/.test(expr)) this.state[varName] = parseInt(expr.split('=')[1]);
-          else this.state[varName] = forceString ? '' : undefined;
+          this.state[varName] = 0;
+          console.log(`🧠 Smart init: ${varName} = 0 (detected numeric operation)`);
+        }
+        return;
+      }
+
+      // 2. Array operations: var.push, var.filter, var.map, etc.
+      const arrayOps = expr.match(/([\w$]+)\.(push|pop|shift|unshift|filter|map|reduce|forEach|length|slice|splice)/);
+      if (arrayOps) {
+        const varName = arrayOps[1];
+        if (!(varName in this.state)) {
+          this.state[varName] = [];
+          console.log(`🧠 Smart init: ${varName} = [] (detected array operation)`);
+        }
+        return;
+      }
+
+      // 3. Boolean operations: var = true/false, !var, var && something
+      const boolOps = expr.match(/([\w$]+)\s*=\s*(true|false)|!([\w$]+)|([\w$]+)\s*(&&|\|\|)/);
+      if (boolOps) {
+        const varName = boolOps[1] || boolOps[3] || boolOps[4];
+        if (varName && !(varName in this.state)) {
+          this.state[varName] = false;
+          console.log(`🧠 Smart init: ${varName} = false (detected boolean operation)`);
+        }
+        return;
+      }
+
+      // 4. Object property access: var.property
+      const objAccess = expr.match(/([\w$]+)\.[\w$]+(?!\()/);
+      if (objAccess) {
+        const varName = objAccess[1];
+        if (!(varName in this.state)) {
+          this.state[varName] = {};
+          console.log(`🧠 Smart init: ${varName} = {} (detected object property access)`);
+        }
+        return;
+      }
+
+      // 5. String operations: var.toLowerCase, var.includes, var + 'string'
+      const stringOps = expr.match(/([\w$]+)\.(toLowerCase|toUpperCase|includes|indexOf|substring|slice|trim)/);
+      if (stringOps) {
+        const varName = stringOps[1];
+        if (!(varName in this.state)) {
+          this.state[varName] = '';
+          console.log(`🧠 Smart init: ${varName} = '' (detected string operation)`);
+        }
+        return;
+      }
+
+      // 6. Assignments with type hints: var = 123, var = "string", var = []
+      const assignment = expr.match(/([\w$]+)\s*=\s*(.+)/);
+      if (assignment) {
+        const varName = assignment[1];
+        const value = assignment[2].trim();
+        
+        if (!(varName in this.state)) {
+          if (/^\d+$/.test(value)) {
+            this.state[varName] = parseInt(value);
+            console.log(`🧠 Smart init: ${varName} = ${parseInt(value)} (detected numeric literal)`);
+          } else if (/^['"].*['"]$/.test(value)) {
+            this.state[varName] = value.slice(1, -1);
+            console.log(`🧠 Smart init: ${varName} = "${value.slice(1, -1)}" (detected string literal)`);
+          } else if (value === 'true' || value === 'false') {
+            this.state[varName] = value === 'true';
+            console.log(`🧠 Smart init: ${varName} = ${value} (detected boolean literal)`);
+          } else if (value === '[]') {
+            this.state[varName] = [];
+            console.log(`🧠 Smart init: ${varName} = [] (detected array literal)`);
+          } else if (value === '{}') {
+            this.state[varName] = {};
+            console.log(`🧠 Smart init: ${varName} = {} (detected object literal)`);
+          } else if (forceString) {
+            this.state[varName] = '';
+            console.log(`🧠 Smart init: ${varName} = '' (forced string)`);
+          }
+        }
+        return;
+      }
+
+      // 7. Single variable reference: se è da solo, cerca indizi dal nome
+      const singleVar = expr.match(/^\s*([\w$]+)\s*$/);
+      if (singleVar) {
+        const varName = singleVar[1];
+        if (!(varName in this.state)) {
+          // Deduzione dal nome della variabile
+          if (/count|total|index|id|size|length|number|num/i.test(varName)) {
+            this.state[varName] = 0;
+            console.log(`🧠 Smart init: ${varName} = 0 (name suggests number)`);
+          } else if (/items|list|array|data|results|errors/i.test(varName)) {
+            this.state[varName] = [];
+            console.log(`🧠 Smart init: ${varName} = [] (name suggests array)`);
+          } else if (/show|hide|is|has|can|should|valid|enable/i.test(varName)) {
+            this.state[varName] = false;
+            console.log(`🧠 Smart init: ${varName} = false (name suggests boolean)`);
+          } else if (/user|config|form|settings/i.test(varName)) {
+            this.state[varName] = {};
+            console.log(`🧠 Smart init: ${varName} = {} (name suggests object)`);
+          } else if (forceString) {
+            this.state[varName] = '';
+            console.log(`🧠 Smart init: ${varName} = '' (default string)`);
+          } else {
+            this.state[varName] = undefined;
+            console.log(`🧠 Smart init: ${varName} = undefined (no hints)`);
+          }
         }
       }
+    }
 
-      m = expr.match(/([\w$]+)\s*\+\+/);
-      if (m) {
-        const varName = m[1];
-        if (!(varName in this.state) || this.state[varName] == null) this.state[varName] = 1;
+    ensureArrayVariable(varName) {
+      if (!(varName in this.state) || !Array.isArray(this.state[varName])) {
+        // Usa una funzione helper per creare array in modo sicuro
+        this.safeSetArrayVariable(varName, []);
       }
+    }
 
-      m = expr.match(/([\w$]+)\s*\+=/);
-      if (m) {
-        const varName = m[1];
-        if (!(varName in this.state) || this.state[varName] == null) this.state[varName] = 1;
-      }
-
-      m = expr.match(/([\w$]+)\.push\s*\(/);
-      if (m) {
-        const varName = m[1];
-        if (!(varName in this.state)) this.state[varName] = [];
+    safeSetArrayVariable(varName, value) {
+      try {
+        // Se il proxy reattivo non è ancora attivo, usa Object.defineProperty
+        if (!this.state._isReactive) {
+          Object.defineProperty(this.state, varName, {
+            value: value,
+            writable: true,
+            configurable: true,
+            enumerable: true
+          });
+        } else {
+          // Se il proxy è attivo, assegna normalmente
+          this.state[varName] = value;
+        }
+      } catch (error) {
+        // Fallback: forza Object.defineProperty
+        Object.defineProperty(this.state, varName, {
+          value: value,
+          writable: true,
+          configurable: true,
+          enumerable: true
+        });
       }
     }
   }
@@ -143,15 +264,15 @@
         return { type: 'text', text: node.textContent };
       }
       if (node.nodeType !== 1) return null;
-      
+
       const tag = node.tagName.toLowerCase();
       if (tag === 'init') {
         this.initBlocks.push(node.textContent);
         return null;
       }
-      
+
       const vNode = { tag, attrs: {}, directives: {}, subDirectives: {}, children: [] };
-      
+
       for (const attr of Array.from(node.attributes)) {
         if (attr.name.startsWith('@')) {
           const name = attr.name;
@@ -167,14 +288,14 @@
           vNode.attrs[attr.name] = attr.value;
         }
       }
-      
+
       if (node.childNodes && node.childNodes.length > 0) {
         node.childNodes.forEach(child => {
           const cn = this.parse(child);
           if (cn) vNode.children.push(cn);
         });
       }
-      
+
       return vNode;
     }
   }
@@ -255,18 +376,61 @@
       this.state = state;
       this.watchers = {};
       this.renderCallback = renderCallback;
+      this.watchersReady = false;
     }
 
     makeReactive() {
+      // Segna lo stato come reattivo
+      this.state._isReactive = true;
+      
       this.state = new Proxy(this.state, {
         set: (obj, prop, val) => {
+          // CORREZIONE: Riduce il debug solo per proprietà specifiche
+          const isDebugMode = ['userId', 'count', 'items'].includes(prop);
+          if (isDebugMode) {
+            console.log(`🔄 PROXY SET: ${prop} =`, val, `(type: ${typeof val})`);
+          }
+          
           const old = obj[prop];
           if (JSON.stringify(old) === JSON.stringify(val)) {
             obj[prop] = val;
+            if (isDebugMode) {
+              console.log(`📝 Proxy: ${prop} unchanged, set anyway`);
+            }
             return true;
           }
+          
+          // CORREZIONE: Prevenzione loop infiniti
+          if (prop === 'userUrl' && this._settingUserUrl) {
+            console.warn(`🚨 Prevented userUrl loop!`);
+            return true;
+          }
+          
+          if (prop === 'userUrl') {
+            this._settingUserUrl = true;
+            setTimeout(() => { this._settingUserUrl = false; }, 100);
+          }
+          
           obj[prop] = val;
-          (this.watchers[prop] || []).forEach(fn => fn(val));
+          if (isDebugMode) {
+            console.log(`✅ Proxy: ${prop} set to`, val, `- verification:`, obj[prop]);
+          }
+          
+          // Esegui watcher solo se sono pronti e non siamo in un loop
+          if (this.watchersReady && this.watchers[prop] && !this._executingWatcher) {
+            this._executingWatcher = true;
+            setTimeout(() => {
+              this.watchers[prop].forEach(fn => {
+                try {
+                  fn(val);
+                } catch (error) {
+                  console.error('Watcher execution error:', error, 'for property:', prop, 'new value:', val);
+                }
+              });
+              this._executingWatcher = false;
+            }, 0);
+          }
+          
           this.renderCallback();
           return true;
         }
@@ -277,6 +441,10 @@
     addWatcher(prop, fn) {
       this.watchers[prop] = this.watchers[prop] || [];
       this.watchers[prop].push(fn);
+    }
+
+    enableWatchers() {
+      this.watchersReady = true;
     }
   }
 
@@ -292,12 +460,12 @@
 
     setupRouting() {
       let p = location.pathname.replace(/^\//, '') || '';
-      if (!p || p === 'index.html') { 
-        history.replaceState({}, '', '/'); 
-        p = ''; 
+      if (!p || p === 'index.html') {
+        history.replaceState({}, '', '/');
+        p = '';
       }
       this.state.currentPage = p;
-      
+
       window.addEventListener('popstate', () => {
         this.state.currentPage = location.pathname.replace(/^\//, '') || '';
         this.renderCallback();
@@ -341,14 +509,14 @@
         });
       }
       if (!url) return;
-      
+
       const fid = `${url}::${rk}`;
       if (!force && this.lastFetchUrl[rk] === url) return;
       if (this.pendingFetches[fid]) return;
-      
+
       this.pendingFetches[fid] = true;
       this.lastFetchUrl[rk] = url;
-      
+
       fetch(url)
         .then(res => {
           if (!res.ok) {
@@ -390,7 +558,7 @@
         '@if': `Esempio: <div @if="condizione">Mostra se condizione è true</div>`,
         '@show': `Esempio: <div @show="condizione">Mostra se condizione è true</div>`,
         '@hide': `Esempio: <div @hide="condizione">Nasconde se condizione è true</div>`,
-        '@for': `Esempio: <li @for="item in items">{{item}}</li>`,
+        '@for': `Esempio: <li @for="item in items">{{item}}</li> o <li @for="i, item in items">{{i}}: {{item}}</li>`,
         '@model': `Esempio: <input @model="nome">`,
         '@click': `Esempio: <button @click="state.count++">Aumenta</button>`,
         '@fetch': `Esempio: <div @fetch="'url'" @result="data">Carica</div>`,
@@ -530,18 +698,34 @@
         const path = key.split('.');
         for (let i = 0; i < path.length - 1; i++) ref = ref[path[i]];
         const last = path[path.length - 1];
-        if (typeof ref[last] !== 'string') ref[last] = ''; 
+        if (typeof ref[last] !== 'string') ref[last] = '';
       } else {
         if (typeof this.evaluator.state[key] !== 'string') this.evaluator.state[key] = '';
       }
+
       const update = () => {
         const val = this.evaluator.evalExpr(key, ctx);
-        if (el.type === 'checkbox') el.checked = !!val;
-        else if (el.type === 'radio') el.checked = val == el.value;
-        else if (el.value !== String(val)) el.value = val ?? '';
+        if (el.type === 'checkbox') {
+          el.checked = !!val;
+        } else if (el.type === 'radio') {
+          el.checked = val == el.value;
+        } else if (el.type === 'color') {
+          // CORREZIONE: Gestione speciale per input color
+          if (val && typeof val === 'string' && val.match(/^#[0-9A-Fa-f]{6}$/)) {
+            el.value = val;
+          } else if (val && typeof val === 'string' && val.match(/^[0-9A-Fa-f]{6}$/)) {
+            el.value = '#' + val;
+          } else {
+            el.value = '#000000'; // Default color
+          }
+        } else {
+          if (el.value !== String(val)) el.value = val ?? '';
+        }
       };
+
       this.modelBindings.push({ el, update });
       update();
+
       el.addEventListener('input', () => {
         // Assicura di nuovo che la variabile esista prima dell'assegnamento
         this.evaluator.ensureVarInState(key, true);
@@ -568,30 +752,30 @@
 
     bindValidation(el, rulesStr, modelVar = null) {
       const rules = rulesStr.split(',').map(r => r.trim());
-      
+
       if (!modelVar) {
         console.warn('@validate requires @model to be present on the same element');
         return;
       }
-      
+
       // Assicura che state._validate esista
       if (!this.evaluator.state._validate) {
         this.evaluator.state._validate = {};
       }
-      
+
       // Inizializza la validazione a false
       this.evaluator.state._validate[modelVar] = false;
-      
+
       const validate = () => {
         let valid = true;
-        
+
         for (const rule of rules) {
           if (rule === 'required') {
             if (!el.value || !el.value.trim()) {
               valid = false;
               break;
             }
-          } 
+          }
           else if (rule.startsWith('minLength:')) {
             const minLen = parseInt(rule.split(':')[1], 10);
             if (el.value.length < minLen) {
@@ -677,26 +861,26 @@
             }
           }
         }
-        
+
         // Aggiorna state._validate[variabile]
         this.evaluator.state._validate[modelVar] = valid;
-        
+
         // Applica classi CSS
         el.classList.toggle('invalid', !valid);
         el.classList.toggle('valid', valid && el.value.length > 0);
-        
+
         return valid;
       };
-      
+
       // Validazione iniziale
       validate();
-      
+
       // Validazione su input e blur
       el.addEventListener('input', () => {
         validate();
         this.renderCallback();
       });
-      
+
       el.addEventListener('blur', validate);
     }
 
@@ -718,7 +902,7 @@
       this._initBlocks = [];
       this._vdom = null;
       this._isRendering = false;
-      
+
       // Initialize modules
       this.evaluator = new ExpressionEvaluator(this.state);
       this.parser = new DOMParser(this._initBlocks);
@@ -729,7 +913,7 @@
       this.helpSystem = new DirectiveHelpSystem();
       this.errorHandler = new ErrorHandler();
       this.bindingManager = new BindingManager(this.evaluator, () => this.render());
-      
+
       window.ayisha = this;
     }
 
@@ -759,6 +943,35 @@
           console.error('Init error:', e);
         }
       });
+      
+      // CORREZIONE: Dopo aver eseguito i blocchi init, forza i tipi corretti per variabili numeriche
+      const shouldBeNumbers = ['userId', 'count', 'total', 'index', 'sinistra', 'destra', 'clicks', 'enterPresses', 'debounceCount', 'fontSize', 'sum'];
+      shouldBeNumbers.forEach(varName => {
+        if (varName in this.state) {
+          let value = this.state[varName];
+          if (typeof value === 'string' && value !== '') {
+            const parsed = parseFloat(value);
+            if (!isNaN(parsed)) {
+              this.state[varName] = parsed;
+              console.log(`🔧 Converted ${varName} from "${value}" to ${parsed}`);
+            }
+          } else if (value === '' || value === null || value === undefined) {
+            this.state[varName] = 0;
+            console.log(`🔧 Initialized ${varName} to 0`);
+          }
+        }
+      });
+    }
+
+    _preInitializeEssentialVariables() {
+      // CORREZIONE: Inizializza solo le variabili critiche del framework
+      // Non più liste infinite di variabili!
+      
+      // Solo le variabili essenziali per il funzionamento del framework
+      if (!this.state._validate) this.state._validate = {};
+      if (!this.state.currentPage) this.state.currentPage = '';
+      
+      console.log('🔧 Initialized only essential framework variables');
     }
 
     _makeReactive() {
@@ -833,7 +1046,7 @@
 
       this.bindingManager.clearBindings();
       const real = this._renderVNode(this._vdom, this.state);
-      
+
       // Update DOM
       if (this.root === document.body) {
         document.body.innerHTML = '';
@@ -872,7 +1085,7 @@
           } catch (e) { }
         }
       }
-      
+
       window.scrollTo(scrollX, scrollY);
       this.bindingManager.updateBindings();
       this._isRendering = false;
@@ -893,7 +1106,7 @@
       let unknownDirective = null;
       let unknownSubDirective = null;
       let unknownSubDirectiveEvt = null;
-      
+
       if (vNode && vNode.directives) {
         for (const dir of Object.keys(vNode.directives)) {
           if (dir === '@src' && vNode.tag === 'component') continue;
@@ -903,7 +1116,7 @@
           }
         }
       }
-      
+
       if (!unknownDirective && vNode && vNode.subDirectives) {
         for (const [dir, evs] of Object.entries(vNode.subDirectives)) {
           for (const evt of Object.keys(evs)) {
@@ -917,7 +1130,7 @@
           if (unknownSubDirective) break;
         }
       }
-      
+
       if (unknownDirective || unknownSubDirective) {
         let msg = '';
         if (unknownDirective) {
@@ -997,6 +1210,18 @@
       // Create DOM element
       const el = document.createElement(vNode.tag);
 
+      // CORREZIONE: Salva il testo originale per le direttive hover
+      if (vNode.subDirectives && vNode.subDirectives['@text'] && vNode.subDirectives['@text']['hover']) {
+        // Se c'è testo nei children, salvalo
+        const textContent = vNode.children
+          .filter(child => child.type === 'text')
+          .map(child => child.text)
+          .join('');
+        if (textContent) {
+          el._ayishaOriginalText = textContent;
+        }
+      }
+
       // Set attributes
       Object.entries(vNode.attrs).forEach(([k, v]) => {
         el.setAttribute(k, this.evaluator.evalAttrValue(v, ctx));
@@ -1017,6 +1242,13 @@
         if (node) el.appendChild(node);
       });
 
+      // CORREZIONE: Dopo aver aggiunto i children, salva il testo per hover se necessario
+      if (vNode.subDirectives && vNode.subDirectives['@text'] && vNode.subDirectives['@text']['hover']) {
+        if (!el._ayishaOriginalText) {
+          el._ayishaOriginalText = el.textContent || el.innerText || '';
+        }
+      }
+
       // Handle logging wrapper
       const logWrapper = this._createLogWrapper(vNode, ctx);
       if (logWrapper) {
@@ -1030,16 +1262,36 @@
     }
 
     _handleForDirective(vNode, ctx) {
-      const m = vNode.directives['@for'].match(/(\w+) in (.+)/);
-      if (m) {
-        const [, it, expr] = m;
+      // CORREZIONE: Supporta sia "item in items" che "index, item in items"
+      let match = vNode.directives['@for'].match(/(\w+),\s*(\w+) in (.+)/);
+      if (match) {
+        // Sintassi: "i, item in items"
+        const [, indexVar, itemVar, expr] = match;
         let arr = this.evaluator.evalExpr(expr, ctx) || [];
         if (typeof arr === 'object' && !Array.isArray(arr)) arr = Object.values(arr);
         const frag = document.createDocumentFragment();
-        arr.forEach(val => {
+        arr.forEach((val, index) => {
           const clone = JSON.parse(JSON.stringify(vNode));
           delete clone.directives['@for'];
-          const subCtx = { ...ctx, [it]: val };
+          const subCtx = { ...ctx, [itemVar]: val, [indexVar]: index };
+          const node = this._renderVNode(clone, subCtx);
+          if (node) frag.appendChild(node);
+        });
+        return frag;
+      }
+      
+      // Sintassi originale: "item in items"
+      match = vNode.directives['@for'].match(/(\w+) in (.+)/);
+      if (match) {
+        const [, it, expr] = match;
+        let arr = this.evaluator.evalExpr(expr, ctx) || [];
+        if (typeof arr === 'object' && !Array.isArray(arr)) arr = Object.values(arr);
+        const frag = document.createDocumentFragment();
+        arr.forEach((val, index) => {
+          const clone = JSON.parse(JSON.stringify(vNode));
+          delete clone.directives['@for'];
+          // CORREZIONE: Aggiungi sempre $index come variabile disponibile
+          const subCtx = { ...ctx, [it]: val, $index: index };
           const node = this._renderVNode(clone, subCtx);
           if (node) frag.appendChild(node);
         });
@@ -1064,42 +1316,78 @@
     }
 
     _handleFunctionalDirectives(vNode, ctx) {
-      const arr = this.evaluator.evalExpr(vNode.directives['@source'], ctx) || [];
+      let sourceData = this.evaluator.evalExpr(vNode.directives['@source'], ctx);
+
+      // CORREZIONE: Assicurati che sourceData sia sempre un array
+      let arr = [];
+      if (Array.isArray(sourceData)) {
+        arr = sourceData;
+      } else if (sourceData && typeof sourceData === 'object') {
+        arr = Object.values(sourceData);
+      } else if (sourceData == null) {
+        arr = [];
+      } else {
+        // Se è un valore singolo, mettilo in un array
+        arr = [sourceData];
+      }
+
       const setState = (key, val) => {
         if (JSON.stringify(this.state[key]) !== JSON.stringify(val)) {
           Object.defineProperty(this.state, key, { value: val, writable: true, configurable: true, enumerable: true });
         }
       };
       let used = false;
-      
+
       if (vNode.directives['@map']) {
         used = true;
-        const fn = new Function('item', `return (${vNode.directives['@map']})`);
-        setState(vNode.directives['@result'] || 'result', arr.map(fn));
+        try {
+          const fn = new Function('item', `return (${vNode.directives['@map']})`);
+          setState(vNode.directives['@result'] || 'result', arr.map(fn));
+        } catch (error) {
+          console.error('Error in @map directive:', error);
+          setState(vNode.directives['@result'] || 'result', []);
+        }
       }
-      
+
       if (vNode.directives['@filter']) {
         used = true;
-        const fn = new Function('item', `return (${vNode.directives['@filter']})`);
-        setState(vNode.directives['@result'] || 'result', arr.filter(fn));
+        try {
+          const fn = new Function('item', `return (${vNode.directives['@filter']})`);
+          setState(vNode.directives['@result'] || 'result', arr.filter(fn));
+        } catch (error) {
+          console.error('Error in @filter directive:', error);
+          setState(vNode.directives['@result'] || 'result', []);
+        }
       }
-      
+
       if (vNode.directives['@reduce']) {
         used = true;
-        const str = vNode.directives['@reduce'];
-        let redFn;
-        if (str.includes('=>')) {
-          const [params, body] = str.split('=>').map(s => s.trim());
-          const [a, b] = params.replace(/[()]/g, '').split(',').map(s => s.trim());
-          redFn = new Function(a, b, `return (${body})`);
-        } else {
-          redFn = new Function('acc', 'item', `return (${str})`);
+        try {
+          const str = vNode.directives['@reduce'];
+          let redFn;
+          if (str.includes('=>')) {
+            const [params, body] = str.split('=>').map(s => s.trim());
+            const [a, b] = params.replace(/[()]/g, '').split(',').map(s => s.trim());
+            redFn = new Function(a, b, `return (${body})`);
+          } else {
+            redFn = new Function('acc', 'item', `return (${str})`);
+          }
+          const initial = vNode.directives['@initial'] ? this.evaluator.evalExpr(vNode.directives['@initial'], ctx) : undefined;
+
+          let result;
+          if (arr.length === 0) {
+            result = initial !== undefined ? initial : undefined;
+          } else {
+            result = initial !== undefined ? arr.reduce(redFn, initial) : arr.reduce(redFn);
+          }
+          setState(vNode.directives['@result'] || 'result', result);
+        } catch (error) {
+          console.error('Error in @reduce directive:', error);
+          const initial = vNode.directives['@initial'] ? this.evaluator.evalExpr(vNode.directives['@initial'], ctx) : undefined;
+          setState(vNode.directives['@result'] || 'result', initial !== undefined ? initial : undefined);
         }
-        const initial = vNode.directives['@initial'] ? this.evaluator.evalExpr(vNode.directives['@initial'], ctx) : undefined;
-        const result = initial !== undefined ? arr.reduce(redFn, initial) : arr.reduce(redFn);
-        setState(vNode.directives['@result'] || 'result', result);
       }
-      
+
       if (used) return document.createComment('functional');
       return null;
     }
@@ -1108,14 +1396,14 @@
       if (!vNode.directives['@src']) {
         return this.errorHandler.createErrorElement(`Error: <b>&lt;component&gt;</b> requires the <b>@src</b> attribute (e.g. <code>&lt;component @src="file.html"&gt;</code>)`);
       }
-      
+
       let srcUrl = null;
       try {
         srcUrl = this.evaluator.evalExpr(vNode.directives['@src'], ctx);
       } catch (e) {
         console.warn('Error evaluating @src:', e);
       }
-      
+
       if (!srcUrl) {
         const rawSrc = vNode.directives['@src'].trim();
         if (/^['"].*['"]$/.test(rawSrc)) {
@@ -1124,15 +1412,15 @@
           srcUrl = rawSrc;
         }
       }
-      
+
       if (!srcUrl || srcUrl === 'undefined' || srcUrl === 'null') {
         return this.errorHandler.createErrorElement(`Error: Invalid component URL (<b>${vNode.directives['@src']}</b>)`);
       }
-      
+
       if (this.componentManager.getCachedComponent(srcUrl) && this.componentManager.getCachedComponent(srcUrl).includes('component-error')) {
         return this.errorHandler.createErrorElement(`Error: component <b>${srcUrl}</b> not rendered or not found.`);
       }
-      
+
       if (this.componentManager.getCachedComponent(srcUrl)) {
         const componentHtml = this.componentManager.getCachedComponent(srcUrl);
         const tempDiv = document.createElement('div');
@@ -1147,7 +1435,7 @@
           return frag;
         }
       }
-      
+
       if (!this.componentManager.getCachedComponent(srcUrl) && !this.componentManager.isLoading(srcUrl)) {
         this.componentManager.markAsLoading(srcUrl);
         fetch(srcUrl)
@@ -1166,7 +1454,7 @@
             if (!this._isRendering) requestAnimationFrame(() => this.render());
           });
       }
-      
+
       const placeholder = document.createElement('div');
       placeholder.className = 'component-loading';
       if (this.componentManager.isLoading(srcUrl)) {
@@ -1222,11 +1510,203 @@
           if (this.evaluator.hasInterpolation(expr)) {
             codeToRun = this.evaluator.evalAttrValue(expr, ctx);
           }
+          
+          let processedCode = codeToRun.replace(/\bstate\./g, '');
+          
+          console.log(`🚀 CLICK EVENT:`, {
+            button: el.textContent?.trim(),
+            expression: expr,
+            processed: processedCode,
+            currentState: {...this.state}
+          });
+          
           try {
-            new Function('state', 'ctx', 'event', `with(state){with(ctx){${codeToRun}}}`)
-              (this.state, ctx, e);
+            // CORREZIONE: Gestione specifica per casi comuni
+            
+            // 1. Incrementi semplici: userId++, count++, etc.
+            const incrementMatch = processedCode.match(/^(\w+)\+\+$/);
+            if (incrementMatch) {
+              const varName = incrementMatch[1];
+              
+              // Verifica che la variabile esista nello state
+              if (!(varName in this.state)) {
+                console.error(`❌ Variable ${varName} not found in state!`, {
+                  availableVars: Object.keys(this.state),
+                  stateContent: this.state
+                });
+                this.state[varName] = 0; // Crea se non esiste
+              }
+              
+              let currentValue = this.state[varName];
+              let originalValue = currentValue; // Salva per il log
+              
+              console.log(`🔍 INCREMENT DEBUG - ${varName}:`, {
+                exists: varName in this.state,
+                original: originalValue,
+                type: typeof originalValue
+              });
+              
+              // Se è stringa vuota o undefined, inizializza a 0
+              if (currentValue === '' || currentValue === undefined || currentValue === null) {
+                currentValue = 0;
+              } else if (typeof currentValue === 'string') {
+                // Se è una stringa numerica, convertila
+                const parsed = parseInt(currentValue, 10);
+                currentValue = isNaN(parsed) ? 0 : parsed;
+              } else if (typeof currentValue !== 'number') {
+                currentValue = 0;
+              }
+              
+              const newValue = currentValue + 1;
+              
+              // CORREZIONE CRITICA: Bypassa il proxy reattivo per evitare problemi
+              try {
+                // Metodo 1: Assegnazione diretta tramite Object.defineProperty
+                Object.defineProperty(this.state, varName, {
+                  value: newValue,
+                  writable: true,
+                  configurable: true,
+                  enumerable: true
+                });
+                console.log(`🔧 Used Object.defineProperty for ${varName}`);
+              } catch (err) {
+                console.log(`⚠️ defineProperty failed, trying direct assignment:`, err);
+                // Metodo 2: Assegnazione normale
+                this.state[varName] = newValue;
+              }
+              
+              // Verifica che l'assegnazione sia riuscita
+              const verification = this.state[varName];
+              console.log(`✅ Incremented ${varName}:`, {
+                from: currentValue,
+                to: newValue,
+                originalWas: originalValue,
+                actualNewValue: verification,
+                success: verification === newValue
+              });
+              
+              // Se l'assegnazione è fallita, prova un approccio più aggressivo
+              if (verification !== newValue) {
+                console.log(`🚨 Assignment failed! Trying alternative approach...`);
+                
+                // Accedi direttamente al target del proxy
+                const proxyTarget = this.state.__proto__ || this.state;
+                if (proxyTarget && proxyTarget !== this.state) {
+                  proxyTarget[varName] = newValue;
+                  console.log(`🔧 Used proxy target, new value:`, this.state[varName]);
+                } else {
+                  // Ultimo tentativo: forza attraverso il reactivity system
+                  this.reactivitySystem.state[varName] = newValue;
+                  console.log(`🔧 Used reactivity system, new value:`, this.state[varName]);
+                }
+              }
+              
+              // Forza re-render immediato
+              setTimeout(() => this.render(), 0);
+              return;
+            }
+            
+            // 2. Decrementi semplici: count--, etc.
+            const decrementMatch = processedCode.match(/^(\w+)--$/);
+            if (decrementMatch) {
+              const varName = decrementMatch[1];
+              // CORREZIONE: Stessa logica robusta per i decrementi
+              let currentValue = this.state[varName];
+              
+              if (currentValue === '' || currentValue === undefined || currentValue === null) {
+                currentValue = 0;
+              } else if (typeof currentValue === 'string') {
+                const parsed = parseInt(currentValue, 10);
+                currentValue = isNaN(parsed) ? 0 : parsed;
+              } else if (typeof currentValue !== 'number') {
+                currentValue = 0;
+              }
+              
+              this.state[varName] = currentValue - 1;
+              console.log(`✅ Decremented ${varName} from ${currentValue} to:`, this.state[varName]);
+              this.render();
+              return;
+            }
+            
+            // 2.5. Operazioni aritmetiche: count += 1, etc.
+            const arithMatch = processedCode.match(/^(\w+)\s*([+\-*\/])\s*=\s*(.+)$/);
+            if (arithMatch) {
+              const [, varName, operator, valueExpr] = arithMatch;
+              try {
+                let currentValue = this.state[varName];
+                let operandValue = this.evaluator.evalExpr(valueExpr, ctx);
+                
+                // Normalizza il valore corrente
+                if (currentValue === '' || currentValue === undefined || currentValue === null) {
+                  currentValue = 0;
+                } else if (typeof currentValue === 'string') {
+                  const parsed = parseFloat(currentValue);
+                  currentValue = isNaN(parsed) ? 0 : parsed;
+                } else if (typeof currentValue !== 'number') {
+                  currentValue = 0;
+                }
+                
+                // Normalizza l'operando
+                if (typeof operandValue === 'string') {
+                  const parsed = parseFloat(operandValue);
+                  operandValue = isNaN(parsed) ? 0 : parsed;
+                }
+                
+                switch (operator) {
+                  case '+': this.state[varName] = currentValue + operandValue; break;
+                  case '-': this.state[varName] = currentValue - operandValue; break;
+                  case '*': this.state[varName] = currentValue * operandValue; break;
+                  case '/': this.state[varName] = operandValue !== 0 ? currentValue / operandValue : currentValue; break;
+                }
+                
+                console.log(`✅ Arithmetic ${varName} ${operator}= ${operandValue}, result:`, this.state[varName]);
+                this.render();
+                return;
+              } catch (err) {
+                console.log('Arithmetic operation failed, trying general execution');
+              }
+            }
+            
+            // 3. Filter operations con contesto: items = items.filter(...)
+            const filterMatch = processedCode.match(/^(\w+)\s*=\s*\1\.filter\((\w+)\s*=>\s*\2\.(\w+)\s*!==\s*(\w+)\.(\w+)\)$/);
+            if (filterMatch && ctx) {
+              const [, arrayName, paramName, paramProp, contextVar, contextProp] = filterMatch;
+              if (ctx[contextVar] && this.state[arrayName]) {
+                const contextValue = ctx[contextVar][contextProp];
+                this.state[arrayName] = this.state[arrayName].filter(item => item[paramProp] !== contextValue);
+                console.log(`✅ Filtered ${arrayName}, removed item with ${paramProp}:`, contextValue);
+                this.render();
+                return;
+              }
+            }
+            
+            // 4. Assegnazioni dirette: variable = value
+            const assignMatch = processedCode.match(/^(\w+)\s*=\s*(.+)$/);
+            if (assignMatch) {
+              const [, varName, valueExpr] = assignMatch;
+              try {
+                const value = this.evaluator.evalExpr(valueExpr, ctx);
+                this.state[varName] = value;
+                console.log(`✅ Assigned ${varName} =`, value);
+                this.render();
+                return;
+              } catch (err) {
+                console.log('Assignment failed, trying general execution');
+              }
+            }
+            
+            // 5. Fallback: esecuzione generale
+            console.log('🔄 Using general execution for:', processedCode);
+            const func = new Function('state', 'ctx', `
+              with(state) {
+                ${processedCode}
+              }
+            `);
+            func(this.state, ctx || {});
+            
           } catch (err) {
-            this.errorHandler.showAyishaError(el, err, codeToRun);
+            console.error('❌ Click execution failed:', err, 'Code:', processedCode);
+            this.errorHandler.showAyishaError(el, err, processedCode);
           }
           this.render();
         });
@@ -1241,10 +1721,18 @@
             codeToRun = this.evaluator.evalAttrValue(rawExpr, ctx);
           }
           try {
-            new Function('state', 'ctx', 'event', `with(state){with(ctx){${codeToRun}}}`)
+            // CORREZIONE: Gestione migliorata per espressioni con 'state.'
+            const cleanCode = codeToRun.replace(/\bstate\./g, '');
+            new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
               (this.state, ctx, e);
           } catch (err) {
-            this.errorHandler.showAyishaError(el, err, codeToRun);
+            // Fallback: prova con il codice originale
+            try {
+              new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${codeToRun}}}`)
+                (this.state, ctx, e);
+            } catch (err2) {
+              this.errorHandler.showAyishaError(el, err2, codeToRun);
+            }
           }
           this.render();
         };
@@ -1257,7 +1745,7 @@
         const expr = this.evaluator.autoVarExpr(vNode.directives['@fetch']);
         const rk = vNode.directives['@result'] || 'result';
         this.fetchManager.setupFetch(expr, rk, ctx);
-        
+
         if (vNode.directives['@watch']) {
           this._handleWatchDirective(vNode, expr, rk);
         }
@@ -1312,7 +1800,13 @@
 
       // @animate
       if (vNode.directives['@animate']) {
-        el.classList.add(vNode.directives['@animate']);
+        const animationClass = vNode.directives['@animate'];
+        el.classList.add(animationClass);
+        // CORREZIONE: Se la classe è fade-in, assicurati che l'elemento sia visibile
+        if (animationClass === 'fadeIn' || animationClass === 'fade-in') {
+          el.style.opacity = '1';
+          el.style.transition = 'opacity 0.3s ease-in-out';
+        }
       }
 
       // @component (inline)
@@ -1336,35 +1830,43 @@
             dir === '@model' || dir === '@focus' || dir === '@blur' || dir === '@change' ||
             dir === '@input' || dir === '@class' || dir === '@text'
           ) && (
-            evt === 'click' || evt === 'hover' || evt === 'focus' || evt === 'input' || evt === 'change' || evt === 'blur'
-          );
-          
+              evt === 'click' || evt === 'hover' || evt === 'focus' || evt === 'input' || evt === 'change' || evt === 'blur'
+            );
+
           if (isEvent) {
             const getInterpolatedExpr = () => this.evaluator.evalAttrValue(expr, ctx);
-            
+
             if (dir === '@fetch') {
               this._handleFetchSubDirective(el, eventName, expr, vNode, ctx);
               return;
             }
-            
+
             if (dir === '@class') {
               this._handleClassSubDirective(el, evt, getInterpolatedExpr, ctx);
               return;
             }
-            
+
             if (dir === '@text') {
               this._handleTextSubDirective(el, evt, getInterpolatedExpr, ctx);
               return;
             }
-            
+
             // Default: execute as pure JS code or interpolated
             el.addEventListener(eventName, e => {
               let codeToRun = getInterpolatedExpr();
               try {
-                new Function('state', 'ctx', 'event', `with(state){with(ctx){${codeToRun}}}`)
+                // CORREZIONE: Gestione migliorata per espressioni con 'state.'
+                const cleanCode = codeToRun.replace(/\bstate\./g, '');
+                new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
                   (this.state, ctx, e);
               } catch (err) {
-                this.errorHandler.showAyishaError(el, err, codeToRun);
+                // Fallback: prova con il codice originale
+                try {
+                  new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${codeToRun}}}`)
+                    (this.state, ctx, e);
+                } catch (err2) {
+                  this.errorHandler.showAyishaError(el, err2, codeToRun);
+                }
               }
               this.render();
             });
@@ -1390,10 +1892,18 @@
             codeToRun = this.evaluator.evalAttrValue(expr, ctx);
           }
           try {
-            new Function('state', 'ctx', 'event', `with(state){with(ctx){${codeToRun}}}`)
+            // CORREZIONE: Gestione migliorata per espressioni con 'state.'
+            const cleanCode = codeToRun.replace(/\bstate\./g, '');
+            new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
               (this.state, ctx, e);
           } catch (err) {
-            this.errorHandler.showAyishaError(el, err, codeToRun);
+            // Fallback: prova con il codice originale
+            try {
+              new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${codeToRun}}}`)
+                (this.state, ctx, e);
+            } catch (err2) {
+              this.errorHandler.showAyishaError(el, err2, codeToRun);
+            }
           }
           this.fetchManager.setupFetch(expr, vNode.directives['@result'] || 'result', ctx, e, true);
         }
@@ -1404,30 +1914,49 @@
     _handleClassSubDirective(el, evt, getInterpolatedExpr, ctx) {
       if (evt === 'hover') {
         el.addEventListener('mouseover', e => {
-          const clsMap = this.evaluator.evalExpr(getInterpolatedExpr(), ctx, e) || {};
-          Object.entries(clsMap).forEach(([cls, cond]) => {
-            if (cond) el.classList.add(cls);
-          });
+          try {
+            const expr = getInterpolatedExpr();
+            const clsMap = this.evaluator.evalExpr(expr, ctx, e) || {};
+            Object.entries(clsMap).forEach(([cls, cond]) => {
+              if (cond) el.classList.add(cls);
+            });
+          } catch (error) {
+            console.error('Error in hover class directive:', error);
+          }
         });
         el.addEventListener('mouseout', e => {
-          const clsMap = this.evaluator.evalExpr(getInterpolatedExpr(), ctx, e) || {};
-          Object.entries(clsMap).forEach(([cls, cond]) => {
-            if (cond) el.classList.remove(cls);
-          });
+          try {
+            const expr = getInterpolatedExpr();
+            const clsMap = this.evaluator.evalExpr(expr, ctx, e) || {};
+            Object.entries(clsMap).forEach(([cls, cond]) => {
+              if (cond) el.classList.remove(cls);
+            });
+          } catch (error) {
+            console.error('Error in hover class directive:', error);
+          }
         });
       } else {
         el.addEventListener(evt === 'hover' ? 'mouseover' : evt, e => {
-          const clsMap = this.evaluator.evalExpr(getInterpolatedExpr(), ctx, e) || {};
-          Object.entries(clsMap).forEach(([cls, cond]) => {
-            if (cond) el.classList.add(cls);
-            else el.classList.remove(cls);
-          });
+          try {
+            const expr = getInterpolatedExpr();
+            const clsMap = this.evaluator.evalExpr(expr, ctx, e) || {};
+            Object.entries(clsMap).forEach(([cls, cond]) => {
+              if (cond) el.classList.add(cls);
+              else el.classList.remove(cls);
+            });
+          } catch (error) {
+            console.error('Error in class directive:', error);
+          }
         });
       }
     }
 
     _handleTextSubDirective(el, evt, getInterpolatedExpr, ctx) {
-      if (!el._ayishaOriginal) el._ayishaOriginal = el.textContent;
+      // CORREZIONE: Salva il testo originale all'inizio del rendering
+      if (!el._ayishaOriginalText) {
+        el._ayishaOriginalText = el.textContent || el.innerText || '';
+      }
+      
       if (evt === 'click') {
         el.addEventListener('click', e => {
           el.textContent = this.evaluator.evalExpr(getInterpolatedExpr(), ctx, e);
@@ -1437,7 +1966,7 @@
           el.textContent = this.evaluator.evalExpr(getInterpolatedExpr(), ctx, e);
         });
         el.addEventListener('mouseout', () => {
-          el.textContent = el._ayishaOriginal;
+          el.textContent = el._ayishaOriginalText;
         });
       }
     }
@@ -1450,22 +1979,42 @@
           const prop = match[1];
           const code = match[2];
           this.evaluator.ensureVarInState(code);
+
           this.addWatcher(prop, function (newVal) {
             const state = window.ayisha.state;
             try {
-              const pushMatch = code.match(/state\.(\w+)\.push\s*\(/) || code.match(/(\w+)\.push\s*\(/);
-              if (pushMatch) {
-                const arrName = pushMatch[1];
-                if (!state[arrName]) state[arrName] = [];
-              }
+              // CORREZIONE FINALE: Garantisci sempre che le variabili esistano
+              window.ayisha.evaluator.ensureVarInState(code);
+              
+              // Esecuzione ultra-sicura del codice
               new Function('state', 'newVal', `
-                with(state){ 
-                  const {${Object.keys(state).join(',')}} = state;
+                with(state) { 
+                  // Garantisce che le variabili comuni esistano sempre
+                  if (!state.log || !Array.isArray(state.log)) {
+                    state.log = [];
+                  }
+                  if (!state.errors || !Array.isArray(state.errors)) {
+                    state.errors = [];
+                  }
+                  if (!state.items || !Array.isArray(state.items)) {
+                    state.items = [];
+                  }
+                  if (!state.data || !Array.isArray(state.data)) {
+                    state.data = [];
+                  }
+                  if (!state.results || !Array.isArray(state.results)) {
+                    state.results = [];
+                  }
+                  if (!state.posts || !Array.isArray(state.posts)) {
+                    state.posts = [];
+                  }
+                  
+                  // Ora esegui il codice
                   ${code}
                 }
               `)(state, newVal);
             } catch (e) {
-              console.error('Watcher error:', e, code);
+              console.error('Watcher error:', e, 'Code:', code, 'Prop:', prop, 'NewVal:', newVal);
             }
           });
         } else {
@@ -1487,18 +2036,31 @@
             const state = window.ayisha.state;
             window.ayisha.evaluator.ensureVarInState(code);
             try {
-              const pushMatch = code.match(/(\w+)\.push\s*\(/);
-              if (pushMatch) {
-                const arrName = pushMatch[1];
-                if (!state[arrName]) state[arrName] = [];
-              }
+              // Prepara le variabili array prima dell'esecuzione
               new Function('state', 'newVal', `
                 with(state){
+                  // Variabili di sicurezza
+                  if (!state.log || !Array.isArray(state.log)) {
+                    state.log = [];
+                  }
+                  if (!state.errors || !Array.isArray(state.errors)) {
+                    state.errors = [];
+                  }
+                  if (!state.items || !Array.isArray(state.items)) {
+                    state.items = [];
+                  }
+                  if (!state.data || !Array.isArray(state.data)) {
+                    state.data = [];
+                  }
+                  if (!state.posts || !Array.isArray(state.posts)) {
+                    state.posts = [];
+                  }
+                  
                   ${code}
                 }
               `)(state, newVal);
             } catch (e) {
-              console.error('Watcher error:', e, code);
+              console.error('Generic watcher error:', e, 'Code:', code);
             }
           });
         }
@@ -1507,7 +2069,7 @@
 
     _createLogWrapper(vNode, ctx) {
       if (!vNode.directives.hasOwnProperty('@log')) return null;
-      
+
       const logWrapper = document.createElement('div');
       logWrapper.className = 'ayisha-console-wrapper';
       logWrapper.style.background = '#222';
@@ -1565,18 +2127,18 @@
           });
         }
       });
-      
+
       if (fetchDir) {
         let url = null, method = 'GET', headers = {}, payload = null;
         try {
           url = this.evaluator.evalExpr(fetchExpr, ctx);
         } catch { }
-        
+
         if (!url && typeof fetchExpr === 'string') {
           const m = fetchExpr.match(/([\w$]+)\s*=\s*(.+)/);
           if (m) url = this.evaluator.evalExpr(m[2], ctx);
         }
-        
+
         if (vNode.directives['@method']) method = this.evaluator.evalExpr(vNode.directives['@method'], ctx) || 'GET';
         if (vNode.directives['@headers']) headers = this.evaluator.evalExpr(vNode.directives['@headers'], ctx) || {};
         if (vNode.directives['@payload']) payload = this.evaluator.evalExpr(vNode.directives['@payload'], ctx);
@@ -1628,7 +2190,7 @@
     _addDirectivesToLog(logWrapper, vNode, ctx, renderValue) {
       Object.entries(vNode.directives).forEach(([dir, expr]) => {
         if (dir === '@log') return;
-        
+
         let info = '';
         if (dir === '@model') {
           const val = this.evaluator.evalExpr(expr, ctx);
@@ -1665,7 +2227,7 @@
         } else if (dir === '@animate') {
           info = `<span style=\"color:#0ff\">(animazione: <b>${expr}</b>)</span>`;
         }
-        
+
         const row = document.createElement('div');
         row.style.marginBottom = '0.5em';
         row.innerHTML = `<b style=\"color:#ffd700\">${dir}</b>: <span>${renderValue(expr, ctx)}</span> ${info}`;
@@ -1695,7 +2257,7 @@
           } else if (dir === '@set') {
             info = `<span style=\"color:#0ff\">(assegnazione: <b>${expr}</b>, evento: <b>${evt}</b>)</span>`;
           }
-          
+
           const key = `${dir}:${evt}`;
           const row = document.createElement('div');
           row.style.marginBottom = '0.5em';
@@ -1706,6 +2268,9 @@
     }
 
     mount() {
+      // ORDINE CRITICO CORRETTO:
+      
+      // 1. Parse del DOM PRIMA di tutto
       if (this.root.childNodes.length > 1) {
         const fragVNode = { tag: 'fragment', attrs: {}, directives: {}, subDirectives: {}, children: [] };
         this.root.childNodes.forEach(child => {
@@ -1717,14 +2282,27 @@
       } else {
         this._vdom = this.parse(this.root);
       }
-      
+
+      // 2. PRIMO: Pre-inizializza TUTTE le variabili essenziali
+      this._preInitializeEssentialVariables();
+
+      // 3. SECONDO: Attiva il sistema reattivo (ma watcher ancora disabilitati)
       this._makeReactive();
+
+      // 4. TERZO: Esegui i blocchi init (ora le variabili esistono già)
       this._runInitBlocks();
+
+      // 5. QUARTO: Abilita i watcher (ora tutto è pronto)
+      this.reactivitySystem.enableWatchers();
+
+      // 6. Setup routing
       this._setupRouting();
-      
       this.router.setupCurrentPageProperty();
+
+      // 7. Primo render
       this.render();
-      
+
+      // 8. Event listeners
       this.root.addEventListener('click', e => {
         let el = e.target;
         while (el && el !== this.root) {
@@ -1754,10 +2332,39 @@
   // Set up global reference
   window.AyishaVDOM = AyishaVDOM;
 
+  // CORREZIONE: Aggiungi CSS per le animazioni se non esistono
+  const addDefaultAnimationStyles = () => {
+    const existingStyle = document.getElementById('ayisha-default-animations');
+    if (!existingStyle) {
+      const style = document.createElement('style');
+      style.id = 'ayisha-default-animations';
+      style.textContent = `
+        .fadeIn, .fade-in {
+          animation: ayishaFadeIn 0.3s ease-in-out;
+        }
+        
+        @keyframes ayishaFadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        .slide-down {
+          overflow: hidden;
+          transition: height 0.3s ease-in-out;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  };
+
   // Auto-initialize when DOM is ready
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => new AyishaVDOM(document.body).mount());
+    document.addEventListener('DOMContentLoaded', () => {
+      addDefaultAnimationStyles();
+      new AyishaVDOM(document.body).mount();
+    });
   } else {
+    addDefaultAnimationStyles();
     new AyishaVDOM(document.body).mount();
   }
 
