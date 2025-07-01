@@ -997,14 +997,14 @@
       // Handle standard directives
       this._handleStandardDirectives(el, vNode, ctx);
 
-      // Handle sub-directives
-      this._handleSubDirectives(el, vNode, ctx);
-
-      // Add children
+      // Add children FIRST
       vNode.children.forEach(child => {
         const node = this._renderVNode(child, ctx);
         if (node) el.appendChild(node);
       });
+
+      // FIXED: Handle sub-directives AFTER children are added (so original text is captured correctly)
+      this._handleSubDirectives(el, vNode, ctx);
 
       return el;
     }
@@ -1413,7 +1413,15 @@
             );
 
           if (isEvent) {
-            const getInterpolatedExpr = () => this.evaluator.evalAttrValue(expr, ctx);
+            // FIXED: Use evalExpr directly for object expressions, evalAttrValue for interpolations
+            const getEvaluatedExpr = () => {
+              // For class expressions that are objects, use evalExpr directly
+              if (dir === '@class' && expr.trim().startsWith('{')) {
+                return this.evaluator.evalExpr(expr, ctx);
+              }
+              // For other expressions, use evalAttrValue for interpolation support
+              return this.evaluator.evalAttrValue(expr, ctx);
+            };
 
             if (dir === '@fetch') {
               this._handleFetchSubDirective(el, eventName, expr, vNode, ctx);
@@ -1421,20 +1429,20 @@
             }
 
             if (dir === '@class') {
-              this._handleClassSubDirective(el, evt, getInterpolatedExpr, ctx);
+              this._handleClassSubDirective(el, evt, getEvaluatedExpr, ctx);
               return;
             }
 
             if (dir === '@text') {
-              this._handleTextSubDirective(el, evt, getInterpolatedExpr, ctx);
+              this._handleTextSubDirective(el, evt, getEvaluatedExpr, ctx);
               return;
             }
 
             // Default: execute as pure JS code
             el.addEventListener(eventName, e => {
-              let codeToRun = getInterpolatedExpr();
+              let codeToRun = getEvaluatedExpr();
               try {
-                const cleanCode = codeToRun.replace(/\bstate\./g, '');
+                const cleanCode = String(codeToRun).replace(/\bstate\./g, '');
                 new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
                   (this.state, ctx, e);
               } catch (err) {
@@ -1474,12 +1482,11 @@
       });
     }
 
-    _handleClassSubDirective(el, evt, getInterpolatedExpr, ctx) {
+    _handleClassSubDirective(el, evt, getEvaluatedExpr, ctx) {
       if (evt === 'hover') {
         el.addEventListener('mouseover', e => {
           try {
-            const expr = getInterpolatedExpr();
-            const clsMap = this.evaluator.evalExpr(expr, ctx, e) || {};
+            const clsMap = getEvaluatedExpr() || {};
             Object.entries(clsMap).forEach(([cls, cond]) => {
               if (cond) el.classList.add(cls);
             });
@@ -1489,8 +1496,7 @@
         });
         el.addEventListener('mouseout', e => {
           try {
-            const expr = getInterpolatedExpr();
-            const clsMap = this.evaluator.evalExpr(expr, ctx, e) || {};
+            const clsMap = getEvaluatedExpr() || {};
             Object.entries(clsMap).forEach(([cls, cond]) => {
               if (cond) el.classList.remove(cls);
             });
@@ -1498,14 +1504,74 @@
             console.error('Error in hover class directive:', error);
           }
         });
-      } else {
-        el.addEventListener(evt === 'hover' ? 'mouseover' : evt, e => {
+      } else if (evt === 'focus') {
+        // Focus: add class when focused
+        el.addEventListener('focus', e => {
           try {
-            const expr = getInterpolatedExpr();
-            const clsMap = this.evaluator.evalExpr(expr, ctx, e) || {};
+            const clsMap = getEvaluatedExpr() || {};
             Object.entries(clsMap).forEach(([cls, cond]) => {
               if (cond) el.classList.add(cls);
-              else el.classList.remove(cls);
+            });
+          } catch (error) {
+            console.error('Error in focus class directive:', error);
+          }
+        });
+        // Remove class when loses focus (blur)
+        el.addEventListener('blur', e => {
+          try {
+            const clsMap = getEvaluatedExpr() || {};
+            Object.entries(clsMap).forEach(([cls, cond]) => {
+              if (cond) el.classList.remove(cls);
+            });
+          } catch (error) {
+            console.error('Error in blur class directive:', error);
+          }
+        });
+      } else if (evt === 'input') {
+        // Input: add class while user is typing, remove on blur
+        el.addEventListener('input', e => {
+          try {
+            const clsMap = getEvaluatedExpr() || {};
+            Object.entries(clsMap).forEach(([cls, cond]) => {
+              if (cond) el.classList.add(cls);
+            });
+          } catch (error) {
+            console.error('Error in input class directive:', error);
+          }
+        });
+        el.addEventListener('blur', e => {
+          try {
+            const clsMap = getEvaluatedExpr() || {};
+            Object.entries(clsMap).forEach(([cls, cond]) => {
+              if (cond) el.classList.remove(cls);
+            });
+          } catch (error) {
+            console.error('Error in input blur class directive:', error);
+          }
+        });
+      } else if (evt === 'click') {
+        // Click: toggle class on each click
+        el.addEventListener('click', e => {
+          try {
+            const clsMap = getEvaluatedExpr() || {};
+            Object.entries(clsMap).forEach(([cls, cond]) => {
+              if (cond) {
+                el.classList.toggle(cls);
+              }
+            });
+          } catch (error) {
+            console.error('Error in click class directive:', error);
+          }
+        });
+      } else {
+        // For other events, add class when event occurs
+        el.addEventListener(evt, e => {
+          try {
+            const clsMap = getEvaluatedExpr() || {};
+            Object.entries(clsMap).forEach(([cls, cond]) => {
+              if (cond) {
+                el.classList.add(cls);
+              }
             });
           } catch (error) {
             console.error('Error in class directive:', error);
@@ -1515,20 +1581,31 @@
     }
 
     _handleTextSubDirective(el, evt, getInterpolatedExpr, ctx) {
+      // FIXED: Capture original text AFTER element is fully rendered with children
       if (!el._ayishaOriginalText) {
+        // Get the complete text content including all nested text
         el._ayishaOriginalText = el.textContent || el.innerText || '';
+        // console.log('Captured original text:', el._ayishaOriginalText);
       }
 
       if (evt === 'click') {
         el.addEventListener('click', e => {
-          el.textContent = this.evaluator.evalExpr(getInterpolatedExpr(), ctx, e);
+          const newText = this.evaluator.evalExpr(getInterpolatedExpr(), ctx, e);
+          el.textContent = newText;
         });
       } else if (evt === 'hover') {
         el.addEventListener('mouseover', e => {
-          el.textContent = this.evaluator.evalExpr(getInterpolatedExpr(), ctx, e);
+          const newText = this.evaluator.evalExpr(getInterpolatedExpr(), ctx, e);
+          el.textContent = newText;
         });
         el.addEventListener('mouseout', () => {
-          el.textContent = el._ayishaOriginalText;
+          // Restore original text
+          el.textContent = el._ayishaOriginalText || '';
+        });
+      } else if (evt === 'input' || evt === 'focus' || evt === 'blur') {
+        el.addEventListener(evt, e => {
+          const newText = this.evaluator.evalExpr(getInterpolatedExpr(), ctx, e);
+          el.textContent = newText;
         });
       }
     }
