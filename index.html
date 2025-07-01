@@ -226,10 +226,8 @@
           <button @link="info">Info</button>
           <button @link="contatti">Contatti</button>
         </nav>
-        <div @page="home">
-          <h4>Benvenuto nella Home!</h4>
-         
-        </div>
+        <component @src="/src/home.html" @page="home"></component>
+       
         <div @page="about">
           <h4>Cos'è Ayisha.js?</h4>
           <p>Ayisha.js è un micro-framework VDOM per web app, senza build, con sintassi HTML e direttive ispirate a Vue/Angular.</p>
