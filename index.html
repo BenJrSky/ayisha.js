@@ -1,1102 +1,277 @@
 <!DOCTYPE html>
 <html lang="it">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ayisha.js - Framework JavaScript Reattivo e Dinamico</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-
-        /* Header */
-        .hero {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            text-align: center;
-            color: white;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-            animation: float 20s ease-in-out infinite;
-        }
-
-        @keyframes float {
-
-            0%,
-            100% {
-                transform: translateY(0px);
-            }
-
-            50% {
-                transform: translateY(-20px);
-            }
-        }
-
-        .hero-content {
-            position: relative;
-            z-index: 2;
-        }
-
-        .hero h1 {
-            font-size: 4rem;
-            font-weight: 800;
-            margin-bottom: 1rem;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-            animation: slideInFromTop 1s ease-out;
-        }
-
-        @keyframes slideInFromTop {
-            0% {
-                transform: translateY(-100px);
-                opacity: 0;
-            }
-
-            100% {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-
-        .hero p {
-            font-size: 1.5rem;
-            margin-bottom: 2rem;
-            opacity: 0.9;
-            animation: slideInFromBottom 1s ease-out 0.5s both;
-        }
-
-        @keyframes slideInFromBottom {
-            0% {
-                transform: translateY(50px);
-                opacity: 0;
-            }
-
-            100% {
-                transform: translateY(0);
-                opacity: 0.9;
-            }
-        }
-
-        .cta-buttons {
-            animation: fadeIn 1s ease-out 1s both;
-        }
-
-        @keyframes fadeIn {
-            0% {
-                opacity: 0;
-            }
-
-            100% {
-                opacity: 1;
-            }
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 15px 30px;
-            margin: 10px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            text-decoration: none;
-            border-radius: 50px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-3px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-        }
-
-        .btn-primary {
-            background: #ff6b6b;
-            border-color: #ff6b6b;
-        }
-
-        .btn-primary:hover {
-            background: #ff5252;
-            border-color: #ff5252;
-        }
-
-        /* Navigation */
-        .nav {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
-            z-index: 1000;
-            padding: 1rem 0;
-            transition: all 0.3s ease;
-        }
-
-        .nav.scrolled {
-            background: rgba(0, 0, 0, 0.9);
-        }
-
-        .nav-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: white;
-        }
-
-        .nav-menu {
-            display: flex;
-            list-style: none;
-            gap: 2rem;
-        }
-
-        .nav-link {
-            color: white;
-            text-decoration: none;
-            font-weight: 500;
-            transition: color 0.3s ease;
-        }
-
-        .nav-link:hover {
-            color: #ff6b6b;
-        }
-
-        /* Sections */
-        .section {
-            padding: 100px 0;
-            background: white;
-        }
-
-        .section:nth-child(even) {
-            background: #f8f9fa;
-        }
-
-        .section-title {
-            text-align: center;
-            font-size: 3rem;
-            font-weight: 700;
-            margin-bottom: 3rem;
-            color: #333;
-        }
-
-        .section-subtitle {
-            text-align: center;
-            font-size: 1.2rem;
-            color: #666;
-            margin-bottom: 4rem;
-            max-width: 800px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        /* Features Grid */
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 3rem;
-            margin-top: 4rem;
-        }
-
-        .feature-card {
-            background: white;
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            transition: transform 0.3s ease;
-        }
-
-        .feature-card:hover {
-            transform: translateY(-10px);
-        }
-
-        .feature-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
-
-        .feature-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            color: #333;
-        }
-
-        /* Demo Sections */
-        .demo-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 3rem;
-            margin-top: 3rem;
-            align-items: start;
-        }
-
-        .demo-code {
-            background: #2d3748;
-            color: white;
-            padding: 2rem;
-            border-radius: 10px;
-            font-family: 'Courier New', monospace;
-            overflow-x: auto;
-            position: relative;
-        }
-
-        .demo-code::before {
-            content: 'HTML';
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: #4a5568;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-        }
-
-        .demo-result {
-            background: white;
-            padding: 2rem;
-            border-radius: 10px;
-            border: 2px solid #e2e8f0;
-            min-height: 200px;
-        }
-
-        /* Interactive Examples */
-        .example-section {
-            margin: 3rem 0;
-            padding: 2rem;
-            background: #f7fafc;
-            border-radius: 15px;
-            border-left: 5px solid #667eea;
-        }
-
-        .example-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            color: #2d3748;
-        }
-
-        /* Specific styling for examples */
-        .counter-demo {
-            text-align: center;
-            padding: 2rem;
-        }
-
-        .counter-display {
-            font-size: 3rem;
-            font-weight: bold;
-            color: #667eea;
-            margin: 1rem 0;
-        }
-
-        .todo-demo {
-            max-width: 400px;
-            margin: 0 auto;
-        }
-
-        .todo-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px;
-            margin: 5px 0;
-            background: white;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-
-        .todo-item.completed {
-            opacity: 0.6;
-            text-decoration: line-through;
-        }
-
-        .user-card {
-            background: white;
-            padding: 1rem;
-            margin: 1rem 0;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .user-avatar {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-        }
-
-        .loading {
-            text-align: center;
-            color: #666;
-            font-style: italic;
-        }
-
-        .error {
-            color: #e53e3e;
-            background: #fed7d7;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-        }
-
-        /* Form styling */
-        .form-group {
-            margin: 1rem 0;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 10px;
-            border: 2px solid #e2e8f0;
-            border-radius: 5px;
-            font-size: 1rem;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .form-group input.invalid {
-            border-color: #e53e3e;
-            background-color: #fed7d7;
-        }
-
-        .form-group input.valid {
-            border-color: #38a169;
-            background-color: #c6f6d5;
-        }
-
-        .validation-message {
-            font-size: 0.9rem;
-            margin-top: 0.5rem;
-            padding: 0.5rem;
-            border-radius: 4px;
-        }
-
-        .validation-message.error {
-            color: #e53e3e;
-            background-color: #fed7d7;
-        }
-
-        .validation-message.success {
-            color: #38a169;
-            background-color: #c6f6d5;
-        }
-
-        .btn-demo {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1rem;
-            margin: 5px;
-            transition: all 0.3s ease;
-        }
-
-        .btn-demo:hover {
-            background: #5a67d8;
-            transform: translateY(-2px);
-        }
-
-        .btn-demo.disabled {
-            background: #a0aec0;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .btn-demo.disabled:hover {
-            background: #a0aec0;
-            transform: none;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .hero h1 {
-                font-size: 2.5rem;
-            }
-
-            .hero p {
-                font-size: 1.2rem;
-            }
-
-            .demo-container {
-                grid-template-columns: 1fr;
-                gap: 2rem;
-            }
-
-            .nav-menu {
-                display: none;
-            }
-
-            .section-title {
-                font-size: 2rem;
-            }
-        }
-
-        /* Highlight styles */
-        .highlight {
-            background: #fef5e7;
-            border-left: 4px solid #f6ad55;
-            padding: 1rem;
-            margin: 1rem 0;
-            border-radius: 0 5px 5px 0;
-        }
-
-        /* State viewer */
-        .state-viewer {
-            background: #1a202c;
-            color: #e2e8f0;
-            padding: 1rem;
-            border-radius: 8px;
-            font-family: monospace;
-            margin: 1rem 0;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        /* Footer */
-        .footer {
-            background: #2d3748;
-            color: white;
-            text-align: center;
-            padding: 3rem 0;
-        }
-
-        .footer h3 {
-            font-size: 2rem;
-            margin-bottom: 1rem;
-        }
-
-        .footer p {
-            font-size: 1.1rem;
-            opacity: 0.8;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ayisha.js Tutorial & Confronto</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      font-family: 'Montserrat', Arial, sans-serif;
+      background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);
+      color: #222;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #6366f1;
+      color: #fff;
+      padding: 2rem 1rem 1rem 1rem;
+      text-align: center;
+      border-radius: 0 0 2rem 2rem;
+      box-shadow: 0 4px 24px #6366f133;
+    }
+    header h1 {
+      font-size: 2.5rem;
+      margin: 0 0 0.5rem 0;
+      letter-spacing: 2px;
+    }
+    header p {
+      font-size: 1.2rem;
+      margin: 0;
+      opacity: 0.9;
+    }
+    .container {
+      max-width: 900px;
+      margin: 2rem auto;
+      background: #fff;
+      border-radius: 1.5rem;
+      box-shadow: 0 2px 16px #6366f122;
+      padding: 2rem;
+    }
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 2rem;
+      font-size: 1rem;
+    }
+    .compare-table th, .compare-table td {
+      border: 1px solid #e0e7ff;
+      padding: 0.7rem 0.5rem;
+      text-align: center;
+    }
+    .compare-table th {
+      background: #6366f1;
+      color: #fff;
+      font-weight: 700;
+    }
+    .compare-table tr:nth-child(even) {
+      background: #f3f4f6;
+    }
+    .badge {
+      display: inline-block;
+      background: #6366f1;
+      color: #fff;
+      border-radius: 1rem;
+      padding: 0.2rem 0.8rem;
+      font-size: 0.9rem;
+      margin: 0 0.2rem;
+    }
+    .section-title {
+      font-size: 1.5rem;
+      margin: 2rem 0 1rem 0;
+      color: #6366f1;
+      letter-spacing: 1px;
+    }
+    .directive-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .directive-card {
+      background: #f1f5f9;
+      border-radius: 1rem;
+      box-shadow: 0 1px 6px #6366f111;
+      padding: 1rem;
+      flex: 1 1 260px;
+      min-width: 220px;
+      max-width: 320px;
+      transition: box-shadow 0.2s;
+      position: relative;
+    }
+    .directive-card:hover {
+      box-shadow: 0 4px 16px #6366f133;
+    }
+    .directive-card code {
+      background: #e0e7ff;
+      color: #3730a3;
+      border-radius: 0.5rem;
+      padding: 0.2rem 0.5rem;
+      font-size: 1rem;
+    }
+    .example-block {
+      background: #f3f4f6;
+      border-radius: 1rem;
+      padding: 1rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 1px 6px #6366f111;
+    }
+    .example-block h3 {
+      margin-top: 0;
+      color: #6366f1;
+    }
+    .ayisha-demo {
+      margin: 1rem 0;
+      padding: 1rem;
+      background: #fff;
+      border-radius: 1rem;
+      box-shadow: 0 1px 6px #6366f111;
+    }
+    input, button, select {
+      font-family: inherit;
+      font-size: 1rem;
+      border-radius: 0.5rem;
+      border: 1px solid #c7d2fe;
+      padding: 0.5rem 1rem;
+      margin: 0.2rem 0;
+      outline: none;
+      transition: border 0.2s;
+    }
+    input:focus, button:focus, select:focus {
+      border: 1.5px solid #6366f1;
+    }
+    button {
+      background: #6366f1;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-weight: 700;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #4338ca;
+    }
+    .note {
+      font-size: 0.95rem;
+      color: #6366f1;
+      margin-top: 0.5rem;
+    }
+    @media (max-width: 600px) {
+      .container { padding: 1rem; }
+      .directive-list { flex-direction: column; }
+    }
+  </style>
+  <script src="ayisha.js"></script>
 </head>
-
 <body>
-    <!-- Navigation -->
-    <nav class="nav" id="navbar">
-        <div class="container">
-            <div class="nav-content">
-                <div class="logo">Ayisha.js</div>
-                <ul class="nav-menu">
-                    <li><a href="#home" class="nav-link">Home</a></li>
-                    <li><a href="#features" class="nav-link">Caratteristiche</a></li>
-                    <li><a href="#directives" class="nav-link">Direttive</a></li>
-                    <li><a href="#examples" class="nav-link">Esempi</a></li>
-                    <li><a href="#playground" class="nav-link">Playground</a></li>
-                </ul>
-            </div>
+  <header>
+    <h1>Ayisha.js <span class="badge">Ultra-light VDOM</span></h1>
+    <p>Un micro-framework moderno, reattivo e super semplice per web app e prototipi. <br>Zero build, zero dipendenze, solo HTML + JS.</p>
+  </header>
+  <div class="container">
+    <h2 class="section-title">Confronto con altri framework</h2>
+    <table class="compare-table">
+      <tr>
+        <th>Framework</th>
+        <th>Dimensione</th>
+        <th>Reattività</th>
+        <th>Direttive</th>
+        <th>JSX/Template</th>
+        <th>Learning Curve</th>
+        <th>Build/Tooling</th>
+      </tr>
+      <tr><td><b>Ayisha.js</b></td><td>~20KB</td><td>✔️</td><td>✔️</td><td>HTML</td><td>Facilissima</td><td>No</td></tr>
+      <tr><td>React</td><td>~100KB</td><td>✔️</td><td>✖️</td><td>JSX</td><td>Media</td><td>Sì</td></tr>
+      <tr><td>Vue</td><td>~33KB</td><td>✔️</td><td>✔️</td><td>HTML</td><td>Bassa</td><td>Opzionale</td></tr>
+      <tr><td>Svelte</td><td>~2KB (compilato)</td><td>✔️</td><td>✔️</td><td>HTML</td><td>Bassa</td><td>Sì</td></tr>
+      <tr><td>Angular</td><td>~150KB</td><td>✔️</td><td>✔️</td><td>HTML</td><td>Alta</td><td>Sì</td></tr>
+      <tr><td>jQuery</td><td>~30KB</td><td>✖️</td><td>✖️</td><td>HTML</td><td>Bassa</td><td>No</td></tr>
+      <tr><td>Altri (Preact, Alpine...)</td><td>2-10KB</td><td>✔️</td><td>✔️</td><td>HTML/JSX</td><td>Bassa</td><td>Opzionale</td></tr>
+    </table>
+
+    <h2 class="section-title">Tutte le direttive e sottodirettive</h2>
+    <div class="directive-list" id="directives-list">
+      <!-- Popolato da Ayisha.js -->
+    </div>
+
+    <h2 class="section-title">Tutorial interattivo</h2>
+    <div class="example-block">
+      <h3>1. Ciao! Come ti chiami?</h3>
+      <div class="ayisha-demo">
+        <input type="text" placeholder="Il tuo nome" @model="nome">
+        <button @click="state.nome = state.nome.trim()">Conferma</button>
+        <div class="note">Ciao <b>{{nome || 'amico/a'}}</b>! 👋</div>
+      </div>
+    </div>
+    <div class="example-block">
+      <h3>2. Binding, condizioni e cicli</h3>
+      <div class="ayisha-demo">
+        <input type="number" min="1" max="10" @model="count" value="1">
+        <button @click="state.count++">Aumenta</button>
+        <button @click="state.count = 1">Reset</button>
+        <div class="note">Hai scelto: <b>{{count}}</b></div>
+        <ul>
+          <li @for="i in Array(count).fill(0).map((_,i)=>i+1)">Elemento {{i}}</li>
+        </ul>
+        <div @if="count > 5" class="note">Wow, più di 5 elementi!</div>
+      </div>
+    </div>
+    <div class="example-block">
+      <h3>3. Fetch e dati dinamici</h3>
+      <div class="ayisha-demo">
+        <button @fetch="'https://jsonplaceholder.typicode.com/users'" @result="utenti">Carica utenti</button>
+        <ul>
+          <li @for="user in utenti">👤 {{user.name}} (<a href="mailto:{{user.email}}">{{user.email}}</a>)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="example-block">
+      <h3>4. Componenti e routing</h3>
+      <div class="ayisha-demo">
+        <nav>
+          <button @link="home">Home</button>
+          <button @link="about">About</button>
+          <button @link="info">Info</button>
+          <button @link="contatti">Contatti</button>
+        </nav>
+        <div @page="home">
+          <h4>Benvenuto nella Home!</h4>
+         
         </div>
-    </nav>
-
-    <!-- Hero Section -->
-    <section class="hero" id="home">
-        <div class="container">
-            <div class="hero-content">
-                <h1>Ayisha.js</h1>
-                <p>La libreria JavaScript leggera per interfacce web reattive e dinamiche</p>
-                <div class="cta-buttons">
-                    <a href="#examples" class="btn btn-primary">Vedi Esempi</a>
-                    <a href="#playground" class="btn">Prova Subito</a>
-                </div>
-            </div>
+        <div @page="about">
+          <h4>Cos'è Ayisha.js?</h4>
+          <p>Ayisha.js è un micro-framework VDOM per web app, senza build, con sintassi HTML e direttive ispirate a Vue/Angular.</p>
         </div>
-    </section>
-
-    <!-- Features Section -->
-    <section class="section" id="features">
-        <div class="container">
-            <h2 class="section-title">Caratteristiche Principali</h2>
-            <p class="section-subtitle">
-                Ayisha.js offre tutto ciò di cui hai bisogno per creare interfacce moderne e reattive
-                senza dipendenze esterne e con una curva di apprendimento dolce.
-            </p>
-
-            <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon">⚡</div>
-                    <h3 class="feature-title">Reattività</h3>
-                    <p>Ogni cambiamento nello stato aggiorna automaticamente l'interfaccia. Niente più DOM manipulation
-                        manuale!</p>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-icon">🎯</div>
-                    <h3 class="feature-title">Direttive</h3>
-                    <p>Usa attributi speciali direttamente nell'HTML: @if, @for, @click, @model, @fetch e molte altre.
-                    </p>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-icon">🧩</div>
-                    <h3 class="feature-title">Componenti</h3>
-                    <p>Includi parti di pagina da file esterni o creale inline per un codice modulare e riutilizzabile.
-                    </p>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-icon">🔗</div>
-                    <h3 class="feature-title">Data Binding</h3>
-                    <p>Collega facilmente i dati agli input e viceversa con binding bidirezionale automatico.</p>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-icon">🛣️</div>
-                    <h3 class="feature-title">Routing SPA</h3>
-                    <p>Gestisce pagine diverse senza ricaricare il sito, perfetto per Single Page Applications.</p>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-icon">🔍</div>
-                    <h3 class="feature-title">Debug Tools</h3>
-                    <p>Sistema integrato di logging ed errori per un debugging rapido ed efficace.</p>
-                </div>
-            </div>
+        <div @page="info">
+          <h4>Info</h4>
+          <ul>
+            <li>Ultra leggero: solo 20KB</li>
+            <li>Zero build, zero dipendenze</li>
+            <li>Direttive semplici e potenti</li>
+            <li>Routing SPA nativo</li>
+            <li>Componenti HTML riutilizzabili</li>
+          </ul>
         </div>
-    </section>
-
-    <!-- Directives Overview -->
-    <section class="section" id="directives">
-        <div class="container">
-            <h2 class="section-title">Direttive Disponibili</h2>
-            <p class="section-subtitle">
-                Un set completo di direttive per ogni esigenza di sviluppo web moderno.
-            </p>
-
-            <div class="features-grid">
-                <div class="feature-card">
-                    <h4>🎛️ Controllo di Flusso</h4>
-                    <p><code>@if</code>, <code>@show</code>, <code>@hide</code>, <code>@for</code>,
-                        <code>@switch</code>, <code>@case</code>, <code>@default</code></p>
-                </div>
-
-                <div class="feature-card">
-                    <h4>📊 Data Binding</h4>
-                    <p><code>@model</code>, <code>@text</code>, <code>@class</code>, <code>@style</code></p>
-                </div>
-
-                <div class="feature-card">
-                    <h4>🖱️ Eventi</h4>
-                    <p><code>@click</code>, <code>@hover</code>, <code>@focus</code>, <code>@blur</code>,
-                        <code>@change</code>, <code>@input</code></p>
-                </div>
-
-                <div class="feature-card">
-                    <h4>🌐 HTTP</h4>
-                    <p><code>@fetch</code>, <code>@result</code>, <code>@method</code>, <code>@headers</code>,
-                        <code>@payload</code></p>
-                </div>
-
-                <div class="feature-card">
-                    <h4>👁️ Osservatori</h4>
-                    <p><code>@watch</code> per osservare cambiamenti di stato</p>
-                </div>
-
-                <div class="feature-card">
-                    <h4>🧩 Componenti</h4>
-                    <p><code>@component</code>, <code>@src</code> per modularità</p>
-                </div>
-
-                <div class="feature-card">
-                    <h4>🛣️ Navigazione</h4>
-                    <p><code>@link</code>, <code>@page</code> per SPA routing</p>
-                </div>
-
-                <div class="feature-card">
-                    <h4>🔧 Utilità</h4>
-                    <p><code>@set</code>, <code>@validate</code> (con regex, email, phone, min/max),
-                        <code>@animate</code>, <code>@state</code>, <code>@log</code></p>
-                </div>
-
-                <div class="feature-card">
-                    <h4>⚙️ Funzionale</h4>
-                    <p><code>@source</code>, <code>@map</code>, <code>@filter</code>, <code>@reduce</code></p>
-                </div>
-            </div>
+        <div @page="contatti">
+          <h4>Contatti</h4>
+          <p>Per domande o suggerimenti:</p>
+          <ul>
+            <li>Email: <a href="mailto:info@ayisha.dev">info@ayisha.dev</a></li>
+            <li>GitHub: <a href="https://github.com/devben/ayisha.js" target="_blank">ayisha.js</a></li>
+          </ul>
         </div>
-    </section>
-
-    <!-- Examples Section -->
-    <section class="section" id="examples">
-        <div class="container">
-            <h2 class="section-title">Esempi Interattivi</h2>
-
-            <!-- Counter Example -->
-            <div class="example-section">
-                <h3 class="example-title">1. Counter Reattivo</h3>
-                <div class="demo-container">
-                    <div class="demo-code">&lt;div class="counter-demo"&gt;
-                        &lt;h3&gt;Counter: &lt;span class="counter-display"&gt;{{count}}&lt;/span&gt;&lt;/h3&gt;
-                        &lt;button class="btn-demo" @click="count++"&gt;+&lt;/button&gt;
-                        &lt;button class="btn-demo" @click="count--"&gt;-&lt;/button&gt;
-                        &lt;button class="btn-demo" @click="count = 0"&gt;Reset&lt;/button&gt;
-                        &lt;/div&gt;
-
-                        &lt;init&gt;
-                        state.count = 0;
-                        &lt;/init&gt;</div>
-                    <init>count=0</init>
-                    <div class="demo-result">
-                        <div class="counter-demo">
-                            <h3>Counter: <span class="counter-display">{{count}}</span></h3>
-                            <button class="btn-demo" @click="count++">+</button>
-                            <button class="btn-demo" @click="count--">-</button>
-                            <button class="btn-demo" @click="count = 0">Reset</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Todo List Example -->
-            <div class="example-section">
-                <h3 class="example-title">2. Todo List con @for e @model</h3>
-                <div class="demo-container">
-                    <div class="demo-code">&lt;div class="todo-demo"&gt;
-                        &lt;input @model="newTodo" placeholder="Nuovo todo..."&gt;
-                        &lt;button class="btn-demo"
-                        @click="newTodo.trim() && todos.push({id: Date.now(), text: newTodo, done: false}); newTodo =
-                        ''"&gt;
-                        Aggiungi
-                        &lt;/button&gt;
-
-                        &lt;div @for="todo in todos" class="todo-item" @class="{completed: todo.done}"&gt;
-                        &lt;span&gt;{{todo.text}}&lt;/span&gt;
-                        &lt;button class="btn-demo" @click="todo.done = !todo.done"&gt;
-                        {{todo.done ? '↶' : '✓'}}
-                        &lt;/button&gt;
-                        &lt;/div&gt;
-                        &lt;/div&gt;
-
-                        &lt;init&gt;
-                        state.todos = [];
-                        state.newTodo = '';
-                        &lt;/init&gt;</div>
-                    <div class="demo-result">
-                        <div class="todo-demo">
-                            <div class="form-group">
-                                <input @model="newTodo" placeholder="Nuovo todo..."
-                                    style="width: 70%; display: inline-block;">
-                                <button class="btn-demo"
-                                    @click="newTodo.trim() && todos.push({id: Date.now(), text: newTodo, done: false}); newTodo = ''"
-                                    style="width: 25%; margin-left: 5%;">
-                                    Aggiungi
-                                </button>
-                            </div>
-
-                            <div @for="todo in todos" class="todo-item" @class="{completed: todo.done}">
-                                <span>{{todo.text}}</span>
-                                <button class="btn-demo" @click="todo.done = !todo.done">
-                                    {{todo.done ? '↶' : '✓'}}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Fetch Example -->
-            <div class="example-section">
-                <h3 class="example-title">3. HTTP Requests con @fetch</h3>
-                <div class="demo-container">
-                    <div class="demo-code">&lt;div&gt;
-                        &lt;button class="btn-demo"
-                        @fetch:click="'https://jsonplaceholder.typicode.com/users'"
-                        @result="users"&gt;
-                        Carica Utenti
-                        &lt;/button&gt;
-
-                        &lt;div @if="users" @for="user in users" class="user-card"&gt;
-                        &lt;div class="user-avatar"&gt;{{user.name.charAt(0)}}&lt;/div&gt;
-                        &lt;div&gt;
-                        &lt;strong&gt;{{user.name}}&lt;/strong&gt;&lt;br&gt;
-                        &lt;small&gt;{{user.email}}&lt;/small&gt;
-                        &lt;/div&gt;
-                        &lt;/div&gt;
-                        &lt;/div&gt;</div>
-                    <div class="demo-result">
-                        <button class="btn-demo" @fetch:click="'https://jsonplaceholder.typicode.com/users'"
-                            @result="users">
-                            Carica Utenti
-                        </button>
-
-                        <div @if="!users" class="loading">
-                            Clicca il pulsante per caricare gli utenti...
-                        </div>
-
-                        <div @if="users" @for="user in users.slice(0, 3)" class="user-card">
-                            <div class="user-avatar">{{user.name.charAt(0)}}</div>
-                            <div>
-                                <strong>{{user.name}}</strong><br>
-                                <small>{{user.email}}</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Conditional Rendering Example -->
-            <div class="example-section">
-                <h3 class="example-title">4. Rendering Condizionale con @if/@show/@hide</h3>
-                <div class="demo-container">
-                    <div class="demo-code">&lt;div&gt;
-                        &lt;button class="btn-demo" @click="showAlert = !showAlert"&gt;
-                        {{showAlert ? 'Nascondi' : 'Mostra'}} Alert
-                        &lt;/button&gt;
-
-                        &lt;div @if="showAlert" class="highlight"&gt;
-                        &lt;strong&gt;@if:&lt;/strong&gt; Questo appare/scompare dal DOM
-                        &lt;/div&gt;
-
-                        &lt;div @show="showAlert" class="highlight"&gt;
-                        &lt;strong&gt;@show:&lt;/strong&gt; Questo si nasconde con CSS
-                        &lt;/div&gt;
-
-                        &lt;div @hide="showAlert" class="highlight"&gt;
-                        &lt;strong&gt;@hide:&lt;/strong&gt; Questo è visibile quando showAlert è false
-                        &lt;/div&gt;
-                        &lt;/div&gt;
-
-                        &lt;init&gt;
-                        state.showAlert = false;
-                        &lt;/init&gt;</div>
-                    <div class="demo-result">
-                        <button class="btn-demo" @click="showAlert = !showAlert">
-                            {{showAlert ? 'Nascondi' : 'Mostra'}} Alert
-                        </button>
-
-                        <div @if="showAlert" class="highlight">
-                            <strong>@if:</strong> Questo appare/scompare dal DOM
-                        </div>
-
-                        <div @show="showAlert" class="highlight">
-                            <strong>@show:</strong> Questo si nasconde con CSS
-                        </div>
-
-                        <div @hide="showAlert" class="highlight">
-                            <strong>@hide:</strong> Questo è visibile quando showAlert è false
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Form Validation Example -->
-            <div class="example-section">
-                <h3 class="example-title">5. Form con Validazione Avanzata</h3>
-                <div class="demo-container">
-                    <div class="demo-code">&lt;form&gt;
-                        &lt;div class="form-group"&gt;
-                        &lt;label&gt;Nome (richiesto, min 3 caratteri):&lt;/label&gt;
-                        &lt;input name="nome" @model="form.name"
-                        @validate="required,minLength:3"
-                        placeholder="Il tuo nome"&gt;
-                        &lt;div @if="!nome_valid" class="validation-message error"&gt;
-                        Errori: {{nome_errors.join(', ')}}
-                        &lt;/div&gt;
-                        &lt;div @if="nome_valid && form.name" class="validation-message success"&gt;
-                        ✓ Nome valido
-                        &lt;/div&gt;
-                        &lt;/div&gt;
-
-                        &lt;div class="form-group"&gt;
-                        &lt;label&gt;Email (formato valido richiesto):&lt;/label&gt;
-                        &lt;input name="email" @model="form.email"
-                        @validate="required,email"
-                        type="email"
-                        placeholder="tua@email.com"&gt;
-                        &lt;div @if="!email_valid" class="validation-message error"&gt;
-                        Errori: {{email_errors.join(', ')}}
-                        &lt;/div&gt;
-                        &lt;div @if="email_valid && form.email" class="validation-message success"&gt;
-                        ✓ Email valida
-                        &lt;/div&gt;
-                        &lt;/div&gt;
-
-                        &lt;div class="form-group"&gt;
-                        &lt;label&gt;Telefono (opzionale, formato italiano):&lt;/label&gt;
-                        &lt;input name="telefono" @model="form.phone"
-                        @validate="phone"
-                        placeholder="+39 123 4567890"&gt;
-                        &lt;div @if="form.phone && !telefono_valid" class="validation-message error"&gt;
-                        Errori: {{telefono_errors.join(', ')}}
-                        &lt;/div&gt;
-                        &lt;div @if="telefono_valid && form.phone" class="validation-message success"&gt;
-                        ✓ Telefono valido
-                        &lt;/div&gt;
-                        &lt;/div&gt;
-
-                        &lt;button type="button" class="btn-demo"
-                        @click="nome_valid && email_valid && (form.submitted = true)"
-                        @class="{disabled: !nome_valid || !email_valid}"&gt;
-                        Invia {{nome_valid && email_valid ? '✓' : '✗'}}
-                        &lt;/button&gt;
-
-                        &lt;div @if="form.submitted" class="highlight"&gt;
-                        Form inviato! Nome: {{form.name}}, Email: {{form.email}}
-                        &lt;span @if="form.phone"&gt;, Tel: {{form.phone}}&lt;/span&gt;
-                        &lt;/div&gt;
-                        &lt;/form&gt;
-
-                        &lt;init&gt;
-                        state.form = { name: '', email: '', phone: '', submitted: false };
-                        &lt;/init&gt;</div>
-                    <div class="demo-result">
-                        <div class="form-group">
-                            <label>Nome (richiesto, min 3 caratteri):</label>
-                            <input name="nome" @model="form.name" @validate="required,minLength:3"
-                                placeholder="Il tuo nome">
-                            <div @if="!nome_valid" class="validation-message error">
-                                Errori: {{nome_errors.join(', ')}}
-                            </div>
-                            <div @if="nome_valid && form.name" class="validation-message success">
-                                ✓ Nome valido
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Email (formato valido richiesto):</label>
-                            <input name="email" @model="form.email" @validate="email" type="email"
-                                placeholder="tua@email.com">
-                            <div @if="!email_valid" class="validation-message error">
-                                Errori: {{email_errors.join(', ')}}
-                            </div>
-                            <div @if="email_valid && form.email" class="validation-message success">
-                                ✓ Email valida
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Telefono (opzionale, formato italiano):</label>
-                            <input name="telefono" @model="form.phone" @validate="phone" placeholder="+39 123 4567890">
-                            <div @if="form.phone && !telefono_valid" class="validation-message error">
-                                Errori: {{telefono_errors.join(', ')}}
-                            </div>
-                            <div @if="telefono_valid && form.phone" class="validation-message success">
-                                ✓ Telefono valido
-                            </div>
-                        </div>
-
-                        <button type="button" class="btn-demo"
-                            @click="nome_valid && email_valid && (form.submitted = true)"
-                            @class="{disabled: !nome_valid || !email_valid}">
-                            Invia {{nome_valid && email_valid ? '✓' : '✗'}}
-                        </button>
-
-                        <div @if="form.submitted" class="highlight">
-                            Form inviato! Nome: {{form.name}}, Email: {{form.email}}
-                            <span @if="form.phone">, Tel: {{form.phone}}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Advanced Validation Example -->
-            <div class="example-section">
-                <h3 class="example-title">6. Validazione con Regex Personalizzata</h3>
-                <div class="demo-container">
-                    <div class="demo-code">&lt;div class="form-group"&gt;
-                        &lt;label&gt;Codice Fiscale (solo lettere e numeri, 16 caratteri):&lt;/label&gt;
-                        &lt;input name="cf" @model="codiceFiscale"
-                        @validate="required,regex:/^[A-Z0-9]{16}$/,minLength:16,maxLength:16"
-                        placeholder="RSSMRA80A01H501M"
-                        style="text-transform: uppercase;"&gt;
-                        &lt;div @if="!cf_valid" class="validation-message error"&gt;
-                        Errori: {{cf_errors.join(', ')}}
-                        &lt;/div&gt;
-                        &lt;div @if="cf_valid" class="validation-message success"&gt;
-                        ✓ Codice Fiscale valido
-                        &lt;/div&gt;
-                        &lt;/div&gt;
-
-                        &lt;div class="form-group"&gt;
-                        &lt;label&gt;Età (numero tra 18 e 99):&lt;/label&gt;
-                        &lt;input name="age" type="number" @model="eta"
-                        @validate="required,min:18,max:99"
-                        placeholder="25"&gt;
-                        &lt;div @if="!age_valid" class="validation-message error"&gt;
-                        Errori: {{age_errors.join(', ')}}
-                        &lt;/div&gt;
-                        &lt;div @if="age_valid" class="validation-message success"&gt;
-                        ✓ Età valida
-                        &lt;/div&gt;
-                        &lt;/div&gt;
-
-                        &lt;init&gt;
-                        state.codiceFiscale = '';
-                        state.eta = '';
-                        &lt;/init&gt;</div>
-                    <div class="demo-result">
-                        <div class="form-group">
-                            <label>Codice Fiscale (solo lettere e numeri, 16 caratteri):</label>
-                            <input name="cf" @model="codiceFiscale" @validate="/^[A-Z0-9]{16}$/"
-                                placeholder="RSSMRA80A01H501M" style="text-transform: uppercase;">
-                            <div @if="!cf_valid" class="validation-message error">
-                                Errori: {{cf_errors.join(', ')}}
-                            </div>
-                            <div @if="cf_valid" class="validation-message success">
-                                ✓ Codice Fiscale valido
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Età (numero tra 18 e 99):</label>
-                            <input name="age" type="number" @model="eta" @validate="required,min:18,max:99"
-                                placeholder="25">
-                            <div @if="!age_valid" class="validation-message error">
-                                Errori: {{age_errors.join(', ')}}
-                            </div>
-                            <div @if="age_valid" class="validation-message success">
-                                ✓ Età valida
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Playground Section -->
-    <section class="section" id="playground">
-        <div class="container">
-            <h2 class="section-title">Playground Interattivo</h2>
-            <p class="section-subtitle">
-                Sperimenta con Ayisha.js in tempo reale! Modifica il codice e vedi i risultati istantaneamente.
-            </p>
-
-            <div class="example-section">
-                <h3 class="example-title">🎮 Area di Test</h3>
-                <div class="demo-container">
-                    <div class="demo-code">&lt;!-- Prova qui il tuo codice Ayisha.js --&gt;
-
-                        &lt;div class="playground-area"&gt;
-                        &lt;h3&gt;Playground Ayisha.js&lt;/h3&gt;
-
-                        &lt;div class="form-group"&gt;
-                        &lt;label&gt;Il tuo nome:&lt;/label&gt;
-                        &lt;input @model="playgroundName" placeholder="Scrivi qui..."&gt;
-                        &lt;/div&gt;
-
-                        &lt;div @if="playgroundName"&gt;
-                        &lt;p&gt;Ciao, &lt;strong&gt;{{playgroundName}}&lt;/strong&gt;!&lt;/p&gt;
-                        &lt;button class="btn-demo" @click="playgroundCount++"&gt;
-                        Cliccato {{playgroundCount}} volte
-                        &lt;/button&gt;
-                        &lt;/div&gt;
-
-                        &lt;div @if="playgroundCount > 5" class="highlight"&gt;
-                        🎉 Hai cliccato più di 5 volte!
-                        &lt;/div&gt;
-                        &lt;/div&gt;
-
-                        &lt;init&gt;
-                        state.playgroundName = '';
-                        state.playgroundCount = 0;
-                        &lt;/init&gt;</div>
-                    <div class="demo-result">
-                        <div class="playground-area">
-                            <h3>Playground Ayisha.js</h3>
-
-                            <div class="form-group">
-                                <label>Il tuo nome:</label>
-                                <input @model="playgroundName" placeholder="Scrivi qui...">
-                            </div>
-
-                            <div @if="playgroundName">
-                                <p>Ciao, <strong>{{playgroundName}}</strong>!</p>
-                                <button class="btn-demo" @click="playgroundCount++">
-                                    Cliccato {{playgroundCount}} volte
-                                </button>
-                            </div>
-
-                            <div @if="playgroundCount > 5" class="highlight">
-                                🎉 Hai cliccato più di 5 volte!
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- State Viewer -->
-            <div class="example-section">
-                <h3 class="example-title">🔍 Visualizzatore Stato</h3>
-                <div @state></div>
-            </div>
-
-            <!-- Debug Log -->
-            <div class="example-section">
-                <h3 class="example-title">📊 Debug Console</h3>
-                <div @log @fetch:click="'https://jsonplaceholder.typicode.com/posts/1'" @result="debugPost">
-                    <button class="btn-demo">Test Fetch per Debug</button>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <h3>Inizia con Ayisha.js</h3>
-            <p>Una libreria JavaScript moderna, leggera e potente per lo sviluppo web reattivo.</p>
-            <p style="margin-top: 2rem; opacity: 0.7;">
-                Creato con ❤️ per sviluppatori che vogliono semplicità e potenza.
-            </p>
-        </div>
-    </footer>
-    <script src="ayisha.js"></script>
+      </div>
+    </div>
+    <div class="example-block">
+      <h3>5. Validazione, animazioni e altro</h3>
+      <div class="ayisha-demo">
+        <input type="email" placeholder="Email" @model="email" @validate="email">
+        <button @click="state.email = ''">Reset</button>
+        <div class="note" @if="_validate && !_validate.email && _validate.email.length">Inserisci una email valida!</div>
+        <div class="fadeIn" @if="_validate && _validate.email && _validate.email.length">Email valida: <b>{{email}}</b></div>
+        <div class="fadeIn" @if="!_validate.email">Questa Email non è valida: <b>{{email}}</b></div>
+      </div>
+    </div>
+    <div class="example-block">
+      <h3>6. Stato, log e debug</h3>
+      <div class="ayisha-demo">
+        <div @state></div>
+        <div @log></div>
+      </div>
+    </div>
+    <div class="note">Scorri la pagina per vedere tutte le direttive e prova a modificarle dal vivo!</div>
+  </div>
 </body>
-
 </html>

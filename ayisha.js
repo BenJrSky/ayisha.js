@@ -116,10 +116,10 @@
       if (dotMatch) {
         const path = dotMatch[1].split('.');
         const rootVar = path[0];
-        
+
         // Don't create nested properties on JS globals
         if (jsGlobals.includes(rootVar)) return;
-        
+
         let obj = this.state;
         for (let i = 0; i < path.length; i++) {
           const key = path[i];
@@ -356,7 +356,10 @@
         history.replaceState({}, '', '/');
         p = '';
       }
-      this.state._currentPage = p;
+      
+      if (!this.state._currentPage) {
+        this.state._currentPage = p;
+      }
 
       window.addEventListener('popstate', () => {
         this.state._currentPage = location.pathname.replace(/^\//, '') || '';
@@ -400,12 +403,12 @@
           return val != null ? val : '';
         });
       }
-      
+
       // If still undefined, use raw expression (for direct URLs)
       if (url === undefined || url === null) {
         url = expr;
       }
-      
+
       if (!url) return;
       const fid = `${url}::${rk}`;
       if (!force && this.lastFetchUrl[rk] === url) return;
@@ -415,7 +418,7 @@
       this.lastFetchUrl[rk] = url;
 
       if (!(rk in this.evaluator.state)) {
-        this.evaluator.state[rk] = null; 
+        this.evaluator.state[rk] = null;
       }
 
       fetch(url)
@@ -427,7 +430,7 @@
           }
           return res.json();
         })
-        .then(data => {          
+        .then(data => {
           const oldVal = this.evaluator.state[rk];
           const isEqual = JSON.stringify(oldVal) === JSON.stringify(data);
           if (!isEqual) {
@@ -805,7 +808,7 @@
         'console', 'window', 'document', 'setTimeout', 'setInterval', 'fetch', 'localStorage',
         'sessionStorage', 'history', 'location', 'navigator', 'undefined', 'null', 'true', 'false'
       ];
-      
+
       jsGlobals.forEach(globalName => {
         if (globalName in this.state) {
           delete this.state[globalName];
@@ -889,19 +892,19 @@
     }
 
     // Utility: trova la prima direttiva @page nel VDOM
-_findFirstPageDirective(vNode) {
-  if (!vNode) return null;
-  if (vNode.directives && vNode.directives['@page']) {
-    return vNode;
-  }
-  if (vNode.children && vNode.children.length) {
-    for (const child of vNode.children) {
-      const found = this._findFirstPageDirective(child);
-      if (found) return found;
+    _findFirstPageDirective(vNode) {
+      if (!vNode) return null;
+      if (vNode.directives && vNode.directives['@page']) {
+        return vNode;
+      }
+      if (vNode.children && vNode.children.length) {
+        for (const child of vNode.children) {
+          const found = this._findFirstPageDirective(child);
+          if (found) return found;
+        }
+      }
+      return null;
     }
-  }
-  return null;
-}
 
     render() {
       if (this._isRendering) return;
@@ -987,8 +990,8 @@ _findFirstPageDirective(vNode) {
           else this.evaluator.ensureVarInState(expr);
         }
       });
-      
-      Object.values(vNode.subDirectives || {}).forEach(ev => 
+
+      Object.values(vNode.subDirectives || {}).forEach(ev =>
         Object.values(ev).forEach(expr => {
           // Only ensure variables for simple identifiers
           if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(expr.trim())) {
@@ -1116,9 +1119,9 @@ _findFirstPageDirective(vNode) {
           const clone = JSON.parse(JSON.stringify(vNode));
           delete clone.directives['@for'];
           // FIXED: Create reactive reference to original array item
-          const subCtx = { 
-            ...ctx, 
-            [itemVar]: val, 
+          const subCtx = {
+            ...ctx,
+            [itemVar]: val,
             [indexVar]: index,
             [`${itemVar}_index`]: index,
             [`${itemVar}_ref`]: `${expr.split('.')[0]}[${index}]` // Reference to original item
@@ -1134,27 +1137,27 @@ _findFirstPageDirective(vNode) {
         const [, it, expr] = match;
         let arr = this.evaluator.evalExpr(expr, ctx) || [];
         if (typeof arr === 'object' && !Array.isArray(arr)) arr = Object.values(arr);
-        
+
         // FIXED: For filtered arrays, we need to find the original indices
         const originalArrayName = expr.split('.')[0];
         const isFiltered = expr.includes('.filter');
-        
+
         const frag = document.createDocumentFragment();
         arr.forEach((val, index) => {
           const clone = JSON.parse(JSON.stringify(vNode));
           delete clone.directives['@for'];
-          
+
           // FIXED: Find original index for filtered arrays
           let originalIndex = index;
           if (isFiltered && this.state[originalArrayName]) {
-            originalIndex = this.state[originalArrayName].findIndex(item => 
+            originalIndex = this.state[originalArrayName].findIndex(item =>
               item.id === val.id || JSON.stringify(item) === JSON.stringify(val)
             );
           }
-          
-          const subCtx = { 
-            ...ctx, 
-            [it]: val, 
+
+          const subCtx = {
+            ...ctx,
+            [it]: val,
             $index: index,
             $originalIndex: originalIndex,
             $arrayName: originalArrayName
@@ -1377,16 +1380,16 @@ _findFirstPageDirective(vNode) {
 
               if (ctx && ctx[objName]) {
                 const targetObj = ctx[objName];
-                
+
                 // For array items, try to find and update in original array
                 if (targetObj && typeof targetObj === 'object' && targetObj.id) {
                   // Find the array that contains this object
                   for (const [stateKey, stateValue] of Object.entries(this.state)) {
                     if (Array.isArray(stateValue)) {
-                      const index = stateValue.findIndex(item => 
+                      const index = stateValue.findIndex(item =>
                         item && item.id === targetObj.id
                       );
-                      if (index !== -1) {                        
+                      if (index !== -1) {
                         if (operation === '++') {
                           this.state[stateKey][index][propName] = (this.state[stateKey][index][propName] || 0) + 1;
                           setTimeout(() => this.render(), 0);
@@ -1404,19 +1407,19 @@ _findFirstPageDirective(vNode) {
                       }
                     }
                   }
-                } 
-              } 
+                }
+              }
             }
 
             const filterMatch = processedCode.match(/^(\w+)\s*=\s*(\w+)\.filter\((.+)\)$/);
             if (filterMatch) {
               const [, targetVar, sourceVar, filterExpr] = filterMatch;
-               if (ctx && filterExpr.includes('!==') && targetVar === sourceVar) {
+              if (ctx && filterExpr.includes('!==') && targetVar === sourceVar) {
                 const varMatch = filterExpr.match(/!==\s*(\w+)\.id/);
                 let postToDelete = null;
-                
+
                 if (varMatch) {
-                  const varName = varMatch[1]; 
+                  const varName = varMatch[1];
                   postToDelete = ctx[varName];
                 } else {
                   for (const [ctxKey, ctxValue] of Object.entries(ctx)) {
@@ -1426,16 +1429,16 @@ _findFirstPageDirective(vNode) {
                     }
                   }
                 }
-                
+
                 if (postToDelete && postToDelete.id) {
                   const originalLength = this.state[targetVar].length;
-                  const itemToDeleteId = postToDelete.id;                  
+                  const itemToDeleteId = postToDelete.id;
                   this.state[targetVar] = this.state[targetVar].filter(p => p.id !== itemToDeleteId);
                   const newLength = this.state[targetVar].length;
                   setTimeout(() => this.render(), 0);
                   return;
-                } 
-              } 
+                }
+              }
             }
 
             const arrayMatches = processedCode.match(/([\w$]+)\.(push|pop|shift|unshift|filter|map|reduce|forEach|slice|splice)/g);
@@ -1669,9 +1672,9 @@ _findFirstPageDirective(vNode) {
       el.addEventListener(eventName, e => {
         // FIXED: Simplified logic - just pass the expression to setupFetch
         // setupFetch can handle URLs, variables, and interpolated expressions
-        
+
         const resultVar = vNode.directives['@result'] || 'result';
-        
+
         try {
           let url = this.evaluator.evalExpr(expr, ctx);
           if (url === undefined) {
@@ -1871,7 +1874,7 @@ _findFirstPageDirective(vNode) {
       // Imposta currentPage alla prima @page se non è già valorizzata
       if (!this.state._currentPage) {
         const firstPage = this._findFirstPageDirective(this._vdom);
-        if (firstPage) this.state._currentPage = firstPage;
+        if (firstPage) this.state._currentPage = firstPage.directives['@page'];
       }
 
       // Initialize essential variables
@@ -1900,12 +1903,16 @@ _findFirstPageDirective(vNode) {
           if (el.hasAttribute('@link')) {
             e.preventDefault();
             this.state._currentPage = el.getAttribute('@link');
-            this.render(); 
+            this.render();
             return;
           }
           el = el.parentNode;
         }
       }, true);
+
+      console.log('VDOM:', this._vdom);
+      console.log('Prima @page trovata:', this._findFirstPageDirective(this._vdom));
+      console.log('_currentPage finale:', this.state._currentPage);
     }
   }
 
@@ -1947,5 +1954,7 @@ _findFirstPageDirective(vNode) {
     addDefaultAnimationStyles();
     new AyishaVDOM(document.body).mount();
   }
+
+
 
 })();
