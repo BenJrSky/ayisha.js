@@ -71,20 +71,27 @@
     ensureVarInState(expr, forceString = false, inputType = null) {
       if (typeof expr !== 'string') return;
 
+      // FIXED: Don't create variables for JavaScript globals and built-ins
+      const jsGlobals = [
+        'JSON', 'Object', 'Array', 'String', 'Number', 'Boolean', 'Date', 'Math', 'RegExp',
+        'console', 'window', 'document', 'setTimeout', 'setInterval', 'fetch', 'localStorage',
+        'sessionStorage', 'history', 'location', 'navigator', 'undefined', 'null', 'true', 'false'
+      ];
+
       // FIXED: Restore smart array initialization
       const arrayOps = expr.match(/([\w$]+)\.(push|pop|shift|unshift|filter|map|reduce|forEach|length|slice|splice)/);
       if (arrayOps) {
         const varName = arrayOps[1];
-        if (!(varName in this.state)) {
+        if (!jsGlobals.includes(varName) && !(varName in this.state)) {
           this.state[varName] = [];
           console.log(`🧠 Smart init: ${varName} = [] (detected array operation)`);
         }
         return;
       }
 
-      // FIXED: Only initialize if variable doesn't exist
+      // FIXED: Only initialize if variable doesn't exist and is not a JS global
       const varName = expr.split('.')[0];
-      if (!(varName in this.state)) {
+      if (!jsGlobals.includes(varName) && !(varName in this.state)) {
         if (inputType === 'number') {
           this.state[varName] = 0;
         } else if (forceString) {
@@ -109,6 +116,11 @@
       const dotMatch = expr.match(/([\w$][\w\d$]*(?:\.[\w$][\w\d$]*)+)/);
       if (dotMatch) {
         const path = dotMatch[1].split('.');
+        const rootVar = path[0];
+        
+        // Don't create nested properties on JS globals
+        if (jsGlobals.includes(rootVar)) return;
+        
         let obj = this.state;
         for (let i = 0; i < path.length; i++) {
           const key = path[i];
@@ -389,7 +401,15 @@
           return val != null ? val : '';
         });
       }
+      
+      // If still undefined, use raw expression (for direct URLs)
+      if (url === undefined || url === null) {
+        url = expr;
+      }
+      
       if (!url) return;
+
+      console.log('🌐 setupFetch called:', { url, resultVariable: rk, force });
 
       const fid = `${url}::${rk}`;
       if (!force && this.lastFetchUrl[rk] === url) return;
@@ -397,6 +417,12 @@
 
       this.pendingFetches[fid] = true;
       this.lastFetchUrl[rk] = url;
+
+      // FIXED: Initialize result variable immediately
+      if (!(rk in this.evaluator.state)) {
+        this.evaluator.state[rk] = null; // Initialize as null instead of undefined
+        console.log(`🔧 Initialized ${rk} = null`);
+      }
 
       fetch(url)
         .then(res => {
@@ -408,17 +434,18 @@
           return res.json();
         })
         .then(data => {
-          if (!(rk in this.evaluator.state)) {
-            this.evaluator.state[rk] = undefined;
-          }
+          console.log('🌐 Fetch successful:', { url, data, resultVariable: rk });
+          
           const oldVal = this.evaluator.state[rk];
           const isEqual = JSON.stringify(oldVal) === JSON.stringify(data);
           if (!isEqual) {
             this.evaluator.state[rk] = data;
+            console.log(`✅ Set ${rk} =`, data);
           }
           if (this.fetched[url]) delete this.fetched[url].error;
         })
         .catch(err => {
+          console.error('🌐 Fetch error:', { url, error: err.message, resultVariable: rk });
           if (!this.fetched[url]) this.fetched[url] = {};
           if (!this.fetched[url].error) this.fetched[url].error = err.message;
           console.error('@fetch error:', err);
@@ -781,7 +808,30 @@
         }
       });
 
-      // FIXED: Removed aggressive type conversion
+      // FIXED: Clean up any accidentally created JS global variables in state
+      const jsGlobals = [
+        'JSON', 'Object', 'Array', 'String', 'Number', 'Boolean', 'Date', 'Math', 'RegExp',
+        'console', 'window', 'document', 'setTimeout', 'setInterval', 'fetch', 'localStorage',
+        'sessionStorage', 'history', 'location', 'navigator', 'undefined', 'null', 'true', 'false'
+      ];
+      
+      jsGlobals.forEach(globalName => {
+        if (globalName in this.state) {
+          delete this.state[globalName];
+          console.log(`🧹 Cleaned up global variable: ${globalName}`);
+        }
+      });
+
+      // FIXED: Clean up any expression-based variable names (contain operators, spaces, etc.)
+      const stateKeys = Object.keys(this.state);
+      stateKeys.forEach(key => {
+        // Remove variables that look like expressions rather than proper variable names
+        if (/[+\-*\/=<>!&|(){}[\].,\s]|=>|==|!=|<=|>=|\|\||&&/.test(key)) {
+          delete this.state[key];
+          console.log(`🧹 Cleaned up expression-based variable: ${key}`);
+        }
+      });
+
       // Only ensure essential variables exist
       const essentialVars = ['_validate', 'currentPage'];
       essentialVars.forEach(varName => {
@@ -918,12 +968,23 @@
     _renderVNode(vNode, ctx) {
       if (!vNode) return null;
 
-      // FIXED: Only ensure variables for the actual expressions in use
+      // FIXED: Only ensure variables for simple variable names, not complex expressions
       Object.entries(vNode.directives || {}).forEach(([dir, expr]) => {
-        if (dir === '@model') this.evaluator.ensureVarInState(expr, true);
-        else this.evaluator.ensureVarInState(expr);
+        // Only ensure variables for simple identifiers, not complex expressions
+        if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(expr.trim())) {
+          if (dir === '@model') this.evaluator.ensureVarInState(expr, true);
+          else this.evaluator.ensureVarInState(expr);
+        }
       });
-      Object.values(vNode.subDirectives || {}).forEach(ev => Object.values(ev).forEach(expr => this.evaluator.ensureVarInState(expr)));
+      
+      Object.values(vNode.subDirectives || {}).forEach(ev => 
+        Object.values(ev).forEach(expr => {
+          // Only ensure variables for simple identifiers
+          if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(expr.trim())) {
+            this.evaluator.ensureVarInState(expr);
+          }
+        })
+      );
 
       // Error handling for unknown directives
       let unknownDirective = null;
@@ -1043,7 +1104,14 @@
         arr.forEach((val, index) => {
           const clone = JSON.parse(JSON.stringify(vNode));
           delete clone.directives['@for'];
-          const subCtx = { ...ctx, [itemVar]: val, [indexVar]: index };
+          // FIXED: Create reactive reference to original array item
+          const subCtx = { 
+            ...ctx, 
+            [itemVar]: val, 
+            [indexVar]: index,
+            [`${itemVar}_index`]: index,
+            [`${itemVar}_ref`]: `${expr.split('.')[0]}[${index}]` // Reference to original item
+          };
           const node = this._renderVNode(clone, subCtx);
           if (node) frag.appendChild(node);
         });
@@ -1055,11 +1123,31 @@
         const [, it, expr] = match;
         let arr = this.evaluator.evalExpr(expr, ctx) || [];
         if (typeof arr === 'object' && !Array.isArray(arr)) arr = Object.values(arr);
+        
+        // FIXED: For filtered arrays, we need to find the original indices
+        const originalArrayName = expr.split('.')[0];
+        const isFiltered = expr.includes('.filter');
+        
         const frag = document.createDocumentFragment();
         arr.forEach((val, index) => {
           const clone = JSON.parse(JSON.stringify(vNode));
           delete clone.directives['@for'];
-          const subCtx = { ...ctx, [it]: val, $index: index };
+          
+          // FIXED: Find original index for filtered arrays
+          let originalIndex = index;
+          if (isFiltered && this.state[originalArrayName]) {
+            originalIndex = this.state[originalArrayName].findIndex(item => 
+              item.id === val.id || JSON.stringify(item) === JSON.stringify(val)
+            );
+          }
+          
+          const subCtx = { 
+            ...ctx, 
+            [it]: val, 
+            $index: index,
+            $originalIndex: originalIndex,
+            $arrayName: originalArrayName
+          };
           const node = this._renderVNode(clone, subCtx);
           if (node) frag.appendChild(node);
         });
@@ -1270,7 +1358,141 @@
           // FIXED: Clean processing without state prefix issues
           let processedCode = codeToRun.replace(/\bstate\./g, '');
 
+          console.log('🚀 CLICK DEBUG:', {
+            originalExpr: expr,
+            processedCode: processedCode,
+            context: ctx
+          });
+
           try {
+            // FIXED: Handle operations on loop context objects (like post.likes++)
+            const contextObjMatch = processedCode.match(/^(\w+)\.(\w+)(\+\+|--|=.+)$/);
+            if (contextObjMatch) {
+              const [, objName, propName, operation] = contextObjMatch;
+              console.log('🔍 Context object operation detected:', {
+                objName, propName, operation,
+                hasContext: !!ctx,
+                contextKeys: ctx ? Object.keys(ctx) : [],
+                contextObj: ctx ? ctx[objName] : 'not found'
+              });
+
+              if (ctx && ctx[objName]) {
+                const targetObj = ctx[objName];
+                
+                // For array items, try to find and update in original array
+                if (targetObj && typeof targetObj === 'object' && targetObj.id) {
+                  // Find the array that contains this object
+                  for (const [stateKey, stateValue] of Object.entries(this.state)) {
+                    if (Array.isArray(stateValue)) {
+                      const index = stateValue.findIndex(item => 
+                        item && item.id === targetObj.id
+                      );
+                      if (index !== -1) {
+                        console.log(`🎯 Found object in state.${stateKey}[${index}]`);
+                        
+                        if (operation === '++') {
+                          this.state[stateKey][index][propName] = (this.state[stateKey][index][propName] || 0) + 1;
+                          console.log(`✅ Incremented ${stateKey}[${index}].${propName} = ${this.state[stateKey][index][propName]}`);
+                          
+                          // FIXED: Force reactivity trigger by directly calling render
+                          setTimeout(() => this.render(), 0);
+                          return;
+                        } else if (operation === '--') {
+                          this.state[stateKey][index][propName] = (this.state[stateKey][index][propName] || 0) - 1;
+                          console.log(`✅ Decremented ${stateKey}[${index}].${propName} = ${this.state[stateKey][index][propName]}`);
+                          
+                          // FIXED: Force reactivity trigger by directly calling render
+                          setTimeout(() => this.render(), 0);
+                          return;
+                        } else if (operation.startsWith('=')) {
+                          const value = this.evaluator.evalExpr(operation.substring(1).trim(), ctx);
+                          this.state[stateKey][index][propName] = value;
+                          console.log(`✅ Set ${stateKey}[${index}].${propName} = ${value}`);
+                          
+                          // FIXED: Force reactivity trigger by directly calling render
+                          setTimeout(() => this.render(), 0);
+                          return;
+                        }
+                      }
+                    }
+                  }
+                  console.warn('❌ Could not find object in any state array');
+                } else {
+                  console.warn('❌ Target object has no ID or is not an object:', targetObj);
+                }
+              } else {
+                console.warn('❌ Context object not found:', objName);
+              }
+            }
+
+            // FIXED: Handle array filter operations with context
+            const filterMatch = processedCode.match(/^(\w+)\s*=\s*(\w+)\.filter\((.+)\)$/);
+            if (filterMatch) {
+              const [, targetVar, sourceVar, filterExpr] = filterMatch;
+              console.log('🔍 Filter operation detected:', {
+                targetVar, 
+                sourceVar, 
+                filterExpr, 
+                context: ctx,
+                currentArray: this.state[sourceVar],
+                arrayLength: this.state[sourceVar] ? this.state[sourceVar].length : 'undefined'
+              });
+              
+              if (ctx && filterExpr.includes('!==') && targetVar === sourceVar) {
+                // FIXED: Extract the variable name from the filter expression
+                // For "p => p.id !== post.id", we want to find "post" in context
+                const varMatch = filterExpr.match(/!==\s*(\w+)\.id/);
+                let postToDelete = null;
+                
+                if (varMatch) {
+                  const varName = varMatch[1]; // Should be "post"
+                  postToDelete = ctx[varName];
+                  console.log(`🎯 Looking for context variable: ${varName}`, postToDelete);
+                } else {
+                  // Fallback: search for any object with ID
+                  for (const [ctxKey, ctxValue] of Object.entries(ctx)) {
+                    console.log(`🔍 Checking context[${ctxKey}]:`, ctxValue);
+                    if (ctxValue && typeof ctxValue === 'object' && ctxValue.id && ctxKey !== 'users') {
+                      postToDelete = ctxValue;
+                      console.log(`🎯 Found potential post object: ${ctxKey}`, postToDelete);
+                      break;
+                    }
+                  }
+                }
+                
+                if (postToDelete && postToDelete.id) {
+                  const originalLength = this.state[targetVar].length;
+                  const itemToDeleteId = postToDelete.id;
+                  
+                  console.log(`🗑️ Attempting to delete post with ID: ${itemToDeleteId}`);
+                  console.log(`🗑️ Current posts:`, this.state[targetVar].map(p => ({ id: p.id, title: p.title })));
+                  
+                  this.state[targetVar] = this.state[targetVar].filter(p => p.id !== itemToDeleteId);
+                  const newLength = this.state[targetVar].length;
+                  
+                  console.log(`✅ After deletion - posts:`, this.state[targetVar].map(p => ({ id: p.id, title: p.title })));
+                  console.log(`✅ Deletion result:`, {
+                    originalLength,
+                    newLength,
+                    deleted: originalLength - newLength,
+                    targetArray: targetVar
+                  });
+                  
+                  // Force re-render for array changes
+                  setTimeout(() => this.render(), 0);
+                  return;
+                } else {
+                  console.warn('❌ Could not find post to delete in context:', ctx);
+                }
+              } else {
+                console.log('🔍 Filter operation not recognized as delete:', {
+                  hasContext: !!ctx,
+                  includesNotEqual: filterExpr.includes('!=='),
+                  targetEqualsSource: targetVar === sourceVar
+                });
+              }
+            }
+
             // FIXED: Pre-scan for array operations and ensure arrays exist
             const arrayMatches = processedCode.match(/([\w$]+)\.(push|pop|shift|unshift|filter|map|reduce|forEach|slice|splice)/g);
             if (arrayMatches) {
@@ -1326,6 +1548,7 @@
             }
 
             // General execution as fallback
+            console.log('🔄 Fallback execution:', processedCode);
             const func = new Function('state', 'ctx', `with(state) { ${processedCode} }`);
             func(this.state, ctx || {});
 
@@ -1374,7 +1597,20 @@
 
       // @text
       if (vNode.directives['@text'] && !vNode.subDirectives['@text']) {
-        el.textContent = this.evaluator.evalExpr(vNode.directives['@text'], ctx);
+        try {
+          const textValue = this.evaluator.evalExpr(vNode.directives['@text'], ctx);
+          // FIXED: Handle undefined/null values gracefully
+          if (textValue === undefined) {
+            el.textContent = '';
+          } else if (textValue === null) {
+            el.textContent = 'null';
+          } else {
+            el.textContent = String(textValue);
+          }
+        } catch (error) {
+          console.error('Error in @text directive:', error, 'Expression:', vNode.directives['@text']);
+          el.textContent = `[Error: ${error.message}]`;
+        }
       }
 
       // @model
