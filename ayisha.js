@@ -71,14 +71,12 @@
     ensureVarInState(expr, forceString = false, inputType = null) {
       if (typeof expr !== 'string') return;
 
-      // FIXED: Don't create variables for JavaScript globals and built-ins
       const jsGlobals = [
         'JSON', 'Object', 'Array', 'String', 'Number', 'Boolean', 'Date', 'Math', 'RegExp',
         'console', 'window', 'document', 'setTimeout', 'setInterval', 'fetch', 'localStorage',
         'sessionStorage', 'history', 'location', 'navigator', 'undefined', 'null', 'true', 'false'
       ];
 
-      // FIXED: Restore smart array initialization
       const arrayOps = expr.match(/([\w$]+)\.(push|pop|shift|unshift|filter|map|reduce|forEach|length|slice|splice)/);
       if (arrayOps) {
         const varName = arrayOps[1];
@@ -88,7 +86,6 @@
         return;
       }
 
-      // FIXED: Only initialize if variable doesn't exist and is not a JS global
       const varName = expr.split('.')[0];
       if (!jsGlobals.includes(varName) && !(varName in this.state)) {
         if (inputType === 'number') {
@@ -96,7 +93,6 @@
         } else if (forceString) {
           this.state[varName] = undefined;
         } else {
-          // Smart initialization based on variable name patterns
           if (/items|list|array|data|results|errors|posts|todos|users/.test(varName)) {
             this.state[varName] = [];
           } else if (/count|total|index|id|size|length|number|num/.test(varName)) {
@@ -111,13 +107,11 @@
         }
       }
 
-      // Handle nested variables like form.name or foo.bar.baz
       const dotMatch = expr.match(/([\w$][\w\d$]*(?:\.[\w$][\w\d$]*)+)/);
       if (dotMatch) {
         const path = dotMatch[1].split('.');
         const rootVar = path[0];
 
-        // Don't create nested properties on JS globals
         if (jsGlobals.includes(rootVar)) return;
 
         let obj = this.state;
@@ -149,7 +143,6 @@
 
   /**
    * Module: DOM Parser
-   * Handles parsing of DOM to Virtual DOM
    */
   class DOMParser {
     constructor(initBlocks) {
@@ -158,7 +151,7 @@
 
     parse(node) {
       if (!node) return null;
-      if (node.nodeType === 11) { // DocumentFragment
+      if (node.nodeType === 11) {
         const fragVNode = { tag: 'fragment', attrs: {}, directives: {}, subDirectives: {}, children: [] };
         node.childNodes.forEach(child => {
           const cn = this.parse(child);
@@ -208,7 +201,6 @@
 
   /**
    * Module: Component Manager
-   * Handles component registration and loading
    */
   class ComponentManager {
     constructor() {
@@ -275,7 +267,6 @@
 
   /**
    * Module: Reactivity System
-   * Handles state reactivity and watchers
    */
   class ReactivitySystem {
     constructor(state, renderCallback) {
@@ -283,7 +274,7 @@
       this.watchers = {};
       this.renderCallback = renderCallback;
       this.watchersReady = false;
-      this._isUpdating = false; // FIXED: Prevent cascade updates
+      this._isUpdating = false;
     }
 
     makeReactive() {
@@ -291,7 +282,6 @@
 
       this.state = new Proxy(this.state, {
         set: (obj, prop, val) => {
-          // FIXED: Prevent cascade effects during updates
           if (this._isUpdating) {
             obj[prop] = val;
             return true;
@@ -303,11 +293,9 @@
             return true;
           }
 
-          // FIXED: Set flag to prevent cascade
           this._isUpdating = true;
           obj[prop] = val;
 
-          // Execute watchers only if ready and for the specific property
           if (this.watchersReady && this.watchers[prop]) {
             this.watchers[prop].forEach(fn => {
               try {
@@ -318,7 +306,6 @@
             });
           }
 
-          // FIXED: Reset flag and render after all updates
           setTimeout(() => {
             this._isUpdating = false;
             this.renderCallback();
@@ -342,7 +329,6 @@
 
   /**
    * Module: Router
-   * Handles SPA routing
    */
   class Router {
     constructor(state, renderCallback) {
@@ -385,7 +371,6 @@
 
   /**
    * Module: Fetch Manager
-   * Handles HTTP requests and caching
    */
   class FetchManager {
     constructor(evaluator) {
@@ -404,7 +389,6 @@
         });
       }
 
-      // If still undefined, use raw expression (for direct URLs)
       if (url === undefined || url === null) {
         url = expr;
       }
@@ -452,7 +436,6 @@
 
   /**
    * Module: Directive Help System
-   * Provides help and validation for directives
    */
   class DirectiveHelpSystem {
     constructor() {
@@ -527,8 +510,935 @@
   }
 
   /**
+   * Module: Directive-Specific Loggers
+   */
+  class DirectiveLogger {
+    constructor(evaluator) {
+      this.evaluator = evaluator;
+      this.startTime = performance.now();
+    }
+
+    getBaseInfo(vNode, ctx) {
+      return {
+        tag: vNode.tag,
+        timestamp: new Date(),
+        executionTime: (performance.now() - this.startTime).toFixed(2) + 'ms'
+      };
+    }
+
+    log(vNode, ctx, state) {
+      return this.getBaseInfo(vNode, ctx);
+    }
+  }
+
+  class ForLogger extends DirectiveLogger {
+    log(vNode, ctx, state) {
+      const base = super.log(vNode, ctx, state);
+      const forExpr = vNode.directives['@for'];
+      
+      let arrayInfo = {};
+      try {
+        const match1 = forExpr.match(/(\w+),\s*(\w+) in (.+)/);
+        const match2 = forExpr.match(/(\w+) in (.+)/);
+        
+        if (match1 || match2) {
+          const arrayExpr = match1 ? match1[3] : match2[2];
+          const itemVar = match1 ? match1[2] : match2[1];
+          const indexVar = match1 ? match1[1] : null;
+          
+          const arrayData = this.evaluator.evalExpr(arrayExpr, ctx);
+          const isArray = Array.isArray(arrayData);
+          const length = isArray ? arrayData.length : (arrayData ? Object.keys(arrayData).length : 0);
+          
+          arrayInfo = {
+            expression: forExpr,
+            arrayVariable: arrayExpr,
+            itemVariable: itemVar,
+            indexVariable: indexVar,
+            arrayType: isArray ? 'Array' : 'Object',
+            length: length,
+            isEmpty: length === 0,
+            firstItem: length > 0 ? arrayData[0] : null,
+            status: length === 0 ? '❌ Empty' : `✅ ${length} items`,
+            performance: `${length} items rendered`
+          };
+        }
+      } catch (error) {
+        arrayInfo = {
+          expression: forExpr,
+          error: `❌ ${error.message}`,
+          status: '❌ Error evaluating'
+        };
+      }
+
+      return { ...base, type: '@for', data: arrayInfo };
+    }
+  }
+
+  class FetchLogger extends DirectiveLogger {
+    constructor(evaluator, fetchManager) {
+      super(evaluator);
+      this.fetchManager = fetchManager;
+    }
+
+    log(vNode, ctx, state) {
+      const base = super.log(vNode, ctx, state);
+      const fetchExpr = vNode.directives['@fetch'];
+      const resultVar = vNode.directives['@result'] || 'result';
+      
+      let fetchInfo = {};
+      try {
+        let url = this.evaluator.evalExpr(fetchExpr, ctx);
+        if (!url) url = fetchExpr;
+        
+        const resultValue = state[resultVar];
+        const hasError = this.fetchManager.fetched[url]?.error;
+        const isPending = this.fetchManager.pendingFetches[`${url}::${resultVar}`];
+        
+        fetchInfo = {
+          url: url,
+          method: 'GET',
+          resultVariable: resultVar,
+          status: hasError ? `❌ ${hasError}` : isPending ? '⏳ Loading...' : resultValue ? '✅ Success' : '⭕ No data',
+          responseSize: resultValue ? `${JSON.stringify(resultValue).length} chars` : 'N/A',
+          hasData: !!resultValue,
+          hasError: !!hasError,
+          isPending: !!isPending,
+          lastFetch: this.fetchManager.lastFetchUrl[resultVar] ? 'Recently' : 'Never'
+        };
+      } catch (error) {
+        fetchInfo = {
+          url: fetchExpr,
+          error: `❌ ${error.message}`,
+          status: '❌ Error evaluating URL'
+        };
+      }
+
+      return { ...base, type: '@fetch', data: fetchInfo };
+    }
+  }
+
+  class ModelLogger extends DirectiveLogger {
+    log(vNode, ctx, state) {
+      const base = super.log(vNode, ctx, state);
+      const modelExpr = vNode.directives['@model'];
+      const validateRules = vNode.directives['@validate'];
+      
+      let modelInfo = {};
+      try {
+        const currentValue = this.evaluator.evalExpr(modelExpr, ctx);
+        const validation = state._validate?.[modelExpr];
+        
+        modelInfo = {
+          variable: modelExpr,
+          currentValue: currentValue,
+          valueType: typeof currentValue,
+          isEmpty: !currentValue || currentValue === '',
+          validation: validateRules ? {
+            rules: validateRules,
+            isValid: validation,
+            status: validation ? '✅ Valid' : '❌ Invalid'
+          } : null,
+          binding: '✅ Active'
+        };
+      } catch (error) {
+        modelInfo = {
+          variable: modelExpr,
+          error: `❌ ${error.message}`,
+          status: '❌ Error evaluating'
+        };
+      }
+
+      return { ...base, type: '@model', data: modelInfo };
+    }
+  }
+
+  class ConditionalLogger extends DirectiveLogger {
+    log(vNode, ctx, state) {
+      const base = super.log(vNode, ctx, state);
+      const directive = vNode.directives['@if'] || vNode.directives['@show'] || vNode.directives['@hide'];
+      const directiveType = vNode.directives['@if'] ? '@if' : vNode.directives['@show'] ? '@show' : '@hide';
+      
+      let conditionalInfo = {};
+      try {
+        const result = this.evaluator.evalExpr(directive, ctx);
+        const isVisible = directiveType === '@hide' ? !result : !!result;
+        
+        conditionalInfo = {
+          condition: directive,
+          result: result,
+          isVisible: isVisible,
+          status: isVisible ? '✅ Visible' : '❌ Hidden',
+          evaluation: `${directive} → ${result}`
+        };
+      } catch (error) {
+        conditionalInfo = {
+          condition: directive,
+          error: `❌ ${error.message}`,
+          status: '❌ Error evaluating'
+        };
+      }
+
+      return { ...base, type: directiveType, data: conditionalInfo };
+    }
+  }
+
+  class ClickLogger extends DirectiveLogger {
+    constructor(evaluator) {
+      super(evaluator);
+      this.clickCount = 0;
+      this.lastClick = null;
+    }
+
+    log(vNode, ctx, state) {
+      const base = super.log(vNode, ctx, state);
+      const clickExpr = vNode.directives['@click'];
+      
+      let clickInfo = {
+        action: clickExpr,
+        clickCount: this.clickCount,
+        lastClick: this.lastClick ? `${Date.now() - this.lastClick}ms ago` : 'Never',
+        status: '✅ Ready'
+      };
+
+      return { ...base, type: '@click', data: clickInfo };
+    }
+
+    recordClick() {
+      this.clickCount++;
+      this.lastClick = Date.now();
+    }
+  }
+
+  class ComponentLogger extends DirectiveLogger {
+    constructor(evaluator, componentManager) {
+      super(evaluator);
+      this.componentManager = componentManager;
+    }
+
+    log(vNode, ctx, state) {
+      const base = super.log(vNode, ctx, state);
+      const srcExpr = vNode.directives['@src'];
+      
+      let componentInfo = {};
+      try {
+        let srcUrl = this.evaluator.evalExpr(srcExpr, ctx);
+        if (!srcUrl) {
+          const rawSrc = srcExpr.trim();
+          srcUrl = /^['"].*['"]$/.test(rawSrc) ? rawSrc.slice(1, -1) : rawSrc;
+        }
+        
+        const isCached = this.componentManager.getCachedComponent(srcUrl);
+        const isLoading = this.componentManager.isLoading(srcUrl);
+        
+        componentInfo = {
+          source: srcUrl,
+          status: isLoading ? '⏳ Loading...' : isCached ? '✅ Loaded' : '⭕ Not loaded',
+          cached: !!isCached,
+          isLoading: isLoading,
+          size: isCached ? `${isCached.length} chars` : 'N/A'
+        };
+      } catch (error) {
+        componentInfo = {
+          source: srcExpr,
+          error: `❌ ${error.message}`,
+          status: '❌ Error evaluating'
+        };
+      }
+
+      return { ...base, type: '@component', data: componentInfo };
+    }
+  }
+
+  /**
+   * Module: Central Logger - CORRETTI I BUG DI VISUALIZZAZIONE
+   */
+  class CentralLogger {
+    constructor() {
+      this.logs = [];
+      this.logPanel = null;
+      this.toggleButton = null;
+      this.isVisible = false;
+      this.maxLogs = 100;
+      this.loggers = {};
+      this.clickLoggers = new WeakMap();
+      this.startTime = performance.now();
+      this.panelCreated = false;
+    }
+
+    initializeLoggers(evaluator, fetchManager, componentManager) {
+      this.loggers = {
+        '@for': new ForLogger(evaluator),
+        '@fetch': new FetchLogger(evaluator, fetchManager),
+        '@model': new ModelLogger(evaluator),
+        '@if': new ConditionalLogger(evaluator),
+        '@show': new ConditionalLogger(evaluator),
+        '@hide': new ConditionalLogger(evaluator),
+        '@click': new ClickLogger(evaluator),
+        '@component': new ComponentLogger(evaluator, componentManager)
+      };
+      console.log('✅ CentralLogger initialized with loggers:', Object.keys(this.loggers));
+    }
+
+    addLog(elementInfo, vNode, ctx, state, element = null) {
+      if (!this.loggers || Object.keys(this.loggers).length === 0) {
+        console.error('❌ CentralLogger: Loggers not initialized!');
+        return;
+      }
+
+      const startTime = performance.now();
+      const combinedLog = {
+        id: Date.now() + Math.random(),
+        timestamp: new Date(),
+        tag: vNode.tag,
+        type: 'multi-directive',
+        elementInfo,
+        executionTime: (performance.now() - startTime).toFixed(2) + 'ms',
+        directives: []
+      };
+      
+      console.log('📊 Processing @log for element:', vNode.tag, 'with directives:', Object.keys(vNode.directives));
+      
+      Object.keys(vNode.directives).forEach(directive => {
+        if (this.loggers[directive]) {
+          try {
+            const logData = this.loggers[directive].log(vNode, ctx, state);
+            combinedLog.directives.push({
+              type: directive,
+              data: logData.data,
+              status: this._getDirectiveStatus(logData.data)
+            });
+          } catch (error) {
+            console.error(`❌ Error logging ${directive}:`, error);
+            combinedLog.directives.push({
+              type: directive,
+              data: {
+                error: error.message,
+                status: '❌ Error logging'
+              },
+              status: 'error'
+            });
+          }
+        } else {
+          combinedLog.directives.push({
+            type: directive,
+            data: {
+              expression: vNode.directives[directive],
+              status: '📋 Untracked directive'
+            },
+            status: 'unknown'
+          });
+        }
+      });
+
+      Object.entries(vNode.subDirectives || {}).forEach(([directive, events]) => {
+        Object.keys(events).forEach(event => {
+          if (this.loggers[directive]) {
+            try {
+              const logData = this.loggers[directive].log(vNode, ctx, state);
+              combinedLog.directives.push({
+                type: `${directive}:${event}`,
+                data: logData.data,
+                status: this._getDirectiveStatus(logData.data),
+                isSubDirective: true
+              });
+            } catch (error) {
+              console.error(`❌ Error logging ${directive}:${event}:`, error);
+              combinedLog.directives.push({
+                type: `${directive}:${event}`,
+                data: {
+                  error: error.message,
+                  status: '❌ Error logging'
+                },
+                status: 'error',
+                isSubDirective: true
+              });
+            }
+          } else {
+            combinedLog.directives.push({
+              type: `${directive}:${event}`,
+              data: {
+                expression: events[event],
+                status: '📋 Untracked sub-directive'
+              },
+              status: 'unknown',
+              isSubDirective: true
+            });
+          }
+        });
+      });
+
+      if (combinedLog.directives.length === 0) {
+        combinedLog.type = 'generic';
+        combinedLog.directives.push({
+          type: 'generic',
+          data: {
+            message: 'Element with @log but no tracked directives',
+            status: '📋 Generic log'
+          },
+          status: 'generic'
+        });
+      }
+
+      combinedLog.overallStatus = this._calculateOverallStatus(combinedLog.directives);
+      
+      this.logs.unshift(combinedLog);
+
+      if (this.logs.length > this.maxLogs) {
+        this.logs = this.logs.slice(0, this.maxLogs);
+      }
+
+      console.log('📋 Log entry created:', combinedLog);
+      this._updateLogPanel();
+    }
+
+    _getDirectiveStatus(data) {
+      if (data.error) return 'error';
+      if (data.isPending || data.isLoading) return 'loading';
+      if (data.status && data.status.includes('✅')) return 'success';
+      if (data.status && data.status.includes('❌')) return 'error';
+      if (data.status && data.status.includes('⏳')) return 'loading';
+      return 'normal';
+    }
+
+    _calculateOverallStatus(directives) {
+      if (!directives || directives.length === 0) return '📊 No directives';
+      
+      const statuses = directives.map(d => d.status);
+      if (statuses.includes('error')) return '❌ Has Errors';
+      if (statuses.includes('loading')) return '⏳ Loading';
+      if (statuses.every(s => s === 'success')) return '✅ All Good';
+      return '📊 Mixed Status';
+    }
+
+    recordClick(element) {
+      const clickLogger = this.clickLoggers.get(element);
+      if (clickLogger) {
+        clickLogger.recordClick();
+      }
+    }
+
+    createLogPanel() {
+      if (this.panelCreated) {
+        console.log('📊 Log panel already created');
+        return this.logPanel;
+      }
+
+      console.log('🔧 Creating new log panel...');
+
+      // CORRETTO: Rimuovi eventuali elementi esistenti
+      const existingButton = document.getElementById('ayisha-debug-button');
+      const existingPanel = document.getElementById('ayisha-log-panel');
+      if (existingButton) existingButton.remove();
+      if (existingPanel) existingPanel.remove();
+
+      // Create toggle button con styling migliorato
+      this.toggleButton = document.createElement('button');
+      this.toggleButton.textContent = '📊 Debug Log';
+      this.toggleButton.id = 'ayisha-debug-button';
+      this.toggleButton.style.cssText = `
+        position: fixed !important;
+        top: 10px !important;
+        right: 10px !important;
+        z-index: 999999 !important;
+        background: #0066cc !important;
+        color: white !important;
+        border: none !important;
+        padding: 12px 16px !important;
+        border-radius: 6px !important;
+        cursor: pointer !important;
+        font-size: 14px !important;
+        font-weight: bold !important;
+        box-shadow: 0 4px 12px rgba(0,102,204,0.3) !important;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+        transition: all 0.2s ease !important;
+      `;
+      
+      this.toggleButton.addEventListener('mouseover', () => {
+        this.toggleButton.style.background = '#0056b3 !important';
+        this.toggleButton.style.transform = 'scale(1.05) !important';
+      });
+      
+      this.toggleButton.addEventListener('mouseout', () => {
+        this.toggleButton.style.background = '#0066cc !important';
+        this.toggleButton.style.transform = 'scale(1) !important';
+      });
+      
+      this.toggleButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('🖱️ Debug button clicked!');
+        this.togglePanel();
+      });
+      
+      // Create log panel con styling migliorato
+      this.logPanel = document.createElement('div');
+      this.logPanel.className = 'ayisha-central-log';
+      this.logPanel.id = 'ayisha-log-panel';
+      this.logPanel.style.cssText = `
+        position: fixed !important;
+        top: 60px !important;
+        right: 10px !important;
+        width: 500px !important;
+        max-height: 80vh !important;
+        background: rgba(0, 20, 40, 0.98) !important;
+        color: #fff !important;
+        border: 3px solid #0066cc !important;
+        border-radius: 10px !important;
+        z-index: 999998 !important;
+        display: none !important;
+        overflow: hidden !important;
+        font-family: 'JetBrains Mono', 'Courier New', monospace !important;
+        font-size: 12px !important;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
+        backdrop-filter: blur(10px) !important;
+      `;
+
+      // Header
+      const header = document.createElement('div');
+      header.style.cssText = `
+        background: linear-gradient(135deg, #0066cc, #004499) !important;
+        padding: 12px 16px !important;
+        font-weight: bold !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        border-bottom: 2px solid #0088ff !important;
+      `;
+      
+      const title = document.createElement('span');
+      title.textContent = '📊 Ayisha Debug Log';
+      title.style.fontSize = '16px !important';
+      
+      const clearButton = document.createElement('button');
+      clearButton.textContent = '🗑️ Clear All';
+      clearButton.style.cssText = `
+        background: rgba(255,255,255,0.2) !important;
+        color: white !important;
+        border: 1px solid rgba(255,255,255,0.3) !important;
+        padding: 6px 12px !important;
+        border-radius: 4px !important;
+        cursor: pointer !important;
+        font-size: 11px !important;
+        font-weight: bold !important;
+        transition: background 0.2s ease !important;
+      `;
+      clearButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        console.log('🗑️ Clearing all logs...');
+        this.logs = [];
+        this._updateLogPanel();
+      });
+
+      clearButton.addEventListener('mouseover', () => {
+        clearButton.style.background = 'rgba(255,255,255,0.3) !important';
+      });
+      
+      clearButton.addEventListener('mouseout', () => {
+        clearButton.style.background = 'rgba(255,255,255,0.2) !important';
+      });
+
+      header.appendChild(title);
+      header.appendChild(clearButton);
+
+      // Content area
+      const content = document.createElement('div');
+      content.className = 'log-content';
+      content.style.cssText = `
+        max-height: calc(80vh - 60px) !important;
+        overflow-y: auto !important;
+        padding: 12px !important;
+        background: rgba(0, 20, 40, 0.95) !important;
+      `;
+
+      // CORRETTO: Custom scrollbar per una migliore esperienza
+      const style = document.createElement('style');
+      style.textContent = `
+        .log-content::-webkit-scrollbar {
+          width: 8px;
+        }
+        .log-content::-webkit-scrollbar-track {
+          background: rgba(255,255,255,0.1);
+          border-radius: 4px;
+        }
+        .log-content::-webkit-scrollbar-thumb {
+          background: #0066cc;
+          border-radius: 4px;
+        }
+        .log-content::-webkit-scrollbar-thumb:hover {
+          background: #0088ff;
+        }
+      `;
+      document.head.appendChild(style);
+
+      this.logPanel.appendChild(header);
+      this.logPanel.appendChild(content);
+
+      // CORRETTO: Append al body in modo sicuro
+      if (document.body) {
+        document.body.appendChild(this.toggleButton);
+        document.body.appendChild(this.logPanel);
+        this.panelCreated = true;
+        console.log('✅ Debug button and panel added to body');
+      } else {
+        // Se il body non è ancora pronto, attendi
+        document.addEventListener('DOMContentLoaded', () => {
+          document.body.appendChild(this.toggleButton);
+          document.body.appendChild(this.logPanel);
+          this.panelCreated = true;
+          console.log('✅ Debug button and panel added to body (deferred)');
+        });
+      }
+
+      // CORRETTO: Update iniziale
+      setTimeout(() => {
+        this._updateLogPanel();
+        console.log('📋 Initial log panel update completed');
+      }, 100);
+
+      return this.logPanel;
+    }
+
+    togglePanel() {
+      console.log('🔄 Toggling panel, current visible state:', this.isVisible);
+      
+      if (!this.logPanel || !this.panelCreated) {
+        console.log('📱 No panel exists, creating it...');
+        this.createLogPanel();
+        return;
+      }
+      
+      this.isVisible = !this.isVisible;
+      
+      if (this.isVisible) {
+        this.logPanel.style.display = 'block !important';
+        this.toggleButton.textContent = '❌ Close Debug';
+        this.toggleButton.style.background = '#cc0066 !important';
+        console.log('👁️ Panel shown, updating content...');
+        this._updateLogPanel();
+        console.log('📊 Total logs available:', this.logs.length);
+      } else {
+        this.logPanel.style.display = 'none !important';
+        this.toggleButton.textContent = '📊 Debug Log';
+        this.toggleButton.style.background = '#0066cc !important';
+        console.log('👁️ Panel hidden');
+      }
+    }
+
+    _updateLogPanel() {
+      if (!this.logPanel || !this.isVisible || !this.panelCreated) {
+        return;
+      }
+
+      const content = this.logPanel.querySelector('.log-content');
+      if (!content) {
+        console.error('❌ Log content element not found!');
+        return;
+      }
+
+      console.log('🔄 Updating log panel with', this.logs.length, 'logs');
+
+      content.innerHTML = '';
+
+      if (this.logs.length === 0) {
+        const emptyMessage = document.createElement('div');
+        emptyMessage.style.cssText = `
+          text-align: center !important;
+          padding: 40px 20px !important;
+          color: #888 !important;
+          font-style: italic !important;
+        `;
+        emptyMessage.innerHTML = `
+          <div style="font-size: 48px; margin-bottom: 16px;">📋</div>
+          <div>No logs yet.</div>
+          <div style="font-size: 11px; margin-top: 8px;">Interact with elements that have @log directive</div>
+        `;
+        content.appendChild(emptyMessage);
+        return;
+      }
+
+      this.logs.forEach((log, index) => {
+        const logEntry = document.createElement('div');
+        logEntry.style.cssText = `
+          border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+          padding: 12px !important;
+          margin-bottom: 8px !important;
+          border-left: 4px solid ${this._getDirectiveColor(log.type)} !important;
+          background: rgba(255,255,255,0.05) !important;
+          border-radius: 6px !important;
+          font-family: 'JetBrains Mono', 'Courier New', monospace !important;
+          transition: background 0.2s ease !important;
+        `;
+
+        logEntry.addEventListener('mouseover', () => {
+          logEntry.style.background = 'rgba(255,255,255,0.08) !important';
+        });
+
+        logEntry.addEventListener('mouseout', () => {
+          logEntry.style.background = 'rgba(255,255,255,0.05) !important';
+        });
+
+        try {
+          const html = this._generateIntelligentLogHTML(log);
+          logEntry.innerHTML = html;
+          console.log(`✅ Rendered log entry ${index + 1}/${this.logs.length}`);
+        } catch (error) {
+          logEntry.innerHTML = `
+            <div style="color: #ff6b6b !important;">
+              <strong>❌ Log Render Error:</strong><br>
+              ${error.message}<br>
+              <small>Log type: ${log.type}, Tag: ${log.tag}</small>
+            </div>
+          `;
+          console.error('❌ Log rendering error:', error, log);
+        }
+        
+        content.appendChild(logEntry);
+      });
+
+      // Auto-scroll to top for newest entries
+      content.scrollTop = 0;
+      console.log('✅ Log panel updated successfully');
+    }
+
+    _getDirectiveColor(type) {
+      const colors = {
+        '@for': '#ff9800',
+        '@fetch': '#4caf50',
+        '@model': '#2196f3',
+        '@if': '#9c27b0',
+        '@show': '#9c27b0',
+        '@hide': '#9c27b0',
+        '@click': '#f44336',
+        '@component': '#00bcd4',
+        'generic': '#666666'
+      };
+      return colors[type] || '#666666';
+    }
+
+    _generateIntelligentLogHTML(log) {
+      const time = log.timestamp.toLocaleTimeString();
+      
+      if (log.type === 'multi-directive') {
+        let html = `
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="color: #66ccff; font-weight: bold;">🎯 &lt;${log.tag}&gt; (${log.directives.length} directives)</span>
+            <span style="color: #999; font-size: 10px;">${time}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="color: #ffcc66; font-size: 10px;">⏱️ ${log.executionTime}</span>
+            <span style="color: ${this._getStatusColor(log.overallStatus)}; font-size: 10px; font-weight: bold;">${log.overallStatus}</span>
+          </div>
+        `;
+
+        log.directives.forEach((directive, index) => {
+          const color = this._getDirectiveColor(directive.type);
+          const statusColor = this._getStatusColor(directive.status);
+          
+          html += `
+            <div style="border-left: 3px solid ${color}; margin: 6px 0; padding: 6px 8px; background: rgba(255,255,255,0.03); border-radius: 3px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="color: ${color}; font-weight: bold; font-size: 11px;">
+                  ${directive.isSubDirective ? '📎' : '📋'} ${directive.type}
+                </span>
+                <span style="color: ${statusColor}; font-size: 9px;">${this._getStatusIcon(directive.status)}</span>
+              </div>
+              ${this._generateCompactDirectiveHTML(directive.type, directive.data)}
+            </div>
+          `;
+        });
+
+        return html;
+      }
+      
+      let html = `
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span style="color: #66ccff; font-weight: bold;">${log.type} &lt;${log.tag}&gt;</span>
+          <span style="color: #999; font-size: 10px;">${time}</span>
+        </div>
+      `;
+
+      if (log.executionTime) {
+        html += `<div style="color: #999; font-size: 10px; margin-bottom: 4px;">⏱️ ${log.executionTime}</div>`;
+      }
+
+      if (log.subDirective) {
+        html += `<div style="color: #ffcc66; margin-bottom: 4px;"><strong>Sub-directive:</strong> ${log.subDirective}</div>`;
+      }
+
+      if (log.data) {
+        html += this._generateDirectiveSpecificHTML(log);
+      } else {
+        html += `<div style="color: #cccccc;">No specific data available</div>`;
+      }
+
+      return html;
+    }
+
+    _getStatusColor(status) {
+      if (!status) return '#cccccc';
+      if (typeof status === 'string') {
+        if (status.includes('error') || status.includes('❌')) return '#ff6b6b';
+        if (status.includes('loading') || status.includes('⏳')) return '#ffa726';
+        if (status.includes('success') || status.includes('✅')) return '#66bb6a';
+      }
+      return '#cccccc';
+    }
+
+    _getStatusIcon(status) {
+      if (!status) return '📊';
+      if (status === 'error') return '❌';
+      if (status === 'loading') return '⏳';
+      if (status === 'success') return '✅';
+      if (status === 'unknown') return '❓';
+      return '📊';
+    }
+
+    _generateCompactDirectiveHTML(type, data) {
+      if (!data) return '<div style="color: #999;">No data available</div>';
+      
+      let html = '';
+      
+      try {
+        switch (type.split(':')[0]) {
+          case '@for':
+            html = `
+              <div style="color: #cccccc; font-size: 10px; line-height: 1.3;">
+                Array: <strong>${data.arrayVariable || 'unknown'}</strong> (${data.length || 0} items)<br>
+                Status: ${data.status || 'unknown'}
+              </div>
+            `;
+            break;
+
+          case '@fetch':
+            const url = data.url || '';
+            html = `
+              <div style="color: #cccccc; font-size: 10px; line-height: 1.3;">
+                URL: <strong>${url.slice(0, 40)}${url.length > 40 ? '...' : ''}</strong><br>
+                Status: ${data.status || 'unknown'} | Size: ${data.responseSize || 'N/A'}
+              </div>
+            `;
+            break;
+
+          case '@model':
+            const value = data.currentValue;
+            const displayValue = typeof value === 'string' ? `"${value.slice(0, 20)}${value.length > 20 ? '...' : ''}"` : JSON.stringify(value);
+            html = `
+              <div style="color: #cccccc; font-size: 10px; line-height: 1.3;">
+                Variable: <strong>${data.variable || 'unknown'}</strong><br>
+                Value: ${displayValue} | ${data.validation?.status || 'No validation'}
+              </div>
+            `;
+            break;
+
+          case '@if':
+          case '@show':
+          case '@hide':
+            const condition = data.condition || '';
+            html = `
+              <div style="color: #cccccc; font-size: 10px; line-height: 1.3;">
+                Condition: <strong>${condition.slice(0, 30)}${condition.length > 30 ? '...' : ''}</strong><br>
+                Result: ${data.result} → ${data.isVisible ? 'Visible' : 'Hidden'}
+              </div>
+            `;
+            break;
+
+          case '@click':
+            const action = data.action || '';
+            html = `
+              <div style="color: #cccccc; font-size: 10px; line-height: 1.3;">
+                Action: <strong>${action.slice(0, 30)}${action.length > 30 ? '...' : ''}</strong><br>
+                Clicks: ${data.clickCount || 0} | Last: ${data.lastClick || 'Never'}
+              </div>
+            `;
+            break;
+
+          case '@component':
+            const source = data.source || '';
+            html = `
+              <div style="color: #cccccc; font-size: 10px; line-height: 1.3;">
+                Source: <strong>${source.slice(0, 30)}${source.length > 30 ? '...' : ''}</strong><br>
+                Status: ${data.status || 'unknown'} | Cached: ${data.cached ? 'Yes' : 'No'}
+              </div>
+            `;
+            break;
+
+          default:
+            const expression = data.expression || '';
+            html = `
+              <div style="color: #cccccc; font-size: 10px; line-height: 1.3;">
+                Expression: <strong>${expression.slice(0, 40)}${expression.length > 40 ? '...' : ''}</strong><br>
+                Status: ${data.status || 'unknown'}
+              </div>
+            `;
+        }
+
+        if (data.error) {
+          html += `<div style="color: #ff6b6b; font-size: 9px; margin-top: 2px;">💥 ${data.error}</div>`;
+        }
+      } catch (error) {
+        html = `<div style="color: #ff6b6b; font-size: 9px;">Error rendering directive data: ${error.message}</div>`;
+      }
+
+      return html;
+    }
+
+    _generateDirectiveSpecificHTML(log) {
+      if (!log.data) return '<div style="color: #999;">No legacy data available</div>';
+      
+      const data = log.data;
+      let html = '';
+
+      switch (log.type) {
+        case '@for':
+          html += `
+            <div style="color: #ffcc66;"><strong>Array Info:</strong></div>
+            <div style="margin-left: 12px; color: #cccccc;">
+              • Expression: ${data.expression}<br>
+              • Variable: ${data.arrayVariable} (${data.arrayType})<br>
+              • Length: ${data.length} items<br>
+              • Status: ${data.status}<br>
+              • Item: ${data.itemVariable}${data.indexVariable ? `, Index: ${data.indexVariable}` : ''}<br>
+              • Performance: ${data.performance}
+            </div>
+          `;
+          if (data.error) {
+            html += `<div style="color: #ff6b6b; margin-left: 12px;">❌ ${data.error}</div>`;
+          }
+          break;
+
+        case '@fetch':
+          html += `
+            <div style="color: #ffcc66;"><strong>Network Request:</strong></div>
+            <div style="margin-left: 12px; color: #cccccc;">
+              • URL: ${data.url}<br>
+              • Method: ${data.method}<br>
+              • Status: ${data.status}<br>
+              • Result: ${data.resultVariable}<br>
+              • Response Size: ${data.responseSize}<br>
+              • Last Fetch: ${data.lastFetch}
+            </div>
+          `;
+          if (data.error) {
+            html += `<div style="color: #ff6b6b; margin-left: 12px;">❌ ${data.error}</div>`;
+          }
+          break;
+
+        default:
+          html += `
+            <div style="color: #ffcc66;"><strong>Generic Log:</strong></div>
+            <div style="margin-left: 12px; color: #cccccc;">
+              • Status: ${data.status}
+            </div>
+          `;
+      }
+
+      return html;
+    }
+  }
+
+  /**
    * Module: Error Handler
-   * Handles error display and logging
    */
   class ErrorHandler {
     showAyishaError(el, err, expr) {
@@ -584,7 +1494,6 @@
 
   /**
    * Module: Binding Manager
-   * Handles model binding and validation
    */
   class BindingManager {
     constructor(evaluator, renderCallback) {
@@ -761,7 +1670,7 @@
       this._vdom = null;
       this._isRendering = false;
 
-      // Initialize modules
+      // Initialize modules in correct order
       this.evaluator = new ExpressionEvaluator(this.state);
       this.parser = new DOMParser(this._initBlocks);
       this.componentManager = new ComponentManager();
@@ -771,11 +1680,16 @@
       this.helpSystem = new DirectiveHelpSystem();
       this.errorHandler = new ErrorHandler();
       this.bindingManager = new BindingManager(this.evaluator, () => this.render());
+      this.centralLogger = new CentralLogger();
+
+      // Initialize loggers immediately after all dependencies are created
+      console.log('🔧 Initializing Ayisha.js with intelligent logging...');
+      this.centralLogger.initializeLoggers(this.evaluator, this.fetchManager, this.componentManager);
+      console.log('✅ CentralLogger initialized with loggers:', Object.keys(this.centralLogger.loggers));
 
       window.ayisha = this;
     }
 
-    // Public API methods
     component(name, html) {
       this.componentManager.component(name, html);
     }
@@ -788,7 +1702,6 @@
       return this.helpSystem.getHelp(name);
     }
 
-    // Core methods
     parse(node) {
       return this.parser.parse(node);
     }
@@ -802,7 +1715,6 @@
         }
       });
 
-      // FIXED: Clean up any accidentally created JS global variables in state
       const jsGlobals = [
         'JSON', 'Object', 'Array', 'String', 'Number', 'Boolean', 'Date', 'Math', 'RegExp',
         'console', 'window', 'document', 'setTimeout', 'setInterval', 'fetch', 'localStorage',
@@ -815,16 +1727,13 @@
         }
       });
 
-      // FIXED: Clean up any expression-based variable names (contain operators, spaces, etc.)
       const stateKeys = Object.keys(this.state);
       stateKeys.forEach(key => {
-        // Remove variables that look like expressions rather than proper variable names
         if (/[+\-*\/=<>!&|(){}[\].,\s]|=>|==|!=|<=|>=|\|\||&&/.test(key)) {
           delete this.state[key];
         }
       });
 
-      // Only ensure essential variables exist
       const essentialVars = ['_validate', '_currentPage'];
       essentialVars.forEach(varName => {
         if (!(varName in this.state)) {
@@ -835,7 +1744,6 @@
     }
 
     _preInitializeEssentialVariables() {
-      // FIXED: Only initialize framework-essential variables
       if (!this.state._validate) this.state._validate = {};
       if (!this.state._currentPage) this.state._currentPage = '';
     }
@@ -850,48 +1758,6 @@
       this.router.setupRouting();
     }
 
-    // Backward compatibility aliases
-    _evalExpr(expr, ctx, event) {
-      return this.evaluator.evalExpr(expr, ctx, event);
-    }
-
-    _evalText(text, ctx) {
-      return this.evaluator.evalText(text, ctx);
-    }
-
-    _evalAttrValue(val, ctx) {
-      return this.evaluator.evalAttrValue(val, ctx);
-    }
-
-    _autoVarExpr(expr) {
-      return this.evaluator.autoVarExpr(expr);
-    }
-
-    _hasInterpolation(expr) {
-      return this.evaluator.hasInterpolation(expr);
-    }
-
-    _ensureVarInState(expr) {
-      return this.evaluator.ensureVarInState(expr);
-    }
-
-    _bindModel(el, key, ctx) {
-      return this.bindingManager.bindModel(el, key, ctx);
-    }
-
-    _bindValidation(el, rulesStr, modelVar = null) {
-      return this.bindingManager.bindValidation(el, rulesStr, modelVar);
-    }
-
-    _showAyishaError(el, err, expr) {
-      return this.errorHandler.showAyishaError(el, err, expr);
-    }
-
-    _loadExternalComponent(url) {
-      return this.componentManager.loadExternalComponent(url);
-    }
-
-    // Utility: trova la prima direttiva @page nel VDOM
     _findFirstPageDirective(vNode) {
       if (!vNode) return null;
       if (vNode.directives && vNode.directives['@page']) {
@@ -910,7 +1776,6 @@
       if (this._isRendering) return;
       this._isRendering = true;
 
-      // Save scroll and focus
       const scrollX = window.scrollX, scrollY = window.scrollY;
       const active = document.activeElement;
       let focusInfo = null;
@@ -928,8 +1793,11 @@
       this.bindingManager.clearBindings();
       const real = this._renderVNode(this._vdom, this.state);
 
-      // Update DOM
       if (this.root === document.body) {
+        // CORRETTO: Preserva il debug panel durante il re-render
+        const debugButton = document.getElementById('ayisha-debug-button');
+        const debugPanel = document.getElementById('ayisha-log-panel');
+        
         document.body.innerHTML = '';
         if (real) {
           if (real.tagName === undefined && real.childNodes) {
@@ -939,6 +1807,14 @@
           } else {
             document.body.appendChild(real);
           }
+        }
+        
+        // Ripristina il debug panel se esisteva
+        if (debugButton && debugButton.parentNode !== document.body) {
+          document.body.appendChild(debugButton);
+        }
+        if (debugPanel && debugPanel.parentNode !== document.body) {
+          document.body.appendChild(debugPanel);
         }
       } else {
         this.root.innerHTML = '';
@@ -953,7 +1829,6 @@
         }
       }
 
-      // Restore focus and scroll
       if (focusInfo) {
         let node = this.root;
         focusInfo.path.forEach(i => node = node.childNodes[i]);
@@ -975,16 +1850,13 @@
     _renderVNode(vNode, ctx) {
       if (!vNode) return null;
 
-      // Gestione @page: escludi subito i nodi che non corrispondono
       if (vNode.directives && vNode.directives['@page'] !== undefined) {
         if (this.state._currentPage !== vNode.directives['@page']) {
           return null;
         }
       }
 
-      // FIXED: Only ensure variables for simple variable names, not complex expressions
       Object.entries(vNode.directives || {}).forEach(([dir, expr]) => {
-        // Only ensure variables for simple identifiers, not complex expressions
         if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(expr.trim())) {
           if (dir === '@model') this.evaluator.ensureVarInState(expr, true);
           else this.evaluator.ensureVarInState(expr);
@@ -993,14 +1865,12 @@
 
       Object.values(vNode.subDirectives || {}).forEach(ev =>
         Object.values(ev).forEach(expr => {
-          // Only ensure variables for simple identifiers
           if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(expr.trim())) {
             this.evaluator.ensureVarInState(expr);
           }
         })
       );
 
-      // Error handling for unknown directives
       let unknownDirective = null;
       let unknownSubDirective = null;
       let unknownSubDirectiveEvt = null;
@@ -1042,12 +1912,10 @@
         return this.errorHandler.createErrorElement(msg);
       }
 
-      // Handle text nodes
       if (vNode.type === 'text') {
         return document.createTextNode(this.evaluator.evalText(vNode.text, ctx));
       }
 
-      // Handle fragments
       if (vNode.tag === 'fragment') {
         const frag = document.createDocumentFragment();
         vNode.children.forEach(child => {
@@ -1057,52 +1925,40 @@
         return frag;
       }
 
-      // Conditional rendering directives
       if (vNode.directives['@if'] && !this.evaluator.evalExpr(vNode.directives['@if'], ctx)) return null;
       if (vNode.directives['@show'] && !this.evaluator.evalExpr(vNode.directives['@show'], ctx)) return null;
       if (vNode.directives['@hide'] && this.evaluator.evalExpr(vNode.directives['@hide'], ctx)) return null;
 
-      // @for directive
       if (vNode.directives['@for']) {
         return this._handleForDirective(vNode, ctx);
       }
 
-      // @switch directive
       if (vNode.directives['@switch']) {
         return this._handleSwitchDirective(vNode, ctx);
       }
 
-      // Functional directives (@source, @map, @filter, @reduce)
       if (vNode.directives['@source']) {
         return this._handleFunctionalDirectives(vNode, ctx);
       }
 
-      // Component handling
       if (vNode.tag === 'component') {
         return this._handleComponentDirective(vNode, ctx);
       }
 
-      // Create DOM element
       const el = document.createElement(vNode.tag);
 
-      // Set attributes
       Object.entries(vNode.attrs).forEach(([k, v]) => {
         el.setAttribute(k, this.evaluator.evalAttrValue(v, ctx));
       });
 
-      // Handle special directives
       this._handleSpecialDirectives(el, vNode, ctx);
-
-      // Handle standard directives
       this._handleStandardDirectives(el, vNode, ctx);
 
-      // Add children FIRST
       vNode.children.forEach(child => {
         const node = this._renderVNode(child, ctx);
         if (node) el.appendChild(node);
       });
 
-      // FIXED: Handle sub-directives AFTER children are added (so original text is captured correctly)
       this._handleSubDirectives(el, vNode, ctx);
 
       return el;
@@ -1118,13 +1974,12 @@
         arr.forEach((val, index) => {
           const clone = JSON.parse(JSON.stringify(vNode));
           delete clone.directives['@for'];
-          // FIXED: Create reactive reference to original array item
           const subCtx = {
             ...ctx,
             [itemVar]: val,
             [indexVar]: index,
             [`${itemVar}_index`]: index,
-            [`${itemVar}_ref`]: `${expr.split('.')[0]}[${index}]` // Reference to original item
+            [`${itemVar}_ref`]: `${expr.split('.')[0]}[${index}]`
           };
           const node = this._renderVNode(clone, subCtx);
           if (node) frag.appendChild(node);
@@ -1138,7 +1993,6 @@
         let arr = this.evaluator.evalExpr(expr, ctx) || [];
         if (typeof arr === 'object' && !Array.isArray(arr)) arr = Object.values(arr);
 
-        // FIXED: For filtered arrays, we need to find the original indices
         const originalArrayName = expr.split('.')[0];
         const isFiltered = expr.includes('.filter');
 
@@ -1147,7 +2001,6 @@
           const clone = JSON.parse(JSON.stringify(vNode));
           delete clone.directives['@for'];
 
-          // FIXED: Find original index for filtered arrays
           let originalIndex = index;
           if (isFiltered && this.state[originalArrayName]) {
             originalIndex = this.state[originalArrayName].findIndex(item =>
@@ -1326,7 +2179,6 @@
     }
 
     _handleSpecialDirectives(el, vNode, ctx) {
-      // @state directive
       if (vNode.directives.hasOwnProperty('@state')) {
         const wrapper = document.createElement('div');
         wrapper.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
@@ -1353,10 +2205,144 @@
 
         el.appendChild(wrapper);
       }
+
+      if (vNode.directives.hasOwnProperty('@log')) {
+        // CORRETTO: Assicurati che il logger sia inizializzato
+        if (!this.centralLogger || !this.centralLogger.loggers || Object.keys(this.centralLogger.loggers).length === 0) {
+          console.warn('⚠️ CentralLogger not initialized, initializing now...');
+          this.centralLogger.initializeLoggers(this.evaluator, this.fetchManager, this.componentManager);
+        }
+        
+        try {
+          // CORRETTO: Crea il panel se non esiste
+          if (!this.centralLogger.panelCreated) {
+            this.centralLogger.createLogPanel();
+          }
+          
+          const elementInfo = {
+            tagName: el.tagName,
+            className: el.className,
+            id: el.id
+          };
+          
+          this.centralLogger.addLog(elementInfo, vNode, ctx, this.state, el);
+
+          if (!el.querySelector('.ayisha-inline-log')) {
+  const inlineLog = document.createElement('div');
+  inlineLog.className = 'ayisha-inline-log';
+  inlineLog.style.cssText = `
+    background: #222; color: #fff; font-size: 12px; font-family: monospace;
+    border-radius: 4px; margin-top: 6px; padding: 6px 10px; opacity: 0.95;
+    border: 1px solid #444; max-width: 100%; overflow-x: auto;
+  `;
+  // Mostra solo l'ultimo log relativo a questo elemento
+  const lastLog = this.centralLogger.logs.find(l =>
+    l.elementInfo && l.elementInfo.tagName === el.tagName &&
+    l.elementInfo.className === el.className &&
+    l.elementInfo.id === el.id
+  );
+  if (lastLog) {
+    inlineLog.innerHTML = this.centralLogger._generateIntelligentLogHTML(lastLog);
+  } else {
+    inlineLog.textContent = 'No log data';
+  }
+  el.appendChild(inlineLog);
+}
+          
+          if (vNode.directives['@click']) {
+            const clickLogger = this.centralLogger.loggers['@click'];
+            if (clickLogger) {
+              this.centralLogger.clickLoggers.set(el, clickLogger);
+              
+              el.addEventListener('click', () => {
+                clickLogger.recordClick();
+                this.centralLogger.addLog(elementInfo, vNode, ctx, this.state, el);
+              });
+            }
+          }
+          
+          // CORRETTO: Migliora l'indicatore visivo
+          const indicator = document.createElement('span');
+          indicator.textContent = '📊';
+          indicator.style.cssText = `
+            position: absolute !important;
+            top: -8px !important;
+            right: -8px !important;
+            background: #0066cc !important;
+            color: white !important;
+            border-radius: 50% !important;
+            width: 18px !important;
+            height: 18px !important;
+            font-size: 11px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            cursor: pointer !important;
+            z-index: 10001 !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
+            border: 2px solid white !important;
+            transition: all 0.2s ease !important;
+          `;
+          indicator.title = 'Element is logged - click Debug Log button to view details';
+          indicator.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.centralLogger.togglePanel();
+          });
+          
+          indicator.addEventListener('mouseover', () => {
+            indicator.style.transform = 'scale(1.2) !important';
+            indicator.style.background = '#0088ff !important';
+          });
+          
+          indicator.addEventListener('mouseout', () => {
+            indicator.style.transform = 'scale(1) !important';
+            indicator.style.background = '#0066cc !important';
+          });
+          
+          // CORRETTO: Assicurati che l'elemento sia positioned correttamente
+          const position = getComputedStyle(el).position;
+          if (position === 'static') {
+            el.style.position = 'relative';
+          }
+          
+          el.appendChild(indicator);
+          
+          console.log('✅ @log activated for element:', el.tagName, 'with directives:', Object.keys(vNode.directives));
+          
+        } catch (error) {
+          console.error('❌ Error in @log directive:', error);
+          // Crea un indicatore di errore visibile
+          const errorIndicator = document.createElement('span');
+          errorIndicator.textContent = '❌';
+          errorIndicator.style.cssText = `
+            position: absolute !important;
+            top: -8px !important;
+            right: -8px !important;
+            background: #ff0000 !important;
+            color: white !important;
+            border-radius: 50% !important;
+            width: 18px !important;
+            height: 18px !important;
+            font-size: 11px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            z-index: 10001 !important;
+            border: 2px solid white !important;
+          `;
+          errorIndicator.title = `Log error: ${error.message}`;
+          
+          const position = getComputedStyle(el).position;
+          if (position === 'static') {
+            el.style.position = 'relative';
+          }
+          
+          el.appendChild(errorIndicator);
+        }
+      }
     }
 
     _handleStandardDirectives(el, vNode, ctx) {
-      // @click - FIXED: Isolated execution to prevent cross-variable interference
       if (vNode.directives['@click']) {
         el.addEventListener('click', e => {
           if (el.tagName === 'BUTTON') {
@@ -1369,11 +2355,9 @@
             codeToRun = this.evaluator.evalAttrValue(expr, ctx);
           }
 
-          // FIXED: Clean processing without state prefix issues
           let processedCode = codeToRun.replace(/\bstate\./g, '');
 
           try {
-            // FIXED: Handle operations on loop context objects (like post.likes++)
             const contextObjMatch = processedCode.match(/^(\w+)\.\w+(\+\+|--|=.+)$/);
             if (contextObjMatch) {
               const [, objName, propName, operation] = contextObjMatch;
@@ -1381,9 +2365,7 @@
               if (ctx && ctx[objName]) {
                 const targetObj = ctx[objName];
 
-                // For array items, try to find and update in original array
                 if (targetObj && typeof targetObj === 'object' && targetObj.id) {
-                  // Find the array that contains this object
                   for (const [stateKey, stateValue] of Object.entries(this.state)) {
                     if (Array.isArray(stateValue)) {
                       const index = stateValue.findIndex(item =>
@@ -1501,7 +2483,6 @@
         });
       }
 
-      // @hover
       if (vNode.directives['@hover']) {
         const rawExpr = vNode.directives['@hover'];
         const applyHover = e => {
@@ -1521,7 +2502,6 @@
         el.addEventListener('mouseout', applyHover);
       }
 
-      // @fetch
       if (vNode.directives['@fetch'] && !vNode.subDirectives['@fetch']) {
         const expr = this.evaluator.autoVarExpr(vNode.directives['@fetch']);
         const rk = vNode.directives['@result'] || 'result';
@@ -1532,16 +2512,13 @@
         }
       }
 
-      // @watch (generic, non-fetch)
       if (vNode.directives['@watch'] && !vNode.directives['@fetch']) {
         this._handleGenericWatchDirective(vNode);
       }
 
-      // @text
       if (vNode.directives['@text'] && !vNode.subDirectives['@text']) {
         try {
           const textValue = this.evaluator.evalExpr(vNode.directives['@text'], ctx);
-          // FIXED: Handle undefined/null values gracefully
           if (textValue === undefined) {
             el.textContent = '';
           } else if (textValue === null) {
@@ -1555,30 +2532,25 @@
         }
       }
 
-      // @model
       if (vNode.directives['@model']) {
         this.bindingManager.bindModel(el, vNode.directives['@model'], ctx);
       }
 
-      // @class
       if (vNode.directives['@class'] && !vNode.subDirectives['@class']) {
         const clsMap = this.evaluator.evalExpr(vNode.directives['@class'], ctx) || {};
         Object.entries(clsMap).forEach(([cls, cond]) => el.classList.toggle(cls, !!cond));
       }
 
-      // @style
       if (vNode.directives['@style']) {
         const styles = this.evaluator.evalExpr(vNode.directives['@style'], ctx) || {};
         Object.entries(styles).forEach(([prop, val]) => el.style[prop] = val);
       }
 
-      // @validate
       if (vNode.directives['@validate']) {
         const modelVar = vNode.directives['@model'] || null;
         this.bindingManager.bindValidation(el, vNode.directives['@validate'], modelVar);
       }
 
-      // @link
       if (vNode.directives['@link']) {
         el.setAttribute('href', vNode.directives['@link']);
         el.addEventListener('click', e => {
@@ -1587,12 +2559,10 @@
         });
       }
 
-      // @page
       if (vNode.directives['@page'] && this.state._currentPage !== vNode.directives['@page']) {
         return null;
       }
 
-      // @animate
       if (vNode.directives['@animate']) {
         const animationClass = vNode.directives['@animate'];
         el.classList.add(animationClass);
@@ -1602,7 +2572,6 @@
         }
       }
 
-      // @component (inline)
       if (vNode.directives['@component']) {
         const n = vNode.directives['@component'];
         if (this.componentManager.getComponent(n)) {
@@ -1627,13 +2596,10 @@
             );
 
           if (isEvent) {
-            // FIXED: Use evalExpr directly for object expressions, evalAttrValue for interpolations
             const getEvaluatedExpr = () => {
-              // For class expressions that are objects, use evalExpr directly
               if (dir === '@class' && expr.trim().startsWith('{')) {
                 return this.evaluator.evalExpr(expr, ctx);
               }
-              // For other expressions, use evalAttrValue for interpolation support
               return this.evaluator.evalAttrValue(expr, ctx);
             };
 
@@ -1652,7 +2618,6 @@
               return;
             }
 
-            // Default: execute as pure JS code
             el.addEventListener(eventName, e => {
               let codeToRun = getEvaluatedExpr();
               try {
@@ -1670,9 +2635,6 @@
 
     _handleFetchSubDirective(el, eventName, expr, vNode, ctx) {
       el.addEventListener(eventName, e => {
-        // FIXED: Simplified logic - just pass the expression to setupFetch
-        // setupFetch can handle URLs, variables, and interpolated expressions
-
         const resultVar = vNode.directives['@result'] || 'result';
 
         try {
@@ -1710,7 +2672,6 @@
           }
         });
       } else if (evt === 'focus') {
-        // Focus: add class when focused
         el.addEventListener('focus', e => {
           try {
             const clsMap = getEvaluatedExpr() || {};
@@ -1721,7 +2682,6 @@
             console.error('Error in focus class directive:', error);
           }
         });
-        // Remove class when loses focus (blur)
         el.addEventListener('blur', e => {
           try {
             const clsMap = getEvaluatedExpr() || {};
@@ -1733,7 +2693,6 @@
           }
         });
       } else if (evt === 'input') {
-        // Input: add class while user is typing, remove on blur
         el.addEventListener('input', e => {
           try {
             const clsMap = getEvaluatedExpr() || {};
@@ -1755,7 +2714,6 @@
           }
         });
       } else if (evt === 'click') {
-        // Click: toggle class on each click
         el.addEventListener('click', e => {
           try {
             const clsMap = getEvaluatedExpr() || {};
@@ -1769,7 +2727,6 @@
           }
         });
       } else {
-        // For other events, add class when event occurs
         el.addEventListener(evt, e => {
           try {
             const clsMap = getEvaluatedExpr() || {};
@@ -1858,7 +2815,6 @@
     }
 
     mount() {
-      // Parse DOM first
       if (this.root.childNodes.length > 1) {
         const fragVNode = { tag: 'fragment', attrs: {}, directives: {}, subDirectives: {}, children: [] };
         this.root.childNodes.forEach(child => {
@@ -1871,32 +2827,19 @@
         this._vdom = this.parse(this.root);
       }
 
-      // Imposta currentPage alla prima @page se non è già valorizzata
       if (!this.state._currentPage) {
         const firstPage = this._findFirstPageDirective(this._vdom);
         if (firstPage) this.state._currentPage = firstPage.directives['@page'];
       }
 
-      // Initialize essential variables
       this._preInitializeEssentialVariables();
-
-      // Make reactive
       this._makeReactive();
-
-      // Run init blocks
       this._runInitBlocks();
-
-      // Enable watchers
       this.reactivitySystem.enableWatchers();
-
-      // Setup routing
       this._setupRouting();
       this.router.setupCurrentPageProperty();
-
-      // First render
       this.render();
 
-      // Event listeners
       this.root.addEventListener('click', e => {
         let el = e.target;
         while (el && el !== this.root) {
@@ -1931,13 +2874,39 @@
         }
         
         @keyframes ayishaFadeIn {
-          from { opacity:   0; }
+          from { opacity: 0; }
           to { opacity: 1; }
         }
         
         .slide-down {
           overflow: hidden;
           transition: height 0.3s ease-in-out;
+        }
+        
+        /* CORRETTO: Stili aggiuntivi per @log indicators */
+        .ayisha-log-indicator {
+          position: absolute !important;
+          top: -8px !important;
+          right: -8px !important;
+          background: #0066cc !important;
+          color: white !important;
+          border-radius: 50% !important;
+          width: 18px !important;
+          height: 18px !important;
+          font-size: 11px !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          cursor: pointer !important;
+          z-index: 10001 !important;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
+          border: 2px solid white !important;
+          transition: all 0.2s ease !important;
+        }
+        
+        .ayisha-log-indicator:hover {
+          transform: scale(1.2) !important;
+          background: #0088ff !important;
         }
       `;
       document.head.appendChild(style);
@@ -1954,7 +2923,5 @@
     addDefaultAnimationStyles();
     new AyishaVDOM(document.body).mount();
   }
-
-
 
 })();

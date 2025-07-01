@@ -190,8 +190,8 @@
     <div class="example-block">
       <h3>1. Ciao! Come ti chiami?</h3>
       <div class="ayisha-demo">
-        <input type="text" placeholder="Il tuo nome" @model="nome">
-        <button @click="state.nome = state.nome.trim()">Conferma</button>
+        <input type="text" placeholder="Il tuo nome" @model="nome" @log />
+        <button @click="state.nome = state.nome.trim()" @log>Conferma</button>
         <div class="note">Ciao <b>{{nome || 'amico/a'}}</b>! 👋</div>
       </div>
     </div>
@@ -199,13 +199,13 @@
       <h3>2. Binding, condizioni e cicli</h3>
       <div class="ayisha-demo">
         <input type="number" min="1" max="10" @model="count" value="1">
-        <button @click="state.count++">Aumenta</button>
+        <button @click="state.count++" @log>Aumenta</button>
         <button @click="state.count = 1">Reset</button>
         <div class="note">Hai scelto: <b>{{count}}</b></div>
         <ul>
           <li @for="i in Array(count).fill(0).map((_,i)=>i+1)">Elemento {{i}}</li>
         </ul>
-        <div @if="count > 5" class="note">Wow, più di 5 elementi!</div>
+        <div @if="count > 5" class="note" @log>Wow, più di 5 elementi!</div>
       </div>
     </div>
     <div class="example-block">
