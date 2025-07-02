@@ -30,7 +30,7 @@ Hello {{name}}!
 Value: {{count}} | Message: {{msg}}
 </pre>
     <div style="margin-top:1em;">
-      <button @click="count++">Increment</button>
+      <button @set="count=0" @click="count++">Increment</button>
       <input @input="msg = 'Typed!'" placeholder="Type here...">
       <input @focus="msg = 'Focused!'" @blur="msg = 'Blurred!'">
       <div>Value: {{count}} | Message: {{msg}}</div>
@@ -148,8 +148,7 @@ Sum: {{sum}}
 &lt;/div&gt;
 </pre>
 <div style="margin-top:1em;">
-      ---> {{role}}
-        <init>role = 'user'</init>
+        <init>role = 'norole'</init>
       <select @model="role">
         <option value="user">User</option>
         <option value="admin">Admin</option>
@@ -178,19 +177,12 @@ Sum: {{sum}}
 Value: {{foo}}
 </pre>
     <div style="margin-top:1em;">
-      <button @set="state.foo = 42">Set foo to 42</button>
+      <button @set="foo = 42">Set foo to 42</button>
       <div>Value: {{foo}}</div>
+      <div>Value: {{cane}}</div>
+
       <div class="tip"><b>Tip:</b> <code>@set</code> assigns a value to a variable on an event.</div>
     </div>
-
-
-    <init>
-      test=true; animal='dog'
-    </init>
-     <button @set="test = true">Set foo to 42</button>
-     <button @click="test = 'ciao'">click</button>
-
-Value of TEST: {{test}}
 
 
 

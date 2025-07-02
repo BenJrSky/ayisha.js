@@ -2100,6 +2100,20 @@
     }
 
     _handleSpecialDirectives(el, vNode, ctx) {
+      // --- @set as one-time init ---
+      if (vNode.directives && vNode.directives['@set']) {
+        try {
+          let expr = vNode.directives['@set'];
+          expr = String(expr).replace(/\bstate\./g, '');
+          new Function('state', 'ctx', `with(state){with(ctx||{}){${expr}}}`)(this.state, ctx);
+        } catch (e) {
+          el.setAttribute('data-ayisha-set-error', e.message);
+        }
+        // Remove @set after initialization
+        delete vNode.directives['@set'];
+      }
+
+      // @state
       if (vNode.directives.hasOwnProperty('@state')) {
         const wrapper = document.createElement('div');
         wrapper.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
