@@ -1,41 +1,41 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ayisha.js - Wiki Direttive</title>
+  <title>Ayisha.js - Directives Wiki</title>
   <link rel="stylesheet" href="site.css">
 </head>
 <body>
   <component @src="header.html"></component>
   <main class="container">
-    <h2 class="section-title">Direttive principali e sottodirettive</h2>
+    <h2 class="section-title">Main Directives and Sub-directives</h2>
     <table class="wiki-table">
-      <tr><th>Direttiva</th><th>Descrizione</th><th>Esempio</th></tr>
-      <tr><td><span class="dir-badge">@model</span></td><td>Binding bidirezionale input &lt;-&gt; stato</td><td><span class="dir-example">&lt;input @model="nome"&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@click</span></td><td>Esegue JS al click</td><td><span class="dir-example">&lt;button @click="state.count++"&gt;Aumenta&lt;/button&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@for</span></td><td>Ciclo su array/range</td><td><span class="dir-example">&lt;li @for="item in items"&gt;{{item}}&lt;/li&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@if</span></td><td>Condizione di rendering</td><td><span class="dir-example">&lt;div @if="count &gt; 5"&gt;Tanti elementi!&lt;/div&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@show</span></td><td>Mostra se condizione true</td><td><span class="dir-example">&lt;div @show="cond"&gt;Visibile&lt;/div&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@hide</span></td><td>Nasconde se condizione true</td><td><span class="dir-example">&lt;div @hide="cond"&gt;Nascosto&lt;/div&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@fetch</span> <span class="dir-badge">@result</span></td><td>Fetch API e assegnazione risultato</td><td><span class="dir-example">&lt;button @fetch="'url'" @result="data"&gt;Carica&lt;/button&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@validate</span></td><td>Validazione input</td><td><span class="dir-example">&lt;input @validate="email"&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@page</span> <span class="dir-badge">@link</span></td><td>Routing SPA</td><td><span class="dir-example">&lt;div @page="home"&gt;Home&lt;/div&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@component</span> <span class="dir-badge">@src</span></td><td>Componenti HTML riutilizzabili</td><td><span class="dir-example">&lt;component @src="comp.html"&gt;&lt;/component&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@state</span></td><td>Mostra lo stato corrente</td><td><span class="dir-example">&lt;div @state&gt;&lt;/div&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@log</span></td><td>Mostra log delle direttive</td><td><span class="dir-example">&lt;div @log&gt;&lt;/div&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@class</span></td><td>Classi dinamiche</td><td><span class="dir-example">&lt;div @class="{rosso: condizione}"&gt;&lt;/div&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@style</span></td><td>Stili dinamici</td><td><span class="dir-example">&lt;div @style="{color:'red'}"&gt;&lt;/div&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@set</span></td><td>Assegnazione variabile/evento</td><td><span class="dir-example">&lt;button @set:click="foo=1"&gt;&lt;/button&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@key</span></td><td>Chiave univoca in @for</td><td><span class="dir-example">&lt;li @for="item in items" @key="item.id"&gt;&lt;/li&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@switch</span> <span class="dir-badge">@case</span> <span class="dir-badge">@default</span></td><td>Switch-case rendering</td><td><span class="dir-example">&lt;div @switch="val"&gt;&lt;div @case="1"&gt;Uno&lt;/div&gt;&lt;div @default&gt;Altro&lt;/div&gt;&lt;/div&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@source</span> <span class="dir-badge">@map</span> <span class="dir-badge">@filter</span> <span class="dir-badge">@reduce</span> <span class="dir-badge">@initial</span></td><td>Operazioni su array</td><td><span class="dir-example">&lt;div @source="items" @map="item =&gt; item*2" @result="doppio"&gt;&lt;/div&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@animate</span></td><td>Animazioni CSS</td><td><span class="dir-example">&lt;div @animate="fade-in"&gt;&lt;/div&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@watch</span></td><td>Watcher su variabili</td><td><span class="dir-example">&lt;div @watch="prop=&gt;console.log(prop)"&gt;&lt;/div&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@hover</span></td><td>Evento hover</td><td><span class="dir-example">&lt;div @hover="doSomething()"&gt;&lt;/div&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@text</span></td><td>Imposta testo dinamico</td><td><span class="dir-example">&lt;span @text="nome"&gt;&lt;/span&gt;</span></td></tr>
+      <tr><th>Directive</th><th>Description</th><th>Example</th></tr>
+      <tr><td><span class="dir-badge">@model</span></td><td>Two-way binding input &lt;-&gt; state</td><td><span class="dir-example">&lt;input @model="name"&gt;</span></td></tr>
+      <tr><td><span class="dir-badge">@click</span></td><td>Executes JS on click</td><td><span class="dir-example">&lt;button @click="state.count++"&gt;Increment&lt;/button&gt;</span></td></tr>
+      <tr><td><span class="dir-badge">@for</span></td><td>Loop over array/range</td><td><span class="dir-example">&lt;li @for="item in items"&gt;{{item}}&lt;/li&gt;</span></td></tr>
+      <tr><td><span class="dir-badge">@if</span></td><td>Conditional rendering</td><td><span class="dir-example">&lt;div @if="count &gt; 5"&gt;Many items!&lt;/div&gt;</span></td></tr>
+      <tr><td><span class="dir-badge">@show</span></td><td>Show if condition is true</td><td><span class="dir-example">&lt;div @show="cond"&gt;Visible&lt;/div&gt;</span></td></tr>
+      <tr><td><span class="dir-badge">@hide</span></td><td>Hide if condition is true</td><td><span class="dir-example">&lt;div @hide="cond"&gt;Hidden&lt;/div&gt;</span></td></tr>
+      <tr><td><span class="dir-badge">@fetch</span> <span class="dir-badge">@result</span></td><td>Fetch API and assign result</td><td><span class="dir-example">&lt;button @fetch="'url'" @result="data"&gt;Load&lt;/button&gt;</span></td></tr>
+      <tr><td><span class="dir-badge">@validate</span></td><td>Input validation</td><td><span class="dir-example">&lt;input @validate="email"&gt;</span></td></tr>
+      <tr><td><span class="dir-badge">@page</span> <span class="dir-badge">@link</span></td><td>SPA Routing</td><td><span class="dir-example">&lt;div @page="home"&gt;Home&lt;/div&gt;</span></td></tr>
+      <tr><td><span class="dir-badge">@component</span> <span class="dir-badge">@src</span></td><td>Reusable HTML components</td><td><span class="dir-example">&lt;component @src="comp.html"&gt;&lt;/component&gt;</span></td></tr>
+      <tr><td><span class="dir-badge">@state</span></td><td>Show current state</td><td><span class="dir-example">&lt;div @state&gt;&lt;/div&gt;</span></td></tr>
+      <tr><td><span class="dir-badge">@log</span></td><td>Show directive log</td><td><span class="dir-example">&lt;div @log&gt;&lt;/div&gt;</span></td></tr>
+      <tr><td><span class="dir-badge">@class</span></td><td>Dynamic classes</td><td><span class="dir-example">&lt;div @class="{red: condition}"&gt;&lt;/div&gt;</span></td></tr>
+      <tr><td><span class="dir-badge">@style</span></td><td>Dynamic styles</td><td><span class="dir-example">&lt;div @style="{color:'red'}"&gt;&lt;/div&gt;</span></td></tr>
+      <tr><td><span class="dir-badge">@set</span></td><td>Variable/event assignment</td><td><span class="dir-example">&lt;button @set:click="foo=1"&gt;&lt;/button&gt;</span></td></tr>
+      <tr><td><span class="dir-badge">@key</span></td><td>Unique key in @for</td><td><span class="dir-example">&lt;li @for="item in items" @key="item.id"&gt;&lt;/li&gt;</span></td></tr>
+      <tr><td><span class="dir-badge">@switch</span> <span class="dir-badge">@case</span> <span class="dir-badge">@default</span></td><td>Switch-case rendering</td><td><span class="dir-example">&lt;div @switch="val"&gt;&lt;div @case="1"&gt;One&lt;/div&gt;&lt;div @default&gt;Other&lt;/div&gt;&lt;/div&gt;</span></td></tr>
+      <tr><td><span class="dir-badge">@source</span> <span class="dir-badge">@map</span> <span class="dir-badge">@filter</span> <span class="dir-badge">@reduce</span> <span class="dir-badge">@initial</span></td><td>Array operations</td><td><span class="dir-example">&lt;div @source="items" @map="item =&gt; item*2" @result="double"&gt;&lt;/div&gt;</span></td></tr>
+      <tr><td><span class="dir-badge">@animate</span></td><td>CSS animations</td><td><span class="dir-example">&lt;div @animate="fade-in"&gt;&lt;/div&gt;</span></td></tr>
+      <tr><td><span class="dir-badge">@watch</span></td><td>Variable watcher</td><td><span class="dir-example">&lt;div @watch="prop=&gt;console.log(prop)"&gt;&lt;/div&gt;</span></td></tr>
+      <tr><td><span class="dir-badge">@hover</span></td><td>Hover event</td><td><span class="dir-example">&lt;div @hover="doSomething()"&gt;&lt;/div&gt;</span></td></tr>
+      <tr><td><span class="dir-badge">@text</span></td><td>Set dynamic text</td><td><span class="dir-example">&lt;span @text="name"&gt;&lt;/span&gt;</span></td></tr>
     </table>
-    <h2 class="section-title">Sottodirettive/eventi supportati</h2>
+    <h2 class="section-title">Supported sub-directives/events</h2>
     <div>
       <span class="dir-badge">@model:input</span>
       <span class="dir-badge">@model:change</span>
@@ -64,85 +64,85 @@
       <span class="dir-badge">@change</span>
       <span class="dir-badge">@input</span>
     </div>
-    <h2 class="section-title">Variabili speciali</h2>
-    <div class="special-var"><b>state</b>: Oggetto stato globale reattivo.</div>
-    <div class="special-var"><b>_validate</b>: Oggetto con risultati validazione input.</div>
-    <div class="special-var"><b>_currentPage</b>: Pagina attiva per SPA routing.</div>
-    <h2 class="section-title">Best practice e consigli</h2>
+    <h2 class="section-title">Special variables</h2>
+    <div class="special-var"><b>state</b>: Global reactive state object.</div>
+    <div class="special-var"><b>_validate</b>: Object with input validation results.</div>
+    <div class="special-var"><b>_currentPage</b>: Active page for SPA routing.</div>
+    <h2 class="section-title">Best practices & tips</h2>
     <div class="best-practice">
       <ul>
-        <li>Usa <b>state</b> per tutte le variabili reattive e i dati condivisi.</li>
-        <li>Evita nomi di variabili in conflitto con oggetti JS globali.</li>
-        <li>Per validazione, usa <b>@validate</b> e controlla <b>_validate</b> per i risultati.</li>
-        <li>Per fetch asincroni, usa <b>@fetch</b> e <b>@result</b> su elementi diversi.</li>
-        <li>Per SPA, usa <b>@page</b> e <b>@link</b> per navigazione senza reload.</li>
-        <li>Per componenti, preferisci HTML riutilizzabile e <b>@src</b>.</li>
-        <li>Per debug, usa <b>@state</b> e <b>@log</b> per ispezionare lo stato e le direttive.</li>
-        <li>Le direttive possono essere combinate liberamente su ogni elemento.</li>
-        <li>Le sottodirettive permettono binding/eventi avanzati (es: <b>@model:input</b>).</li>
+        <li>Use <b>state</b> for all reactive variables and shared data.</li>
+        <li>Avoid variable names that conflict with global JS objects.</li>
+        <li>For validation, use <b>@validate</b> and check <b>_validate</b> for results.</li>
+        <li>For async fetch, use <b>@fetch</b> and <b>@result</b> on different elements.</li>
+        <li>For SPA, use <b>@page</b> and <b>@link</b> for navigation without reload.</li>
+        <li>For components, prefer reusable HTML and <b>@src</b>.</li>
+        <li>For debugging, use <b>@state</b> and <b>@log</b> to inspect state and directives.</li>
+        <li>Directives can be freely combined on any element.</li>
+        <li>Sub-directives allow advanced binding/events (e.g. <b>@model:input</b>).</li>
       </ul>
     </div>
-    <h2 class="section-title">Esempi rapidi</h2>
+    <h2 class="section-title">Quick examples</h2>
     <div class="best-practice">
-      <b>Input e binding:</b>
-      <pre class="code-console" id="ex1-code" style="background:#181c24;color:#fff;padding:1em;border-radius:8px;overflow:auto;font-size:1.05em;">&lt;input @model=&quot;nome&quot; placeholder=&quot;Nome&quot;&gt;
-Ciao {{nome}}!</pre>
+      <b>Input and binding:</b>
+      <pre class="code-console" id="ex1-code" style="background:#181c24;color:#fff;padding:1em;border-radius:8px;overflow:auto;font-size:1.05em;">&lt;input @model=&quot;name&quot; placeholder=&quot;Name&quot;&gt;
+Hello {{name}}!</pre>
       <div style="margin-top:1em;">
-        <input @model="nome" placeholder="Nome">
-        Ciao {{nome}}!
+        <input @model="name" placeholder="Name">
+        Hello {{name}}!
       </div>
     </div>
     <div class="best-practice">
-      <b>Contatore:</b>
-      <pre class="code-console" id="ex2-code" style="background:#181c24;color:#fff;padding:1em;border-radius:8px;overflow:auto;font-size:1.05em;">&lt;button @click=&quot;state.count++&quot;&gt;Aumenta&lt;/button&gt;
-Valore: {{count}}</pre>
+      <b>Counter:</b>
+      <pre class="code-console" id="ex2-code" style="background:#181c24;color:#fff;padding:1em;border-radius:8px;overflow:auto;font-size:1.05em;">&lt;button @click=&quot;state.count++&quot;&gt;Increment&lt;/button&gt;
+Value: {{count}}</pre>
       <div style="margin-top:1em;">
-        <button @click="state.count++">Aumenta</button>
-        Valore: {{count}}
+        <button @click="state.count++">Increment</button>
+        Value: {{count}}
       </div>
     </div>
     <div class="best-practice">
       <b>Fetch API:</b>
-      <pre class="code-console" id="ex3-code" style="background:#181c24;color:#fff;padding:1em;border-radius:8px;overflow:auto;font-size:1.05em;">&lt;button @fetch=&quot;'https://jsonplaceholder.typicode.com/users'&quot; @result=&quot;utenti&quot;&gt;Carica utenti&lt;/button&gt;
+      <pre class="code-console" id="ex3-code" style="background:#181c24;color:#fff;padding:1em;border-radius:8px;overflow:auto;font-size:1.05em;">&lt;button @fetch=&quot;'https://jsonplaceholder.typicode.com/users'&quot; @result=&quot;users&quot;&gt;Load users&lt;/button&gt;
 &lt;ul&gt;
-  &lt;li @for=&quot;user in utenti&quot;&gt;{{user.name}}&lt;/li&gt;
+  &lt;li @for=&quot;user in users&quot;&gt;{{user.name}}&lt;/li&gt;
 &lt;/ul&gt;</pre>
       <div style="margin-top:1em;">
-        <button @fetch="'https://jsonplaceholder.typicode.com/users'" @result="utenti">Carica utenti</button>
+        <button @fetch="'https://jsonplaceholder.typicode.com/users'" @result="users">Load users</button>
         <ul>
-          <li @for="user in utenti">{{user.name}}</li>
+          <li @for="user in users">{{user.name}}</li>
         </ul>
       </div>
     </div>
     <div class="best-practice">
-      <b>Validazione email:</b>
+      <b>Email validation:</b>
       <pre class="code-console" id="ex4-code" style="background:#181c24;color:#fff;padding:1em;border-radius:8px;overflow:auto;font-size:1.05em;">&lt;input type=&quot;email&quot; @model=&quot;email&quot; @validate=&quot;email&quot;&gt;
-&lt;div @if=&quot;_validate &amp;&amp; !_validate.email &amp;&amp; _validate.email.length&quot;&gt;Email non valida!&lt;/div&gt;</pre>
+&lt;div @if=&quot;_validate &amp;&amp; !_validate.email &amp;&amp; _validate.email.length&quot;&gt;Invalid email!&lt;/div&gt;</pre>
       <div style="margin-top:1em;">
         <input type="email" @model="email" @validate="email">
-        <div @if="_validate && !_validate.email && _validate.email.length">Email non valida!</div>
+        <div @if="_validate && !_validate.email && _validate.email.length">Invalid email!</div>
       </div>
     </div>
     <div class="best-practice">
-      <b>Routing SPA:</b>
+      <b>SPA Routing:</b>
       <pre class="code-console" id="ex5-code" style="background:#181c24;color:#fff;padding:1em;border-radius:8px;overflow:auto;font-size:1.05em;">&lt;button @link=&quot;about&quot;&gt;About&lt;/button&gt;
-&lt;div @page=&quot;about&quot;&gt;Pagina About&lt;/div&gt;</pre>
+&lt;div @page=&quot;about&quot;&gt;About Page&lt;/div&gt;</pre>
       <div style="margin-top:1em;">
         <button @link="wiki">Wiki</button>
         <button @link="about">About</button>
-        <div @page="wiki">Pagina About</div>
-        <div @page="about">Pagina About</div>
+        <div @page="wiki">Wiki Page</div>
+        <div @page="about">About Page</div>
       </div>
     </div>
     <div class="best-practice">
-      <b>Componenti:</b>
+      <b>Components:</b>
       <pre class="code-console" id="ex6-code" style="background:#181c24;color:#fff;padding:1em;border-radius:8px;overflow:auto;font-size:1.05em;">&lt;component @src=&quot;/src/home.html&quot; @page=&quot;home&quot;&gt;&lt;/component&gt;</pre>
       <div style="margin-top:1em;">
         <component @src="/src/home.html" @page="home"></component>
       </div>
     </div>
     <div class="best-practice">
-      <b>Stato e debug:</b>
+      <b>State and debug:</b>
       <pre class="code-console" id="ex7-code" style="background:#181c24;color:#fff;padding:1em;border-radius:8px;overflow:auto;font-size:1.05em;">&lt;div @state&gt;&lt;/div&gt;
 &lt;div @log&gt;&lt;/div&gt;</pre>
       <div style="margin-top:1em;">
@@ -151,79 +151,79 @@ Valore: {{count}}</pre>
       </div>
     </div>
     <script src="/ayisha.js"></script>
-    <h2 class="section-title">Esempi avanzati: fetch e sub-direttive</h2>
+    <h2 class="section-title">Advanced examples: fetch and sub-directives</h2>
     <div class="best-practice">
-      <b>Fetch base:</b><br>
-      <code>&lt;button @fetch="'https://jsonplaceholder.typicode.com/users'" @result="utenti"&gt;Carica utenti&lt;/button&gt;<br>
+      <b>Basic fetch:</b><br>
+      <code>&lt;button @fetch="'https://jsonplaceholder.typicode.com/users'" @result="users"&gt;Load users&lt;/button&gt;<br>
       &lt;ul&gt;
-        &lt;li @for="user in utenti"&gt;{{user.name}}&lt;/li&gt;
+        &lt;li @for="user in users"&gt;{{user.name}}&lt;/li&gt;
       &lt;/ul&gt;
       </code>
     </div>
     <div class="best-practice">
-      <b>Fetch su evento click (sub-direttiva):</b><br>
-      <code>&lt;button @fetch:click="'https://jsonplaceholder.typicode.com/posts'" @result="posts"&gt;Carica post&lt;/button&gt;<br>
+      <b>Fetch on click (sub-directive):</b><br>
+      <code>&lt;button @fetch:click="'https://jsonplaceholder.typicode.com/posts'" @result="posts"&gt;Load posts&lt;/button&gt;<br>
       &lt;ul&gt;
         &lt;li @for="post in posts"&gt;{{post.title}}&lt;/li&gt;
       &lt;/ul&gt;
       </code>
     </div>
     <div class="best-practice">
-      <b>Fetch su evento hover (sub-direttiva):</b><br>
-      <code>&lt;div @fetch:hover="'https://jsonplaceholder.typicode.com/todos'" @result="todos" style="display:inline-block;cursor:pointer;"&gt;Passa qui per caricare ToDo&lt;/div&gt;<br>
+      <b>Fetch on hover (sub-directive):</b><br>
+      <code>&lt;div @fetch:hover="'https://jsonplaceholder.typicode.com/todos'" @result="todos" style="display:inline-block;cursor:pointer;"&gt;Hover here to load ToDo&lt;/div&gt;<br>
       &lt;ul&gt;
         &lt;li @for="todo in todos"&gt;{{todo.title}}&lt;/li&gt;
       &lt;/ul&gt;
       </code>
     </div>
     <div class="best-practice">
-      <b>Fetch su input dinamico (sub-direttiva):</b><br>
-      <code>&lt;input @model="userId" type="number" min="1" max="10" placeholder="ID utente"&gt;<br>
-      &lt;button @fetch:click="`https://jsonplaceholder.typicode.com/users/${userId}`" @result="utente"&gt;Cerca utente&lt;/button&gt;<br>
-      &lt;div @if="utente"&gt;Nome: {{utente.name}}&lt;/div&gt;
+      <b>Fetch with dynamic input (sub-directive):</b><br>
+      <code>&lt;input @model="userId" type="number" min="1" max="10" placeholder="User ID"&gt;<br>
+      &lt;button @fetch:click="`https://jsonplaceholder.typicode.com/users/${userId}`" @result="user"&gt;Find user&lt;/button&gt;<br>
+      &lt;div @if="user"&gt;Name: {{user.name}}&lt;/div&gt;
       </code>
     </div>
     <div class="best-practice">
-      <b>Combinazione fetch + validazione:</b><br>
+      <b>Fetch + validation combination:</b><br>
       <code>&lt;input @model="email" @validate="email" placeholder="Email"&gt;<br>
-      &lt;button @fetch:click="`/api/check?email=${email}`" @result="check" @if="_validate.email"&gt;Verifica email&lt;/button&gt;<br>
-      &lt;div @if="check"&gt;Risposta: {{check.status}}&lt;/div&gt;
+      &lt;button @fetch:click="`/api/check?email=${email}`" @result="check" @if="_validate.email"&gt;Check email&lt;/button&gt;<br>
+      &lt;div @if="check"&gt;Response: {{check.status}}&lt;/div&gt;
       </code>
     </div>
     <div class="best-practice">
-      <b>Fetch multiplo e @result diversi:</b><br>
-      <code>&lt;button @fetch:click="'https://jsonplaceholder.typicode.com/users'" @result="utenti"&gt;Utenti&lt;/button&gt;
-      &lt;button @fetch:click="'https://jsonplaceholder.typicode.com/posts'" @result="posts"&gt;Post&lt;/button&gt;<br>
+      <b>Multiple fetches and different @result:</b><br>
+      <code>&lt;button @fetch:click="'https://jsonplaceholder.typicode.com/users'" @result="users"&gt;Users&lt;/button&gt;
+      &lt;button @fetch:click="'https://jsonplaceholder.typicode.com/posts'" @result="posts"&gt;Posts&lt;/button&gt;<br>
       &lt;ul&gt;
-        &lt;li @for="user in utenti"&gt;{{user.name}}&lt;/li&gt;
+        &lt;li @for="user in users"&gt;{{user.name}}&lt;/li&gt;
       &lt;/ul&gt;
       &lt;ul&gt;
         &lt;li @for="post in posts"&gt;{{post.title}}&lt;/li&gt;
       &lt;/ul&gt;
       </code>
     </div>
-    <h2 class="section-title">Esempio live: Fetch API</h2>
+    <h2 class="section-title">Live example: Fetch API</h2>
     <div class="best-practice">
-      <b>Codice pronto da copiare:</b>
-      <pre><code id="fetch-demo-code">&lt;button @fetch="'https://jsonplaceholder.typicode.com/users'" @result="utenti"&gt;Carica utenti&lt;/button&gt;
+      <b>Copy-ready code:</b>
+      <pre><code id="fetch-demo-code">&lt;button @fetch="'https://jsonplaceholder.typicode.com/users'" @result="users"&gt;Load users&lt;/button&gt;
 &lt;ul&gt;
-  &lt;li @for="user in utenti"&gt;{{user.name}}&lt;/li&gt;
+  &lt;li @for="user in users"&gt;{{user.name}}&lt;/li&gt;
 &lt;/ul&gt;</code></pre>
     </div>
     <div class="best-practice">
-      <b>Demo interattiva:</b>
+      <b>Interactive demo:</b>
       <div id="fetch-demo" style="margin-top:1em;">
-        <button @fetch="'https://jsonplaceholder.typicode.com/users'" @result="utenti">Carica utenti</button>
+        <button @fetch="'https://jsonplaceholder.typicode.com/users'" @result="users">Load users</button>
         <ul>
-          <li @for="user in utenti">{{user.name}}</li>
+          <li @for="user in users">{{user.name}}</li>
         </ul>
       </div>
       <script src="/ayisha.js"></script>
     </div>
-    <h2 class="section-title">Vedi anche</h2>
+    <h2 class="section-title">See also</h2>
     <ul>
-      <li><a href="/site/tutorial.html">Tutorial passo-passo</a></li>
-      <li><a href="/site/examples.html">Esempi pratici</a></li>
+      <li><a href="/site/tutorial.html">Step-by-step Tutorial</a></li>
+      <li><a href="/site/examples.html">Practical Examples</a></li>
     </ul>
   </main>
   <init>

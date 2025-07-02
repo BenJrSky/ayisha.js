@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,23 +9,23 @@
 <body>
   <component @src="header.html"></component>
   <main class="container">
-    <h2>Domande frequenti</h2>
-    <h3>Ayisha.js funziona senza build?</h3>
-    <p>Sì, basta includere <code>&lt;script src="ayisha.js"&gt;&lt;/script&gt;</code> e puoi usare tutte le direttive direttamente in HTML.</p>
-    <h3>Come gestisco lo stato?</h3>
-    <p>Usa la variabile <b>state</b> per tutte le proprietà reattive. Ad esempio: <code>state.nome</code>, <code>state.count</code>.</p>
-    <h3>Come funziona la validazione?</h3>
-    <p>Con <b>@validate</b> su input e controllando <b>_validate</b> per i risultati.</p>
-    <h3>Posso creare componenti riutilizzabili?</h3>
-    <p>Sì, con il tag <code>&lt;component @src="file.html"&gt;&lt;/component&gt;</code>.</p>
-    <h3>Come faccio SPA routing?</h3>
-    <p>Usa <b>@page</b> per le sezioni e <b>@link</b> per i bottoni/link di navigazione.</p>
-    <h3>Posso usare fetch e dati dinamici?</h3>
-    <p>Sì, con <b>@fetch</b> e <b>@result</b> puoi caricare dati da API e usarli subito.</p>
-    <h3>Come faccio debug?</h3>
-    <p>Usa <b>@log</b> per vedere lo stato delle direttive e <b>@state</b> per vedere lo stato globale.</p>
-    <h3>Ayisha.js è adatto a progetti grandi?</h3>
-    <p>È pensato per progetti piccoli/medi, prototipi, demo, landing page e app leggere. Per progetti enterprise valuta framework più strutturati.</p>
+    <h2>Frequently Asked Questions</h2>
+    <h3>Does Ayisha.js work without a build step?</h3>
+    <p>Yes, just include <code>&lt;script src="ayisha.js"&gt;&lt;/script&gt;</code> and you can use all directives directly in HTML.</p>
+    <h3>How do I manage state?</h3>
+    <p>Use the <b>state</b> variable for all reactive properties. For example: <code>state.name</code>, <code>state.count</code>.</p>
+    <h3>How does validation work?</h3>
+    <p>With <b>@validate</b> on inputs and by checking <b>_validate</b> for results.</p>
+    <h3>Can I create reusable components?</h3>
+    <p>Yes, with the tag <code>&lt;component @src="file.html"&gt;&lt;/component&gt;</code>.</p>
+    <h3>How do I do SPA routing?</h3>
+    <p>Use <b>@page</b> for sections and <b>@link</b> for navigation buttons/links.</p>
+    <h3>Can I use fetch and dynamic data?</h3>
+    <p>Yes, with <b>@fetch</b> and <b>@result</b> you can load data from APIs and use it immediately.</p>
+    <h3>How do I debug?</h3>
+    <p>Use <b>@log</b> to see directive state and <b>@state</b> to see the global state.</p>
+    <h3>Is Ayisha.js suitable for large projects?</h3>
+    <p>It's designed for small/medium projects, prototypes, demos, landing pages, and lightweight apps. For enterprise projects, consider more structured frameworks.</p>
   </main>
       <script src="/ayisha.js"></script>
   <init>
