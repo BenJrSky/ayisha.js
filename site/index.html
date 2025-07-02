@@ -7,17 +7,7 @@
   <link rel="stylesheet" href="site.css">
 </head>
 <body>
-  <header>
-    <h1>Ayisha.js <span class="badge">Ultra-light VDOM</span></h1>
-    <p>Benvenuto nella documentazione ufficiale di Ayisha.js!<br>Un micro-framework moderno, reattivo e super semplice per web app e prototipi.<br>Zero build, zero dipendenze, solo HTML + JS.</p>
-    <nav>
-      <a href="/site/index.html">Home</a> |
-      <a href="/site/wiki.html">Wiki Direttive</a> |
-      <a href="/site/tutorial.html">Tutorial</a> |
-      <a href="/site/faq.html">FAQ</a> |
-      <a href="/site/examples.html">Esempi</a>
-    </nav>
-  </header>
+  <component @src="header.html"></component>
   <main class="container">
     <h2>Cos'è Ayisha.js?</h2>
     <p>Ayisha.js è un micro-framework VDOM per web app, senza build, con sintassi HTML e direttive ispirate a Vue/Angular. Ideale per prototipi, demo, landing page e app leggere.</p>
@@ -35,5 +25,6 @@
 </code></pre>
     <p>Scopri tutte le funzionalità nella <a href="/site/wiki.html">Wiki delle direttive</a> o segui il <a href="/site/tutorial.html">Tutorial</a> passo-passo.</p>
   </main>
+      <script src="/ayisha.js"></script>
 </body>
 </html>

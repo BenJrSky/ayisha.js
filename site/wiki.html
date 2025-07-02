@@ -7,16 +7,7 @@
   <link rel="stylesheet" href="site.css">
 </head>
 <body>
-  <header>
-    <h1>Wiki Direttive Ayisha.js</h1>
-    <nav>
-      <a href="/site/index.html">Home</a> |
-      <a href="/site/wiki.html">Wiki Direttive</a> |
-      <a href="/site/tutorial.html">Tutorial</a> |
-      <a href="/site/faq.html">FAQ</a> |
-      <a href="/site/examples.html">Esempi</a>
-    </nav>
-  </header>
+  <component @src="header.html"></component>
   <main class="container">
     <h2 class="section-title">Direttive principali e sottodirettive</h2>
     <table class="wiki-table">
@@ -137,7 +128,9 @@ Valore: {{count}}</pre>
       <pre class="code-console" id="ex5-code" style="background:#181c24;color:#fff;padding:1em;border-radius:8px;overflow:auto;font-size:1.05em;">&lt;button @link=&quot;about&quot;&gt;About&lt;/button&gt;
 &lt;div @page=&quot;about&quot;&gt;Pagina About&lt;/div&gt;</pre>
       <div style="margin-top:1em;">
+        <button @link="wiki">Wiki</button>
         <button @link="about">About</button>
+        <div @page="wiki">Pagina About</div>
         <div @page="about">Pagina About</div>
       </div>
     </div>
@@ -233,5 +226,8 @@ Valore: {{count}}</pre>
       <li><a href="/site/examples.html">Esempi pratici</a></li>
     </ul>
   </main>
+  <init>
+  _currentPage = 'wiki';
+  </init>
 </body>
 </html>

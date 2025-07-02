@@ -7,16 +7,7 @@
   <link rel="stylesheet" href="site.css">
 </head>
 <body>
-  <header>
-    <h1>FAQ Ayisha.js</h1>
-    <nav>
-      <a href="/site/index.html">Home</a> |
-      <a href="/site/wiki.html">Wiki Direttive</a> |
-      <a href="/site/tutorial.html">Tutorial</a> |
-      <a href="/site/faq.html">FAQ</a> |
-      <a href="/site/examples.html">Esempi</a>
-    </nav>
-  </header>
+  <component @src="header.html"></component>
   <main class="container">
     <h2>Domande frequenti</h2>
     <h3>Ayisha.js funziona senza build?</h3>
@@ -36,5 +27,9 @@
     <h3>Ayisha.js è adatto a progetti grandi?</h3>
     <p>È pensato per progetti piccoli/medi, prototipi, demo, landing page e app leggere. Per progetti enterprise valuta framework più strutturati.</p>
   </main>
+      <script src="/ayisha.js"></script>
+  <init>
+_currentPage = 'faq';
+</init>
 </body>
 </html>

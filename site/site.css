@@ -1,147 +1,297 @@
-/* site.css - Stile moderno per tutta la documentazione Ayisha.js */
+/* Modern pastel palette for Ayisha.js documentation site, based on #ffdb67 */
 body {
-  font-family: 'Montserrat', Arial, sans-serif;
-  background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);
-  color: #222;
+  background: #fffbe9;
+  color: #22242a;
+  /* darker for better contrast */
+  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 18px;
+  line-height: 1.7;
   margin: 0;
+}
+.ayisha-header {
+  background: linear-gradient(90deg, #ffdb67 0%, #ffe6a7 100%);
+  box-shadow: 0 2px 8px #ffdb6733;
+  border-radius: 0;
+  margin-bottom: 2.5em;
   padding: 0;
+  border-bottom: 1.5px solid #ffdb67;
 }
-.container {
-  max-width: 900px;
-  margin: 2rem auto;
-  background: #fff;
-  border-radius: 1.5rem;
-  box-shadow: 0 2px 16px #6366f122;
-  padding: 2rem;
+.ayisha-header-inner {
+  max-width: 980px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.2em 2em 1.2em 2em;
 }
-header {
-  background: #6366f1;
-  color: #fff;
-  padding: 2rem 1rem 1rem 1rem;
-  text-align: center;
-  border-radius: 0 0 2rem 2rem;
-  box-shadow: 0 4px 24px #6366f133;
-}
-header h1 {
-  font-size: 2.5rem;
-  margin: 0 0 0.5rem 0;
-  letter-spacing: 2px;
-}
-header nav {
-  margin-top: 1rem;
-}
-header nav a {
-  color: #fff;
+.ayisha-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
   text-decoration: none;
-  margin: 0 0.5rem;
-  font-weight: 600;
-  transition: color 0.2s;
 }
-header nav a:hover {
-  color: #c7d2fe;
+.ayisha-logo-icon {
+  font-size: 2em;
+  margin-right: 0.2em;
+  filter: drop-shadow(0 2px 6px #ffe6a7cc);
 }
-.badge, .dir-badge {
-  display: inline-block;
-  background: #6366f1;
-  color: #fff;
-  border-radius: 1rem;
-  padding: 0.2rem 0.8rem;
-  font-size: 0.95rem;
-  margin: 0 0.2rem 0.2rem 0;
-}
-.section-title {
-  font-size: 1.4rem;
-  margin: 2rem 0 1rem 0;
-  color: #6366f1;
+.ayisha-logo-title {
+  font-size: 1.35em;
+  font-weight: 800;
+  color: #ff9800;
   letter-spacing: 1px;
 }
-input, button, select {
-  font-family: inherit;
-  font-size: 1rem;
-  border-radius: 0.5rem;
-  border: 1px solid #c7d2fe;
-  padding: 0.5rem 1rem;
-  margin: 0.2rem 0;
-  outline: none;
-  transition: border 0.2s;
+.ayisha-nav {
+  display: flex;
+  gap: 1.1em;
 }
-input:focus, button:focus, select:focus {
-  border: 1.5px solid #6366f1;
+.ayisha-nav a {
+  color: #7a5a00;
+  text-decoration: none;
+  padding: 0.45em 1.1em;
+  border-radius: 0;
+  font-weight: 600;
+  font-size: 1.08em;
+  transition: background 0.2s, color 0.2s;
+  border-bottom: 2px solid transparent;
+}
+.ayisha-nav a:hover, .ayisha-nav a.active {
+  background: #ffe6a7;
+  color: #ff9800;
+  border-bottom: 2px solid #ff9800;
+}
+header {
+  background: linear-gradient(90deg, #ffdb67 0%, #ffe6a7 100%);
+  color: #22242a;
+  /* darker for better contrast */
+  padding: 2.2em 0 1.2em 0;
+  box-shadow: 0 2px 16px #ffdb6733;
+  margin-bottom: 2em;
+  border-bottom-left-radius: 32px;
+  border-bottom-right-radius: 32px;
+}
+header h1 {
+  font-size: 2.3em;
+  font-weight: 700;
+  margin: 0 0 0.2em 0;
+  letter-spacing: 1px;
+  color: #22242a;
+}
+nav {
+  font-size: 1.13em;
+  margin-top: 0.5em;
+  display: flex;
+  justify-content: center;
+  gap: 1.2em;
+}
+nav a {
+  color: #7a5a00;
+  /* deeper gold-brown for contrast */
+  text-decoration: none;
+  padding: 0.3em 1em;
+  border-radius: 8px;
+  transition: background 0.2s, color 0.2s;
+  font-weight: 500;
+}
+nav a:hover {
+  background: #ffe6a7;
+  color: #ff9800;
+  /* more contrast on hover */
+}
+.container {
+  max-width: 860px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 22px;
+  box-shadow: 0 6px 36px #ffdb6733;
+  padding: 2.7em 2.2em 2.2em 2.2em;
+}
+h2 {
+  color: #ff9800;
+  /* deeper orange for better contrast */
+  font-size: 1.55em;
+  margin-top: 2.3em;
+  margin-bottom: 0.7em;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+h3 {
+  color: #ffb300;
+  font-size: 1.18em;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+}
+pre.code-console {
+  background: linear-gradient(90deg, #fff3c1 0%, #ffdb67 100%);
+  color: #22242a;
+  padding: 1.3em 1.7em;
+  border-radius: 14px;
+  overflow-x: auto;
+  font-size: 1.09em;
+  font-family: 'Fira Mono', 'Consolas', 'Menlo', monospace;
+  line-height: 2.1;
+  margin-bottom: 1.8em;
+  margin-top: 0.5em;
+  box-shadow: 0 2px 14px #ffdb6733;
+  border: 1.5px solid #ffe6a7;
+}
+code {
+  background: #fff3c1;
+  color: #7a5a00;
+  padding: 0.15em 0.4em;
+  border-radius: 5px;
+  font-size: 0.98em;
+}
+input, button, select, textarea {
+  background: #fffbe9;
+  color: #22242a;
+  border: 1.5px solid #ffdb67;
+  border-radius: 10px;
+  padding: 0.7em 1.1em;
+  font-size: 1em;
+  margin: 0.2em 0.5em 0.7em 0;
+  outline: none;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+input:focus, button:focus, select:focus, textarea:focus {
+  border: 1.5px solid #ffb300;
+  box-shadow: 0 0 0 2px #ffdb6777;
 }
 button {
-  background: #6366f1;
-  color: #fff;
-  border: none;
+  background: linear-gradient(90deg, #ffdb67 0%, #fff3c1 100%);
+  color: #22242a;
+  font-size: 1em;
+  font-weight: 600;
   cursor: pointer;
-  font-weight: 700;
-  transition: background 0.2s;
+  border: none;
+  box-shadow: 0 2px 8px #ffdb6733;
+  margin-right: 0.5em;
+  margin-bottom: 0.5em;
+  padding: 0.7em 1.5em;
+  border-radius: 10px;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
 }
 button:hover {
-  background: #4338ca;
+  background: linear-gradient(90deg, #fff3c1 0%, #ffdb67 100%);
+  color: #ff9800;
+  /* more contrast on hover */
 }
-.wiki-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 2rem;
-  font-size: 1rem;
-  background: #f8fafc;
-  border-radius: 1rem;
-  overflow: hidden;
-  box-shadow: 0 2px 16px #6366f122;
+ul, ol {
+  margin-left: 1.5em;
+  margin-bottom: 1.2em;
 }
-.wiki-table th, .wiki-table td {
-  border: 1px solid #e0e7ff;
-  padding: 0.7rem 0.5rem;
-  text-align: left;
+li {
+  margin-bottom: 0.4em;
 }
-.wiki-table th {
-  background: #6366f1;
-  color: #fff;
-  font-weight: 700;
+.tip {
+  background: #fff3c1;
+  color: #7a5a00;
+  border-left: 5px solid #ffdb67;
+  padding: 0.8em 1.2em;
+  border-radius: 10px;
+  margin: 1.3em 0 1.8em 0;
+  font-size: 1.07em;
+  box-shadow: 0 2px 10px #ffdb6722;
+  font-weight: 500;
 }
-.wiki-table tr:nth-child(even) {
-  background: #f3f4f6;
+::-webkit-scrollbar {
+  background: #ffdb67;
 }
-.dir-example {
-  background: #e0e7ff;
-  color: #3730a3;
-  border-radius: 0.5rem;
-  padding: 0.2rem 0.7rem;
-  font-size: 1rem;
-  display: inline-block;
-  margin: 0.2rem 0;
+::-webkit-scrollbar-thumb {
+  background: #ffe6a7;
 }
-.best-practice {
-  background: #f1f5f9;
-  border-left: 4px solid #6366f1;
-  padding: 1rem;
-  border-radius: 0.7rem;
-  margin-bottom: 1.2rem;
-  color: #222;
+.site-header {
+  background: linear-gradient(90deg, #ffdb67 0%, #ffe6a7 100%);
+  box-shadow: 0 4px 24px #ffdb6733;
+  border-bottom-left-radius: 32px;
+  border-bottom-right-radius: 32px;
+  padding: 0;
+  margin-bottom: 2.5em;
 }
-.special-var {
-  background: #f3f4f6;
-  border-radius: 0.5rem;
-  padding: 0.5rem 1rem;
-  margin-bottom: 0.7rem;
-  color: #3730a3;
-  font-size: 1.05rem;
-  display: inline-block;
+.header-inner {
+  max-width: 980px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5em 2em 1.2em 2em;
 }
-.code-console {
-  background: #181c24;
-  color: #fff;
-  padding: 1em;
+.header-logo {
+  display: flex;
+  align-items: center;
+  gap: 1.1em;
+}
+.logo-icon {
+  font-size: 2.2em;
+  margin-right: 0.2em;
+  filter: drop-shadow(0 2px 6px #ffe6a7cc);
+}
+.logo-title {
+  font-size: 1.7em;
+  font-weight: 800;
+  color: #ff9800;
+  letter-spacing: 1px;
+  margin-right: 0.5em;
+}
+.logo-sub {
+  font-size: 1.1em;
+  color: #7a5a00;
+  font-weight: 500;
+  opacity: 0.7;
+  margin-left: 0.2em;
+}
+.main-nav {
+  display: flex;
+  gap: 1.1em;
+}
+.main-nav a {
+  color: #7a5a00;
+  text-decoration: none;
+  padding: 0.45em 1.1em;
   border-radius: 8px;
-  overflow: auto;
-  font-size: 1.05em;
-  font-family: 'Fira Mono', 'Consolas', 'Menlo', monospace;
-  line-height: 1.8;
-  margin-bottom: 1.5em;
-  /* Spaziatura tra le righe aumentata */
+  font-weight: 600;
+  font-size: 1.08em;
+  transition: background 0.2s, color 0.2s;
+}
+.main-nav a:hover {
+  background: #ffe6a7;
+  color: #ff9800;
 }
 @media (max-width: 600px) {
-  .container { padding: 1rem; }
-  .wiki-table, .wiki-table th, .wiki-table td { font-size: 0.95rem; }
-  header h1 { font-size: 1.5rem; }
+  .container {
+    padding: 1.2em 0.5em;
+    border-radius: 0;
+  }
+  pre.code-console {
+    font-size: 0.98em;
+    padding: 0.7em 0.5em;
+  }
+  h1 {
+    font-size: 1.3em;
+  }
+  h2 {
+    font-size: 1.1em;
+  }
+  nav {
+    flex-direction: column;
+    gap: 0.5em;
+  }
+}
+@media (max-width: 700px) {
+  .ayisha-header-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.2em;
+    padding: 1.2em 1em 1em 1em;
+  }
+  .ayisha-nav {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 0.5em;
+  }
+  .ayisha-logo-title {
+    font-size: 1.1em;
+  }
 }

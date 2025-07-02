@@ -7,16 +7,7 @@
   <link rel="stylesheet" href="site.css">
 </head>
 <body>
-  <header>
-    <h1>Tutorial Ayisha.js</h1>
-    <nav>
-      <a href="/site/index.html">Home</a> |
-      <a href="/site/wiki.html">Wiki Direttive</a> |
-      <a href="/site/tutorial.html">Tutorial</a> |
-      <a href="/site/faq.html">FAQ</a> |
-      <a href="/site/examples.html">Esempi</a>
-    </nav>
-  </header>
+  <component @src="header.html"></component>
   <main class="container">
     <h2>1. Setup rapido</h2>
     <pre class="code-console" id="tut1">&lt;script src="ayisha.js"&gt;&lt;/script&gt;</pre>
@@ -117,6 +108,7 @@ zip = '';
 &lt;div @page="demo"&gt;Welcome!&lt;/div&gt;</pre>
     <div style="margin-top:1em;">
       <button @link="demo">Demo</button>
+      <div @page="tutorial">Welcome!</div>
       <div @page="demo">Welcome!</div>
       <div class="tip"> <b>Tip:</b> Use <code>@link</code> to change the current page (<code>_currentPage</code>), and <code>@page</code> to show content for a specific page. </div>
     </div>
@@ -126,7 +118,7 @@ zip = '';
 _currentPage = 'demo';
 &lt;/init&gt;</pre>
     <div style="margin-top:1em;">
-      <component @src="/src/demo-component.html" @page="demo"></component>
+      <component @src="component.html" @page="demo"></component>
       <div class="tip"> <b>Tip:</b> <code>&lt;component&gt;</code> lets you load external HTML as a reusable component. Use <code>@page</code> to show it only on a specific page. </div>
     </div>
     <h2>9. State and debug</h2>
@@ -137,7 +129,7 @@ _currentPage = 'demo';
       <div @log></div>
       <div class="tip"> <b>Tip:</b> <code>@state</code> shows the full state object. <code>@log</code> prints debug info for the current context. </div>
     </div>
-    <script src="/ayisha.js"></script>
   </main>
+  <script src="/ayisha.js"></script>
 </body>
 </html>

@@ -1,21 +1,23 @@
-<div>
-  <h3>Live Validation State</h3>
-  <div style="margin-bottom:1em;">
-    <input type="text" @model="username" @validate="required,minLength:4" placeholder="Username (min 4 chars)">
-    <input type="text" @model="customCode" @validate="^A\d{3}Z$" placeholder="Custom code (A###Z)">
+<div class="ayisha-demo-component">
+  <h3 class="ayisha-demo-title">Live Validation State</h3>
+  <div class="ayisha-demo-fields">
+    <div class="ayisha-field">
+      <label for="username">Username</label>
+      <input id="username" type="text" @model="username" @validate="required,minLength:4" placeholder="Username (min 4 chars)">
+      <span class="ayisha-status" :class="_validate && _validate.username ? 'valid' : 'invalid'">
+        {{_validate && _validate.username ? 'Valid' : 'Invalid'}}
+      </span>
+    </div>
+    <div class="ayisha-field">
+      <label for="customCode">Custom code</label>
+      <input id="customCode" type="text" @model="customCode" @validate="^A\d{3}Z$" placeholder="Custom code (A###Z)">
+      <span class="ayisha-status" :class="_validate && _validate.customCode ? 'valid' : 'invalid'">
+        {{_validate && _validate.customCode ? 'Valid' : 'Invalid'}}
+      </span>
+    </div>
   </div>
-  <ul style="list-style:none;padding:0;">
-    <li>Username valid: 
-      <span style="color:#2ecc40;" @show="_validate && _validate.username">true</span>
-      <span style="color:#ff4136;" @show="_validate && !_validate.username">false</span>
-    </li>
-    <li>Custom code valid: 
-      <span style="color:#2ecc40;" @show="_validate && _validate.customCode">true</span>
-      <span style="color:#ff4136;" @show="_validate && !_validate.customCode">false</span>
-    </li>
-  </ul>
-  <div style="margin-top:1em;font-size:0.95em;color:#888;">
-    <b>Tip:</b> You can use both <code>state.var</code> and <code>var</code> in expressions. Special variables like <code>_validate</code> (for validation state) and <code>_currentPage</code> (for SPA routing) are always available. Try using <code>@show</code> or <code>@if</code> with these variables to create dynamic UIs. For custom validation, use <code>@validate</code> with a regex or multiple rules (e.g. <code>required,minLength:4</code> or <code>^A\d{3}Z$</code> for "A123Z").
+  <div class="ayisha-demo-tip">
+    <b>Tip:</b> Use <code>@model</code> to bind variables, <code>@validate</code> for rules or regex, and check <code>_validate</code> for live status. You can use <code>state.var</code> or <code>var</code> in expressions. Try <code>@show</code> or <code>@if</code> for dynamic UI.
   </div>
   <init>
     username = '';
@@ -23,3 +25,90 @@
     _validate = {};
   </init>
 </div>
+
+<style>
+.ayisha-demo-component {
+  background: linear-gradient(135deg, #23293a 60%, #1e2433 100%);
+  border-radius: 18px;
+  box-shadow: 0 4px 32px #0004;
+  padding: 2em 1.5em 1.5em 1.5em;
+  max-width: 420px;
+  margin: 2em auto 2em auto;
+}
+.ayisha-demo-title {
+  color: #7ed6df;
+  font-size: 1.3em;
+  font-weight: 700;
+  margin-bottom: 1.2em;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+.ayisha-demo-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2em;
+}
+.ayisha-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+  background: #20263a;
+  border-radius: 10px;
+  padding: 1em 1em 0.7em 1em;
+  box-shadow: 0 2px 12px #0002;
+}
+.ayisha-field label {
+  color: #fbc531;
+  font-size: 1em;
+  font-weight: 500;
+  margin-bottom: 0.1em;
+}
+.ayisha-field input {
+  background: #23293a;
+  color: #fff;
+  border: 1.5px solid #353b4a;
+  border-radius: 7px;
+  padding: 0.6em 1em;
+  font-size: 1em;
+  margin-bottom: 0.2em;
+  outline: none;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+.ayisha-field input:focus {
+  border: 1.5px solid #7ed6df;
+  box-shadow: 0 0 0 2px #7ed6df33;
+}
+.ayisha-status {
+  font-size: 0.98em;
+  font-weight: 600;
+  margin-top: 0.1em;
+  padding: 0.2em 0.7em;
+  border-radius: 6px;
+  display: inline-block;
+  letter-spacing: 0.5px;
+}
+.ayisha-status.valid {
+  background: #2ecc40;
+  color: #181c24;
+}
+.ayisha-status.invalid {
+  background: #ff4136;
+  color: #fff;
+}
+.ayisha-demo-tip {
+  background: #23293a;
+  color: #fbc531;
+  border-left: 4px solid #7ed6df;
+  padding: 0.7em 1em;
+  border-radius: 7px;
+  margin: 1.7em 0 0.5em 0;
+  font-size: 1.04em;
+  box-shadow: 0 2px 8px #0001;
+}
+@media (max-width: 600px) {
+  .ayisha-demo-component {
+    padding: 1em 0.3em 1em 0.3em;
+    max-width: 100%;
+  }
+}
+</style>
