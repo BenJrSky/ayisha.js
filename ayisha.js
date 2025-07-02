@@ -174,14 +174,13 @@
 
       for (const attr of Array.from(node.attributes)) {
         if (attr.name.startsWith('@')) {
-          const name = attr.name;
-          const parts = name.split(':');
+          const parts = attr.name.split(':');
           if (parts.length === 2) {
             const [dir, evt] = parts;
             vNode.subDirectives[dir] = vNode.subDirectives[dir] || {};
             vNode.subDirectives[dir][evt] = attr.value;
           } else {
-            vNode.directives[name] = attr.value;
+            vNode.directives[attr.name] = attr.value;
           }
         } else {
           vNode.attrs[attr.name] = attr.value;
@@ -250,18 +249,6 @@
 
     isLoading(url) {
       return this.loadingComponents.has(url);
-    }
-
-    markAsLoading(url) {
-      this.loadingComponents.add(url);
-    }
-
-    markAsLoaded(url) {
-      this.loadingComponents.delete(url);
-    }
-
-    cacheComponent(url, html) {
-      this.cache[url] = html;
     }
   }
 
@@ -691,15 +678,16 @@
     log(vNode, ctx, state) {
       const base = super.log(vNode, ctx, state);
       const clickExpr = vNode.directives['@click'];
-      
-      let clickInfo = {
-        action: clickExpr,
-        clickCount: this.clickCount,
-        lastClick: this.lastClick ? `${Date.now() - this.lastClick}ms ago` : 'Never',
-        status: '✅ Ready'
+      return {
+        ...base,
+        type: '@click',
+        data: {
+          action: clickExpr,
+          clickCount: this.clickCount,
+          lastClick: this.lastClick ? `${Date.now() - this.lastClick}ms ago` : 'Never',
+          status: '✅ Ready'
+        }
       };
-
-      return { ...base, type: '@click', data: clickInfo };
     }
 
     recordClick() {
