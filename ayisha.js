@@ -2043,20 +2043,17 @@
       }
 
       if (!this.componentManager.getCachedComponent(srcUrl) && !this.componentManager.isLoading(srcUrl)) {
-        this.componentManager.markAsLoading(srcUrl);
         fetch(srcUrl)
           .then(res => {
             if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
             return res.text();
           })
           .then(html => {
-            this.componentManager.cacheComponent(srcUrl, html);
-            this.componentManager.markAsLoaded(srcUrl);
+            this.componentManager.cache[srcUrl] = html;
             if (!this._isRendering) requestAnimationFrame(() => this.render());
           })
           .catch(err => {
-            this.componentManager.cacheComponent(srcUrl, `<div class="component-error">Errore: ${err.message}</div>`);
-            this.componentManager.markAsLoaded(srcUrl);
+            this.componentManager.cache[srcUrl] = `<div class="component-error">Errore: ${err.message}</div>`;
             if (!this._isRendering) requestAnimationFrame(() => this.render());
           });
       }
