@@ -1,0 +1,25 @@
+<div>
+  <h3>Live Validation State</h3>
+  <div style="margin-bottom:1em;">
+    <input type="text" @model="username" @validate="required,minLength:4" placeholder="Username (min 4 chars)">
+    <input type="text" @model="customCode" @validate="^A\d{3}Z$" placeholder="Custom code (A###Z)">
+  </div>
+  <ul style="list-style:none;padding:0;">
+    <li>Username valid: 
+      <span style="color:#2ecc40;" @show="_validate && _validate.username">true</span>
+      <span style="color:#ff4136;" @show="_validate && !_validate.username">false</span>
+    </li>
+    <li>Custom code valid: 
+      <span style="color:#2ecc40;" @show="_validate && _validate.customCode">true</span>
+      <span style="color:#ff4136;" @show="_validate && !_validate.customCode">false</span>
+    </li>
+  </ul>
+  <div style="margin-top:1em;font-size:0.95em;color:#888;">
+    <b>Tip:</b> You can use both <code>state.var</code> and <code>var</code> in expressions. Special variables like <code>_validate</code> (for validation state) and <code>_currentPage</code> (for SPA routing) are always available. Try using <code>@show</code> or <code>@if</code> with these variables to create dynamic UIs. For custom validation, use <code>@validate</code> with a regex or multiple rules (e.g. <code>required,minLength:4</code> or <code>^A\d{3}Z$</code> for "A123Z").
+  </div>
+  <init>
+    username = '';
+    customCode = '';
+    _validate = {};
+  </init>
+</div>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -21,87 +21,121 @@
     <h2>1. Setup rapido</h2>
     <pre class="code-console" id="tut1">&lt;script src="ayisha.js"&gt;&lt;/script&gt;</pre>
     
-    <h2>2. Primo binding</h2>
-    <pre class="code-console" id="tut2">&lt;input @model="nome"&gt;
-Ciao {{nome}}!</pre>
+    <h2>2. First binding</h2>
+    <pre class="code-console" id="tut2">&lt;input @model="name" placeholder="Your name"&gt;
+Hello {{name}}!
+&lt;init&gt;
+name = '';
+&lt;/init&gt;</pre>
     <div style="margin-top:1em;">
-      <input @model="nome">
-      Ciao {{nome}}!
+      <input @model="name" placeholder="Your name">
+      Hello {{name}}!
+      <div class="tip"> <b>Tip:</b> You can use <code>@model</code> to bind any variable (e.g. <code>name</code>) and display it with curly braces: <code>{{name}}</code>. </div>
     </div>
-    <h2>3. Eventi e stato</h2>
-    <pre class="code-console" id="tut3">&lt;button @click="state.count++"&gt;Aumenta&lt;/button&gt;
-Valore: {{count}}</pre>
+    <h2>3. Events and state</h2>
+    <pre class="code-console" id="tut3">&lt;button @click="state.count++"&gt;Increment&lt;/button&gt;
+&lt;init&gt;
+count = 0;
+&lt;/init&gt;</pre>
     <div style="margin-top:1em;">
-      <button @click="state.count++">Aumenta</button>
-      Valore: {{count}}
+      <button @click="state.count++">Increment</button>
+      Value: {{count}}
+      <div class="tip"> <b>Tip:</b> You can use <code>state.count</code> or <code>count</code> in expressions. <code>@click</code> lets you run any JS code on click. </div>
     </div>
-    <pre class="code-console" id="tut3">&lt;button @click="count--"&gt;Diminuisci&lt;/button&gt;
-Valore: {{count}}</pre>
+    <pre class="code-console" id="tut3b">&lt;button @click="count--"&gt;Decrement&lt;/button&gt;
+&lt;init&gt;
+count = 0;
+&lt;/init&gt;</pre>
     <div style="margin-top:1em;">
-      <button @click="count--">Diminuisci</button>
-      Valore: {{count}}
+      <button @click="count--">Decrement</button>
+      Value: {{count}}
+      <div class="tip"> <b>Tip:</b> You can update variables directly in event handlers. </div>
     </div>
-    <h2>4. Cicli e condizioni</h2>
-    <pre class="code-console" id="tut4">&lt;li @for="i in Array(count).fill(0).map((_,i)=&gt;i+1)"&gt;Elemento {{i}}&lt;/li&gt;
-&lt;div @if="count &gt; 5"&gt;Tanti elementi!&lt;/div&gt;</pre>
+    <h2>4. Loops and conditions</h2>
+    <pre class="code-console" id="tut4">&lt;ul&gt;
+  &lt;li @for="i in Array(counter).fill(0).map((_,i)=&gt;i+1)"&gt;Item {{i}}&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div @if="counter &gt; 5"&gt;Many items!&lt;/div&gt;
+&lt;init&gt;
+counter = 10;
+&lt;/init&gt;</pre>
     <div style="margin-top:1em;">
       <ul>
-        <li @for="i in Array(count).fill(0).map((_,i)=>i+1)">Elemento {{i}}</li>
+        <li @for="i in Array(counter).fill(0).map((_,i)=>i+1)">Item {{i}}</li>
       </ul>
-      <div @if="count > 5">Tanti elementi!</div>
+      <div @if="counter > 5">Many items!</div>
+      <div class="tip"> <b>Tip:</b> Use <code>@for</code> to loop over arrays or generated lists, and <code>@if</code> to show/hide elements based on conditions. </div>
     </div>
     <h2>5. Fetch API</h2>
-    <pre class="code-console" id="tut5">&lt;button @fetch:click="'https://jsonplaceholder.typicode.com/users'" @result="utenti"&gt;Carica utenti&lt;/button&gt;
-&lt;div @show="!utenti" style="color:#aaa;"&gt;Ancora nessun utente, clicca per caricare&lt;/div&gt;
+    <pre class="code-console" id="tut5">&lt;button @fetch:click="'https://jsonplaceholder.typicode.com/users'" @result="users"&gt;Load users&lt;/button&gt;
+&lt;div @show="!users" style="color:#aaa;"&gt;No users yet, click to load&lt;/div&gt;
 &lt;ul&gt;
-  &lt;li @for="user in utenti"&gt;{{user.name}}&lt;/li&gt;
-&lt;/ul&gt;</pre>
+  &lt;li @for="user in users"&gt;{{user.name}}&lt;/li&gt;
+&lt;/ul&gt;
+&lt;init&gt;
+users = null;
+&lt;/init&gt;</pre>
     <div style="margin-top:1em;">
-      <button @fetch:click="'https://jsonplaceholder.typicode.com/users'" @result="utenti">Carica utenti</button>
-      <div @show="!utenti" style="color:#aaa;">Ancora nessun utente, clicca per caricare</div>
+      <button @fetch:click="'https://jsonplaceholder.typicode.com/users'" @result="users">Load users</button>
+      <div @show="!users" style="color:#aaa;">No users yet, click to load</div>
       <ul>
-        <li @for="user in utenti">{{user.name}}</li>
+        <li @for="user in users">{{user.name}}</li>
       </ul>
+      <div class="tip"> <b>Tip:</b> <code>@fetch:click</code> fetches data on click and stores it in <code>users</code>. Use <code>@show</code> to display messages conditionally. </div>
     </div>
-    <h2>6. Validazione</h2>
-    <pre class="code-console" id="tut6a">&lt;input type="email" @model="email" @validate="email"&gt;
-&lt;div @show="!email" style="color:#aaa;"&gt;Inserisci una email per la validazione&lt;/div&gt;
-&lt;div @show="email &amp;&amp; _validate &amp;&amp; _validate.email" style="color:#2ecc40;"&gt;Email valida!&lt;/div&gt;
-&lt;div @show="email &amp;&amp; _validate &amp;&amp; !_validate.email" style="color:#ff4136;"&gt;Email non valida!&lt;/div&gt;</pre>
+    <h2>6. Validation</h2>
+    <pre class="code-console" id="tut6a">&lt;input type="email" @model="email" @validate="email" placeholder="Your email"&gt;
+&lt;div @show="!email" style="color:#aaa;"&gt;Enter an email to validate&lt;/div&gt;
+&lt;div @show="email &amp;&amp; _validate &amp;&amp; _validate.email" style="color:#2ecc40;"&gt;Valid email!&lt;/div&gt;
+&lt;div @show="email &amp;&amp; _validate &amp;&amp; !_validate.email" style="color:#ff4136;"&gt;Invalid email!&lt;/div&gt;
+&lt;init&gt;
+email = '';
+&lt;/init&gt;</pre>
     <div style="margin-top:1em; margin-bottom:2em;">
-      <input type="email" @model="email" @validate="email">
-      <div @show="!email" style="color:#aaa;">Inserisci una email per la validazione</div>
-      <div @show="email && _validate && _validate.email" style="color:#2ecc40;">Email valida!</div>
-      <div @show="email && _validate && !_validate.email" style="color:#ff4136;">Email non valida!</div>
+      <input type="email" @model="email" @validate="email" placeholder="Your email">
+      <div @show="!email" style="color:#aaa;">Enter an email to validate</div>
+      <div @show="email && _validate && _validate.email" style="color:#2ecc40;">Valid email!</div>
+      <div @show="email && _validate && !_validate.email" style="color:#ff4136;">Invalid email!</div>
+      <div class="tip"> <b>Tip:</b> <code>@validate</code> supports built-in rules like <code>email</code>. The <code>_validate</code> object holds the validation state for each field. </div>
     </div>
-    <pre class="code-console" id="tut6b">&lt;input type="text" @model="cap" @validate="^\d{5}$" placeholder="CAP (5 cifre)"&gt;
-&lt;div @show="!cap" style="color:#aaa;"&gt;Inserisci un CAP per la validazione&lt;/div&gt;
-&lt;div @show="cap &amp;&amp; _validate &amp;&amp; _validate.cap" style="color:#2ecc40;"&gt;CAP valido!&lt;/div&gt;
-&lt;div @show="cap &amp;&amp; _validate &amp;&amp; !_validate.cap" style="color:#ff4136;"&gt;CAP non valido!&lt;/div&gt;</pre>
+    <pre class="code-console" id="tut6b">&lt;input type="text" @model="zip" @validate="^\d{5}$" placeholder="ZIP code (5 digits)"&gt;
+&lt;div @show="!zip" style="color:#aaa;"&gt;Enter a ZIP code to validate&lt;/div&gt;
+&lt;div @show="zip &amp;&amp; _validate &amp;&amp; _validate.zip" style="color:#2ecc40;"&gt;Valid ZIP!&lt;/div&gt;
+&lt;div @show="zip &amp;&amp; _validate &amp;&amp; !_validate.zip" style="color:#ff4136;"&gt;Invalid ZIP!&lt;/div&gt;
+&lt;init&gt;
+zip = '';
+&lt;/init&gt;</pre>
     <div style="margin-top:1em; margin-bottom:2em;">
-      <input type="text" @model="cap" @validate="^\d{5}$" placeholder="CAP (5 cifre)">
-      <div @show="!cap" style="color:#aaa;">Inserisci un CAP per la validazione</div>
-      <div @show="cap && _validate && _validate.cap" style="color:#2ecc40;">CAP valido!</div>
-      <div @show="cap && _validate && !_validate.cap" style="color:#ff4136;">CAP non valido!</div>
+      <input type="text" @model="zip" @validate="^\d{5}$" placeholder="ZIP code (5 digits)">
+      <div @show="!zip" style="color:#aaa;">Enter a ZIP code to validate</div>
+      <div @show="zip && _validate && _validate.zip" style="color:#2ecc40;">Valid ZIP!</div>
+      <div @show="zip && _validate && !_validate.zip" style="color:#ff4136;">Invalid ZIP!</div>
+      <div class="tip"> <b>Tip:</b> You can use custom regex in <code>@validate</code> (e.g. <code>^\d{5}$</code> for 5 digits). </div>
     </div>
-    <h2>7. Routing SPA</h2>
-    <pre class="code-console" id="tut7">&lt;button @link="home"&gt;Home&lt;/button&gt;
-&lt;div @page="home"&gt;Benvenuto!&lt;/div&gt;</pre>
+    <h2>7. SPA Routing</h2>
+    <pre class="code-console" id="tut7">&lt;button @link="demo"&gt;Demo&lt;/button&gt;
+&lt;div @page="demo"&gt;Welcome!&lt;/div&gt;</pre>
     <div style="margin-top:1em;">
-      <button @link="home">Home</button>
-      <div @page="home">Benvenuto!</div>
+      <button @link="demo">Demo</button>
+      <div @page="demo">Welcome!</div>
+      <div class="tip"> <b>Tip:</b> Use <code>@link</code> to change the current page (<code>_currentPage</code>), and <code>@page</code> to show content for a specific page. </div>
     </div>
-    <h2>8. Componenti</h2>
-    <pre class="code-console" id="tut8">&lt;component @src="/src/home.html" @page="home"&gt;&lt;/component&gt;</pre>
+    <h2>8. Components</h2>
+    <pre class="code-console" id="tut8">&lt;component @src="/src/demo-component.html" @page="demo"&gt;&lt;/component&gt;
+&lt;init&gt;
+_currentPage = 'demo';
+&lt;/init&gt;</pre>
     <div style="margin-top:1em;">
-      <component @src="/src/home.html" @page="home"></component>
+      <component @src="/src/demo-component.html" @page="demo"></component>
+      <div class="tip"> <b>Tip:</b> <code>&lt;component&gt;</code> lets you load external HTML as a reusable component. Use <code>@page</code> to show it only on a specific page. </div>
     </div>
-    <h2>9. Stato e debug</h2>
+    <h2>9. State and debug</h2>
     <pre class="code-console" id="tut9">&lt;div @state&gt;&lt;/div&gt;
 &lt;div @log&gt;&lt;/div&gt;</pre>
     <div style="margin-top:1em;">
       <div @state></div>
       <div @log></div>
+      <div class="tip"> <b>Tip:</b> <code>@state</code> shows the full state object. <code>@log</code> prints debug info for the current context. </div>
     </div>
     <script src="/ayisha.js"></script>
   </main>
