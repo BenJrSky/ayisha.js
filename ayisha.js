@@ -1434,11 +1434,11 @@
         }
       }
 
+      // Aggiungi gli indicatori @log come sibling prima di ripristinare lo scroll
+      this._addLogIndicators();
+      
       window.scrollTo(scrollX, scrollY);
       this.bindingManager.updateBindings();
-      
-      // Aggiungi gli indicatori @log come sibling dopo il rendering completo
-      this._addLogIndicators();
       
       this._isRendering = false;
     }
