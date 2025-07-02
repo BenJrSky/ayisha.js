@@ -278,8 +278,6 @@
     }
 
     makeReactive() {
-      this.state._isReactive = true;
-
       this.state = new Proxy(this.state, {
         set: (obj, prop, val) => {
           if (this._isUpdating) {
@@ -773,7 +771,6 @@
         '@click': new ClickLogger(evaluator),
         '@component': new ComponentLogger(evaluator, componentManager)
       };
-      console.log('✅ CentralLogger initialized with loggers:', Object.keys(this.loggers));
     }
 
     addLog(elementInfo, vNode, ctx, state, element = null) {
@@ -1280,11 +1277,7 @@
       this.errorHandler = new ErrorHandler();
       this.bindingManager = new BindingManager(this.evaluator, () => this.render());
       this.centralLogger = new CentralLogger();
-
-      // Initialize loggers immediately after all dependencies are created
-      console.log('🔧 Initializing Ayisha.js with intelligent logging...');
       this.centralLogger.initializeLoggers(this.evaluator, this.fetchManager, this.componentManager);
-      console.log('✅ CentralLogger initialized with loggers:', Object.keys(this.centralLogger.loggers));
 
       window.ayisha = this;
     }
@@ -2154,12 +2147,8 @@
               });
             }
           }
-          
-          console.log('✅ @log configured for element:', el.tagName, 'with directives:', Object.keys(vNode.directives));
-          
+                    
         } catch (error) {
-          console.error('❌ Error in @log directive:', error);
-          // Crea un indicatore di errore che verrà aggiunto come sibling
           el.setAttribute('data-ayisha-log-error', error.message);
         }
       }
@@ -2676,9 +2665,6 @@
         }
       }, true);
 
-      console.log('VDOM:', this._vdom);
-      console.log('Prima @page trovata:', this._findFirstPageDirective(this._vdom));
-      console.log('_currentPage finale:', this.state._currentPage);
     }
   }
 
