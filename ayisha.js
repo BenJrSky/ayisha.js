@@ -1158,6 +1158,7 @@
     }
 
     bindValidation(el, rulesStr, modelVar = null) {
+      // Supporta: required, minLength:3, maxLength:5, email, regex:pattern
       const rules = rulesStr.split(',').map(r => r.trim());
 
       if (!modelVar) {
@@ -1214,6 +1215,33 @@
           else if (rule === 'email') {
             const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
             if (el.value && !emailRegex.test(el.value)) {
+              valid = false;
+              break;
+            }
+          }
+          else if (rule.startsWith('regex:')) {
+            // regex:pattern oppure solo pattern se non c'è regex:
+            let pattern = rule.slice(6);
+            try {
+              const re = new RegExp(pattern);
+              if (el.value && !re.test(el.value)) {
+                valid = false;
+                break;
+              }
+            } catch (e) {
+              valid = false;
+              break;
+            }
+          }
+          else if (/^\^.*\$$/.test(rule)) {
+            // Se la regola è una regex pura (es: ^\d{5}$)
+            try {
+              const re = new RegExp(rule);
+              if (el.value && !re.test(el.value)) {
+                valid = false;
+                break;
+              }
+            } catch (e) {
               valid = false;
               break;
             }

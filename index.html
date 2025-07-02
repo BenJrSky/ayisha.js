@@ -255,7 +255,7 @@
     <div class="example-block">
       <h3>5. Validazione, animazioni e altro</h3>
       <div class="ayisha-demo">
-        <input type="email" placeholder="Email" @model="email" @validate="email">
+        <input type="email" placeholder="Email" @model="email" @validate="email" @log>
         <button @click="state.email = ''">Reset</button>
         <div class="note" @if="_validate && !_validate.email && _validate.email.length">Inserisci una email valida!</div>
         <div class="fadeIn" @if="_validate && _validate.email && _validate.email.length">Email valida: <b>{{email}}</b></div>

@@ -1,3 +1,4 @@
+/* site.css - Stile moderno per tutta la documentazione Ayisha.js */
 body {
   font-family: 'Montserrat', Arial, sans-serif;
   background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);
@@ -126,6 +127,18 @@ button:hover {
   color: #3730a3;
   font-size: 1.05rem;
   display: inline-block;
+}
+.code-console {
+  background: #181c24;
+  color: #fff;
+  padding: 1em;
+  border-radius: 8px;
+  overflow: auto;
+  font-size: 1.05em;
+  font-family: 'Fira Mono', 'Consolas', 'Menlo', monospace;
+  line-height: 1.8;
+  margin-bottom: 1.5em;
+  /* Spaziatura tra le righe aumentata */
 }
 @media (max-width: 600px) {
   .container { padding: 1rem; }

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ayisha.js - Tutorial</title>
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+  <header>
+    <h1>Tutorial Ayisha.js</h1>
+    <nav>
+      <a href="/site/index.html">Home</a> |
+      <a href="/site/wiki.html">Wiki Direttive</a> |
+      <a href="/site/tutorial.html">Tutorial</a> |
+      <a href="/site/faq.html">FAQ</a> |
+      <a href="/site/examples.html">Esempi</a>
+    </nav>
+  </header>
+  <main class="container">
+    <h2>1. Setup rapido</h2>
+    <pre class="code-console" id="tut1">&lt;script src="ayisha.js"&gt;&lt;/script&gt;</pre>
+    
+    <h2>2. Primo binding</h2>
+    <pre class="code-console" id="tut2">&lt;input @model="nome"&gt;
+Ciao {{nome}}!</pre>
+    <div style="margin-top:1em;">
+      <input @model="nome">
+      Ciao {{nome}}!
+    </div>
+    <h2>3. Eventi e stato</h2>
+    <pre class="code-console" id="tut3">&lt;button @click="state.count++"&gt;Aumenta&lt;/button&gt;
+Valore: {{count}}</pre>
+    <div style="margin-top:1em;">
+      <button @click="state.count++">Aumenta</button>
+      Valore: {{count}}
+    </div>
+    <pre class="code-console" id="tut3">&lt;button @click="count--"&gt;Diminuisci&lt;/button&gt;
+Valore: {{count}}</pre>
+    <div style="margin-top:1em;">
+      <button @click="count--">Diminuisci</button>
+      Valore: {{count}}
+    </div>
+    <h2>4. Cicli e condizioni</h2>
+    <pre class="code-console" id="tut4">&lt;li @for="i in Array(count).fill(0).map((_,i)=&gt;i+1)"&gt;Elemento {{i}}&lt;/li&gt;
+&lt;div @if="count &gt; 5"&gt;Tanti elementi!&lt;/div&gt;</pre>
+    <div style="margin-top:1em;">
+      <ul>
+        <li @for="i in Array(count).fill(0).map((_,i)=>i+1)">Elemento {{i}}</li>
+      </ul>
+      <div @if="count > 5">Tanti elementi!</div>
+    </div>
+    <h2>5. Fetch API</h2>
+    <pre class="code-console" id="tut5">&lt;button @fetch:click="'https://jsonplaceholder.typicode.com/users'" @result="utenti"&gt;Carica utenti&lt;/button&gt;
+&lt;div @show="!utenti" style="color:#aaa;"&gt;Ancora nessun utente, clicca per caricare&lt;/div&gt;
+&lt;ul&gt;
+  &lt;li @for="user in utenti"&gt;{{user.name}}&lt;/li&gt;
+&lt;/ul&gt;</pre>
+    <div style="margin-top:1em;">
+      <button @fetch:click="'https://jsonplaceholder.typicode.com/users'" @result="utenti">Carica utenti</button>
+      <div @show="!utenti" style="color:#aaa;">Ancora nessun utente, clicca per caricare</div>
+      <ul>
+        <li @for="user in utenti">{{user.name}}</li>
+      </ul>
+    </div>
+    <h2>6. Validazione</h2>
+    <pre class="code-console" id="tut6a">&lt;input type="email" @model="email" @validate="email"&gt;
+&lt;div @show="!email" style="color:#aaa;"&gt;Inserisci una email per la validazione&lt;/div&gt;
+&lt;div @show="email &amp;&amp; _validate &amp;&amp; _validate.email" style="color:#2ecc40;"&gt;Email valida!&lt;/div&gt;
+&lt;div @show="email &amp;&amp; _validate &amp;&amp; !_validate.email" style="color:#ff4136;"&gt;Email non valida!&lt;/div&gt;</pre>
+    <div style="margin-top:1em; margin-bottom:2em;">
+      <input type="email" @model="email" @validate="email">
+      <div @show="!email" style="color:#aaa;">Inserisci una email per la validazione</div>
+      <div @show="email && _validate && _validate.email" style="color:#2ecc40;">Email valida!</div>
+      <div @show="email && _validate && !_validate.email" style="color:#ff4136;">Email non valida!</div>
+    </div>
+    <pre class="code-console" id="tut6b">&lt;input type="text" @model="cap" @validate="^\d{5}$" placeholder="CAP (5 cifre)"&gt;
+&lt;div @show="!cap" style="color:#aaa;"&gt;Inserisci un CAP per la validazione&lt;/div&gt;
+&lt;div @show="cap &amp;&amp; _validate &amp;&amp; _validate.cap" style="color:#2ecc40;"&gt;CAP valido!&lt;/div&gt;
+&lt;div @show="cap &amp;&amp; _validate &amp;&amp; !_validate.cap" style="color:#ff4136;"&gt;CAP non valido!&lt;/div&gt;</pre>
+    <div style="margin-top:1em; margin-bottom:2em;">
+      <input type="text" @model="cap" @validate="^\d{5}$" placeholder="CAP (5 cifre)">
+      <div @show="!cap" style="color:#aaa;">Inserisci un CAP per la validazione</div>
+      <div @show="cap && _validate && _validate.cap" style="color:#2ecc40;">CAP valido!</div>
+      <div @show="cap && _validate && !_validate.cap" style="color:#ff4136;">CAP non valido!</div>
+    </div>
+    <h2>7. Routing SPA</h2>
+    <pre class="code-console" id="tut7">&lt;button @link="home"&gt;Home&lt;/button&gt;
+&lt;div @page="home"&gt;Benvenuto!&lt;/div&gt;</pre>
+    <div style="margin-top:1em;">
+      <button @link="home">Home</button>
+      <div @page="home">Benvenuto!</div>
+    </div>
+    <h2>8. Componenti</h2>
+    <pre class="code-console" id="tut8">&lt;component @src="/src/home.html" @page="home"&gt;&lt;/component&gt;</pre>
+    <div style="margin-top:1em;">
+      <component @src="/src/home.html" @page="home"></component>
+    </div>
+    <h2>9. Stato e debug</h2>
+    <pre class="code-console" id="tut9">&lt;div @state&gt;&lt;/div&gt;
+&lt;div @log&gt;&lt;/div&gt;</pre>
+    <div style="margin-top:1em;">
+      <div @state></div>
+      <div @log></div>
+    </div>
+    <script src="/ayisha.js"></script>
+  </main>
+</body>
+</html>
