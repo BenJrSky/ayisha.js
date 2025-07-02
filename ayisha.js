@@ -756,14 +756,10 @@
   class CentralLogger {
     constructor() {
       this.logs = [];
-      this.logPanel = null;
-      this.toggleButton = null;
-      this.isVisible = false;
-      this.maxLogs = 100;
       this.loggers = {};
       this.clickLoggers = new WeakMap();
       this.startTime = performance.now();
-      this.panelCreated = false;
+      this.maxLogs = 100;
     }
 
     initializeLoggers(evaluator, fetchManager, componentManager) {
@@ -785,7 +781,6 @@
         console.error('❌ CentralLogger: Loggers not initialized!');
         return;
       }
-
       const startTime = performance.now();
       const combinedLog = {
         id: Date.now() + Math.random(),
@@ -796,9 +791,6 @@
         executionTime: (performance.now() - startTime).toFixed(2) + 'ms',
         directives: []
       };
-      
-      console.log('📊 Processing @log for element:', vNode.tag, 'with directives:', Object.keys(vNode.directives));
-      
       Object.keys(vNode.directives).forEach(directive => {
         if (this.loggers[directive]) {
           try {
@@ -809,28 +801,20 @@
               status: this._getDirectiveStatus(logData.data)
             });
           } catch (error) {
-            console.error(`❌ Error logging ${directive}:`, error);
             combinedLog.directives.push({
               type: directive,
-              data: {
-                error: error.message,
-                status: '❌ Error logging'
-              },
+              data: { error: error.message, status: '❌ Error logging' },
               status: 'error'
             });
           }
         } else {
           combinedLog.directives.push({
             type: directive,
-            data: {
-              expression: vNode.directives[directive],
-              status: '📋 Untracked directive'
-            },
+            data: { expression: vNode.directives[directive], status: '📋 Untracked directive' },
             status: 'unknown'
           });
         }
       });
-
       Object.entries(vNode.subDirectives || {}).forEach(([directive, events]) => {
         Object.keys(events).forEach(event => {
           if (this.loggers[directive]) {
@@ -843,13 +827,9 @@
                 isSubDirective: true
               });
             } catch (error) {
-              console.error(`❌ Error logging ${directive}:${event}:`, error);
               combinedLog.directives.push({
                 type: `${directive}:${event}`,
-                data: {
-                  error: error.message,
-                  status: '❌ Error logging'
-                },
+                data: { error: error.message, status: '❌ Error logging' },
                 status: 'error',
                 isSubDirective: true
               });
@@ -857,39 +837,26 @@
           } else {
             combinedLog.directives.push({
               type: `${directive}:${event}`,
-              data: {
-                expression: events[event],
-                status: '📋 Untracked sub-directive'
-              },
+              data: { expression: events[event], status: '📋 Untracked sub-directive' },
               status: 'unknown',
               isSubDirective: true
             });
           }
         });
       });
-
       if (combinedLog.directives.length === 0) {
         combinedLog.type = 'generic';
         combinedLog.directives.push({
           type: 'generic',
-          data: {
-            message: 'Element with @log but no tracked directives',
-            status: '📋 Generic log'
-          },
+          data: { message: 'Element with @log but no tracked directives', status: '📋 Generic log' },
           status: 'generic'
         });
       }
-
       combinedLog.overallStatus = this._calculateOverallStatus(combinedLog.directives);
-      
       this.logs.unshift(combinedLog);
-
       if (this.logs.length > this.maxLogs) {
         this.logs = this.logs.slice(0, this.maxLogs);
       }
-
-      console.log('📋 Log entry created:', combinedLog);
-      this._updateLogPanel();
     }
 
     _getDirectiveStatus(data) {
@@ -903,7 +870,6 @@
 
     _calculateOverallStatus(directives) {
       if (!directives || directives.length === 0) return '📊 No directives';
-      
       const statuses = directives.map(d => d.status);
       if (statuses.includes('error')) return '❌ Has Errors';
       if (statuses.includes('loading')) return '⏳ Loading';
@@ -916,267 +882,6 @@
       if (clickLogger) {
         clickLogger.recordClick();
       }
-    }
-
-    createLogPanel() {
-      if (this.panelCreated) {
-        console.log('📊 Log panel already created');
-        return this.logPanel;
-      }
-
-      console.log('🔧 Creating new log panel...');
-
-      // Rimuovi eventuali elementi esistenti
-      const existingButton = document.getElementById('ayisha-debug-button');
-      const existingPanel = document.getElementById('ayisha-log-panel');
-      if (existingButton) existingButton.remove();
-      if (existingPanel) existingPanel.remove();
-
-      // Create toggle button
-      this.toggleButton = document.createElement('button');
-      this.toggleButton.textContent = '📊 Debug Log';
-      this.toggleButton.id = 'ayisha-debug-button';
-      this.toggleButton.style.cssText = `
-        position: fixed !important;
-        top: 10px !important;
-        right: 10px !important;
-        z-index: 999999 !important;
-        background: #0066cc !important;
-        color: white !important;
-        border: none !important;
-        padding: 12px 16px !important;
-        border-radius: 6px !important;
-        cursor: pointer !important;
-        font-size: 14px !important;
-        font-weight: bold !important;
-        box-shadow: 0 4px 12px rgba(0,102,204,0.3) !important;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-        transition: all 0.2s ease !important;
-      `;
-      
-      this.toggleButton.addEventListener('mouseover', () => {
-        this.toggleButton.style.background = '#0056b3 !important';
-        this.toggleButton.style.transform = 'scale(1.05) !important';
-      });
-      
-      this.toggleButton.addEventListener('mouseout', () => {
-        this.toggleButton.style.background = '#0066cc !important';
-        this.toggleButton.style.transform = 'scale(1) !important';
-      });
-      
-      this.toggleButton.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        console.log('🖱️ Debug button clicked!');
-        this.togglePanel();
-      });
-      
-      // Create log panel
-      this.logPanel = document.createElement('div');
-      this.logPanel.className = 'ayisha-central-log';
-      this.logPanel.id = 'ayisha-log-panel';
-      this.logPanel.style.cssText = `
-        position: fixed !important;
-        top: 60px !important;
-        right: 10px !important;
-        width: 500px !important;
-        max-height: 80vh !important;
-        background: rgba(0, 20, 40, 0.98) !important;
-        color: #fff !important;
-        border: 3px solid #0066cc !important;
-        border-radius: 10px !important;
-        z-index: 999998 !important;
-        display: none !important;
-        overflow: hidden !important;
-        font-family: 'JetBrains Mono', 'Courier New', monospace !important;
-        font-size: 12px !important;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
-        backdrop-filter: blur(10px) !important;
-      `;
-
-      // Header
-      const header = document.createElement('div');
-      header.style.cssText = `
-        background: linear-gradient(135deg, #0066cc, #004499) !important;
-        padding: 12px 16px !important;
-        font-weight: bold !important;
-        display: flex !important;
-        justify-content: space-between !important;
-        align-items: center !important;
-        border-bottom: 2px solid #0088ff !important;
-      `;
-      
-      const title = document.createElement('span');
-      title.textContent = '📊 Ayisha Debug Log';
-      title.style.fontSize = '16px !important';
-      
-      const clearButton = document.createElement('button');
-      clearButton.textContent = '🗑️ Clear All';
-      clearButton.style.cssText = `
-        background: rgba(255,255,255,0.2) !important;
-        color: white !important;
-        border: 1px solid rgba(255,255,255,0.3) !important;
-        padding: 6px 12px !important;
-        border-radius: 4px !important;
-        cursor: pointer !important;
-        font-size: 11px !important;
-        font-weight: bold !important;
-        transition: background 0.2s ease !important;
-      `;
-      
-      clearButton.addEventListener('click', (e) => {
-        e.preventDefault();
-        console.log('🗑️ Clearing all logs...');
-        this.logs = [];
-        this._updateLogPanel();
-      });
-
-      clearButton.addEventListener('mouseover', () => {
-        clearButton.style.background = 'rgba(255,255,255,0.3) !important';
-      });
-      
-      clearButton.addEventListener('mouseout', () => {
-        clearButton.style.background = 'rgba(255,255,255,0.2) !important';
-      });
-
-      header.appendChild(title);
-      header.appendChild(clearButton);
-
-      // Content area
-      const content = document.createElement('div');
-      content.className = 'log-content';
-      content.style.cssText = `
-        max-height: calc(80vh - 60px) !important;
-        overflow-y: auto !important;
-        padding: 12px !important;
-        background: rgba(0, 20, 40, 0.95) !important;
-      `;
-
-      this.logPanel.appendChild(header);
-      this.logPanel.appendChild(content);
-
-      // Append al body
-      if (document.body) {
-        document.body.appendChild(this.toggleButton);
-        document.body.appendChild(this.logPanel);
-        this.panelCreated = true;
-        console.log('✅ Debug button and panel added to body');
-      } else {
-        document.addEventListener('DOMContentLoaded', () => {
-          document.body.appendChild(this.toggleButton);
-          document.body.appendChild(this.logPanel);
-          this.panelCreated = true;
-          console.log('✅ Debug button and panel added to body (deferred)');
-        });
-      }
-
-      setTimeout(() => {
-        this._updateLogPanel();
-        console.log('📋 Initial log panel update completed');
-      }, 100);
-
-      return this.logPanel;
-    }
-
-    togglePanel() {
-      console.log('🔄 Toggling panel, current visible state:', this.isVisible);
-      
-      if (!this.logPanel || !this.panelCreated) {
-        console.log('📱 No panel exists, creating it...');
-        this.createLogPanel();
-        return;
-      }
-      
-      this.isVisible = !this.isVisible;
-      
-      if (this.isVisible) {
-        this.logPanel.style.display = 'block !important';
-        this.toggleButton.textContent = '❌ Close Debug';
-        this.toggleButton.style.background = '#cc0066 !important';
-        console.log('👁️ Panel shown, updating content...');
-        this._updateLogPanel();
-        console.log('📊 Total logs available:', this.logs.length);
-      } else {
-        this.logPanel.style.display = 'none !important';
-        this.toggleButton.textContent = '📊 Debug Log';
-        this.toggleButton.style.background = '#0066cc !important';
-        console.log('👁️ Panel hidden');
-      }
-    }
-
-    _updateLogPanel() {
-      if (!this.logPanel || !this.isVisible || !this.panelCreated) {
-        return;
-      }
-
-      const content = this.logPanel.querySelector('.log-content');
-      if (!content) {
-        console.error('❌ Log content element not found!');
-        return;
-      }
-
-      console.log('🔄 Updating log panel with', this.logs.length, 'logs');
-
-      content.innerHTML = '';
-
-      if (this.logs.length === 0) {
-        const emptyMessage = document.createElement('div');
-        emptyMessage.style.cssText = `
-          text-align: center !important;
-          padding: 40px 20px !important;
-          color: #888 !important;
-          font-style: italic !important;
-        `;
-        emptyMessage.innerHTML = `
-          <div style="font-size: 48px; margin-bottom: 16px;">📋</div>
-          <div>No logs yet.</div>
-          <div style="font-size: 11px; margin-top: 8px;">Interact with elements that have @log directive</div>
-        `;
-        content.appendChild(emptyMessage);
-        return;
-      }
-
-      this.logs.forEach((log, index) => {
-        const logEntry = document.createElement('div');
-        logEntry.style.cssText = `
-          border-bottom: 1px solid rgba(255,255,255,0.1) !important;
-          padding: 12px !important;
-          margin-bottom: 8px !important;
-          border-left: 4px solid ${this._getDirectiveColor(log.type)} !important;
-          background: rgba(255,255,255,0.05) !important;
-          border-radius: 6px !important;
-          font-family: 'JetBrains Mono', 'Courier New', monospace !important;
-          transition: background 0.2s ease !important;
-        `;
-
-        logEntry.addEventListener('mouseover', () => {
-          logEntry.style.background = 'rgba(255,255,255,0.08) !important';
-        });
-
-        logEntry.addEventListener('mouseout', () => {
-          logEntry.style.background = 'rgba(255,255,255,0.05) !important';
-        });
-
-        try {
-          const html = this._generateIntelligentLogHTML(log);
-          logEntry.innerHTML = html;
-          console.log(`✅ Rendered log entry ${index + 1}/${this.logs.length}`);
-        } catch (error) {
-          logEntry.innerHTML = `
-            <div style="color: #ff6b6b !important;">
-              <strong>❌ Log Render Error:</strong><br>
-              ${error.message}<br>
-              <small>Log type: ${log.type}, Tag: ${log.tag}</small>
-            </div>
-          `;
-          console.error('❌ Log rendering error:', error, log);
-        }
-        
-        content.appendChild(logEntry);
-      });
-
-      content.scrollTop = 0;
-      console.log('✅ Log panel updated successfully');
     }
 
     _getDirectiveColor(type) {
@@ -1253,9 +958,7 @@
 
     _generateCompactDirectiveHTML(type, data) {
       if (!data) return '<div style="color: #999;">No data available</div>';
-      
       let html = '';
-      
       try {
         switch (type.split(':')[0]) {
           case '@for':
@@ -1266,7 +969,6 @@
               </div>
             `;
             break;
-
           case '@fetch':
             const url = data.url || '';
             html = `
@@ -1276,7 +978,6 @@
               </div>
             `;
             break;
-
           case '@model':
             const value = data.currentValue;
             const displayValue = typeof value === 'string' ? `"${value.slice(0, 20)}${value.length > 20 ? '...' : ''}"` : JSON.stringify(value);
@@ -1287,7 +988,6 @@
               </div>
             `;
             break;
-
           case '@if':
           case '@show':
           case '@hide':
@@ -1299,7 +999,6 @@
               </div>
             `;
             break;
-
           case '@click':
             const action = data.action || '';
             html = `
@@ -1309,7 +1008,6 @@
               </div>
             `;
             break;
-
           case '@component':
             const source = data.source || '';
             html = `
@@ -1319,7 +1017,6 @@
               </div>
             `;
             break;
-
           default:
             const expression = data.expression || '';
             html = `
@@ -1329,14 +1026,12 @@
               </div>
             `;
         }
-
         if (data.error) {
           html += `<div style="color: #ff6b6b; font-size: 9px; margin-top: 2px;">💥 ${data.error}</div>`;
         }
       } catch (error) {
-        html = `<div style="color: #ff6b6b; font-size: 9px;">Error rendering directive data: ${error.message}</div>`;
+        html = `<div style=\"color: #ff6b6b; font-size: 9px;\">Error rendering directive data: ${error.message}</div>`;
       }
-
       return html;
     }
   }
@@ -1818,6 +1513,7 @@
           font-family: monospace !important;
           font-size: 11px !important;
           font-weight: bold !important;
+          display: block !important;
         `;
         errorDisplay.innerHTML = `❌ Log Error: ${errorMessage}`;
         
@@ -2043,6 +1739,15 @@
         if (status.includes('success') || status.includes('✅')) return '#66bb6a';
       }
       return '#cccccc';
+    }
+
+    _getStatusIcon(status) {
+      if (!status) return '📊';
+      if (status === 'error') return '❌';
+      if (status === 'loading') return '⏳';
+      if (status === 'success') return '✅';
+      if (status === 'unknown') return '❓';
+      return '📊';
     }
 
     _truncateValue(value, maxLength = 30) {
@@ -2418,11 +2123,6 @@
         }
         
         try {
-          // Crea il panel se non esiste
-          if (!this.centralLogger.panelCreated) {
-            this.centralLogger.createLogPanel();
-          }
-          
           const elementInfo = {
             tagName: el.tagName,
             className: el.className,
