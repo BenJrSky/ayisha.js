@@ -90,6 +90,8 @@
       if (!jsGlobals.includes(varName) && !(varName in this.state)) {
         if (inputType === 'number') {
           this.state[varName] = 0;
+        } else if (inputType === 'checkbox') {
+          this.state[varName] = false;
         } else if (forceString) {
           this.state[varName] = undefined;
         } else {
@@ -97,7 +99,7 @@
             this.state[varName] = [];
           } else if (/count|total|index|id|size|length|number|num/.test(varName)) {
             this.state[varName] = 0;
-          } else if (/show|hide|is|has|can|should|valid|enable/.test(varName)) {
+          } else if (/show|hide|is|has|can|should|valid|enable|subscribed/.test(varName)) {
             this.state[varName] = false;
           } else if (/user|config|form|settings/.test(varName)) {
             this.state[varName] = {};
@@ -1250,7 +1252,15 @@
     }
 
     bindModel(el, key, ctx) {
-      this.evaluator.ensureVarInState(key, true, el.type === 'number' ? 'number' : null);
+      // Determine input type for proper initialization
+      let inputTypeForInit = null;
+      if (el.type === 'number') {
+        inputTypeForInit = 'number';
+      } else if (el.type === 'checkbox') {
+        inputTypeForInit = 'checkbox';
+      }
+      
+      this.evaluator.ensureVarInState(key, true, inputTypeForInit);
       let ref = this.evaluator.state;
       if (key.includes('.')) {
         const path = key.split('.');
@@ -1258,12 +1268,16 @@
         const last = path[path.length - 1];
         if (el.type === 'number') {
           if (typeof ref[last] !== 'number') ref[last] = 0;
+        } else if (el.type === 'checkbox') {
+          if (typeof ref[last] !== 'boolean') ref[last] = false;
         } else {
           if (typeof ref[last] !== 'string') ref[last] = undefined;
         }
       } else {
         if (el.type === 'number') {
           if (typeof this.evaluator.state[key] !== 'number') this.evaluator.state[key] = 0;
+        } else if (el.type === 'checkbox') {
+          if (typeof this.evaluator.state[key] !== 'boolean') this.evaluator.state[key] = false;
         } else {
           if (typeof this.evaluator.state[key] !== 'string') this.evaluator.state[key] = undefined;
         }
@@ -1291,33 +1305,45 @@
       this.modelBindings.push({ el, update });
       update();
 
-      el.addEventListener('input', () => {
-        this.evaluator.ensureVarInState(key, true, el.type === 'number' ? 'number' : null);
-        let ref = this.evaluator.state;
-        let value = el.value;
+      const handleInput = () => {
+        // Determine input type for proper initialization  
+        let inputTypeForInit = null;
         if (el.type === 'number') {
-          value = value === '' ? undefined : Number(value);
+          inputTypeForInit = 'number';
+        } else if (el.type === 'checkbox') {
+          inputTypeForInit = 'checkbox';
         }
+        
+        this.evaluator.ensureVarInState(key, true, inputTypeForInit);
+        let ref = this.evaluator.state;
+        let value;
+        
+        // Handle different input types
+        if (el.type === 'checkbox') {
+          value = el.checked;
+        } else if (el.type === 'number') {
+          value = el.value === '' ? undefined : Number(el.value);
+        } else {
+          value = el.value;
+        }
+        
         if (key.includes('.')) {
           const path = key.split('.');
           for (let i = 0; i < path.length - 1; i++) ref = ref[path[i]];
           const last = path[path.length - 1];
-          if (el.type === 'number') {
-            ref[last] = value;
-          } else {
-            if (typeof ref[last] !== 'string') ref[last] = '';
-            ref[last] = value;
-          }
+          ref[last] = value;
         } else {
-          if (el.type === 'number') {
-            this.evaluator.state[key] = value;
-          } else {
-            if (typeof this.evaluator.state[key] !== 'string') this.evaluator.state[key] = '';
-            this.evaluator.state[key] = value;
-          }
+          this.evaluator.state[key] = value;
         }
         this.renderCallback();
-      });
+      };
+
+      // Use appropriate event for different input types
+      if (el.type === 'checkbox' || el.type === 'radio') {
+        el.addEventListener('change', handleInput);
+      } else {
+        el.addEventListener('input', handleInput);
+      }
     }
 
     bindValidation(el, rulesStr, modelVar = null) {
