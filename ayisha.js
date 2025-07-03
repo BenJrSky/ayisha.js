@@ -2163,7 +2163,7 @@
 
     _handleFunctionalDirectives(vNode, ctx) {
       let sourceData = this.evaluator.evalExpr(vNode.directives['@source'], ctx);
-
+  
       let arr = [];
       if (Array.isArray(sourceData)) {
         arr = sourceData;
@@ -2185,8 +2185,19 @@
       if (vNode.directives['@map']) {
         used = true;
         try {
-          const fn = new Function('item', `return (${vNode.directives['@map']})`);
-          setState(vNode.directives['@result'] || 'result', arr.map(fn));
+          const mapExpr = vNode.directives['@map'];
+          let fn;
+          
+          // Handle arrow functions
+          if (mapExpr.includes('=>')) {
+            const [param, body] = mapExpr.split('=>').map(s => s.trim());
+            fn = new Function(param.trim(), `return (${body})`);
+          } else {
+            fn = new Function('item', `return (${mapExpr})`);
+          }
+          
+          const result = arr.map(fn);
+          setState(vNode.directives['@result'] || 'result', result);
         } catch (error) {
           console.error('Error in @map directive:', error);
           setState(vNode.directives['@result'] || 'result', []);
@@ -2196,8 +2207,19 @@
       if (vNode.directives['@filter']) {
         used = true;
         try {
-          const fn = new Function('item', `return (${vNode.directives['@filter']})`);
-          setState(vNode.directives['@result'] || 'result', arr.filter(fn));
+          const filterExpr = vNode.directives['@filter'];
+          let fn;
+          
+          // Handle arrow functions
+          if (filterExpr.includes('=>')) {
+            const [param, body] = filterExpr.split('=>').map(s => s.trim());
+            fn = new Function(param.trim(), `return (${body})`);
+          } else {
+            fn = new Function('item', `return (${filterExpr})`);
+          }
+          
+          const result = arr.filter(fn);
+          setState(vNode.directives['@result'] || 'result', result);
         } catch (error) {
           console.error('Error in @filter directive:', error);
           setState(vNode.directives['@result'] || 'result', []);

@@ -70,30 +70,66 @@ Value: {{count}} | Message: {{msg}}
       <div class="tip"><b>Tip:</b> <code>@for</code> loops over arrays. <code>@key</code> helps with efficient updates.</div>
     </div>
 
-    <h2>6. Array Operations: <code>@map</code>, <code>@filter</code>, <code>@reduce</code>, <code>@source</code>, <code>@initial</code></h2>
+    <h2>6. Array Operations with <code>@source</code> and <code>@result</code></h2>
+    
+    <h3>6.1. Transform Array with <code>@map</code></h3>
     <pre class="code-console">&lt;div @source="numbers" @map="n =&gt; n * 2" @result="doubled"&gt;&lt;/div&gt;
 &lt;ul&gt;
   &lt;li @for="n in doubled"&gt;{{n}}&lt;/li&gt;
 &lt;/ul&gt;
-&lt;div @source="numbers" @filter="n =&gt; n % 2 === 0" @result="evens"&gt;&lt;/div&gt;
-&lt;ul&gt;
-  &lt;li @for="n in evens"&gt;{{n}}&lt;/li&gt;
-&lt;/ul&gt;
-&lt;div @source="numbers" @reduce="(a, n) =&gt; a + n" @initial="0" @result="sum"&gt;&lt;/div&gt;
-Sum: {{sum}}
 </pre>
     <div style="margin-top:1em;">
       <div @source="numbers" @map="n => n * 2" @result="doubled"></div>
+      <p>Debug - numbers: {{JSON.stringify(numbers)}}</p>
+      <p>Debug - doubled: {{JSON.stringify(doubled)}}</p>
       <ul>
         <li @for="n in doubled">{{n}}</li>
       </ul>
+      <div class="tip"><b>Tip:</b> <code>@map</code> transforms each element in the array. Original: [1,2,3,4,5] → Doubled: [2,4,6,8,10]</div>
+    </div>
+
+    <h3>6.2. Filter Array with <code>@filter</code></h3>
+    <pre class="code-console">&lt;div @source="numbers" @filter="n =&gt; n % 2 === 0" @result="evens"&gt;&lt;/div&gt;
+&lt;ul&gt;
+  &lt;li @for="n in evens"&gt;{{n}}&lt;/li&gt;
+&lt;/ul&gt;
+</pre>
+    <div style="margin-top:1em;">
       <div @source="numbers" @filter="n => n % 2 === 0" @result="evens"></div>
       <ul>
         <li @for="n in evens">{{n}}</li>
       </ul>
+      <div class="tip"><b>Tip:</b> <code>@filter</code> keeps only elements that match the condition. From [1,2,3,4,5] → Even numbers: [2,4]</div>
+    </div>
+
+    <h3>6.3. Reduce Array with <code>@reduce</code> and <code>@initial</code></h3>
+    <pre class="code-console">&lt;div @source="numbers" @reduce="(a, n) =&gt; a + n" @initial="0" @result="sum"&gt;&lt;/div&gt;
+Sum: {{sum}}
+</pre>
+    <div style="margin-top:1em;">
       <div @source="numbers" @reduce="(a, n) => a + n" @initial="0" @result="sum"></div>
       <div>Sum: {{sum}}</div>
-      <div class="tip"><b>Tip:</b> <code>@map</code>, <code>@filter</code>, and <code>@reduce</code> let you transform arrays reactively. <code>@source</code> is the input array, <code>@result</code> is the output variable.</div>
+      <div class="tip"><b>Tip:</b> <code>@reduce</code> combines all elements into a single value. <code>@initial</code> sets the starting value (0). From [1,2,3,4,5] → Sum: 15</div>
+    </div>
+
+    <h3>6.4. Chain Operations</h3>
+    <pre class="code-console">&lt;!-- First: filter odd numbers --&gt;
+&lt;div @source="numbers" @filter="n =&gt; n % 2 !== 0" @result="odds"&gt;&lt;/div&gt;
+&lt;!-- Then: double them --&gt;
+&lt;div @source="odds" @map="n =&gt; n * 2" @result="doubledOdds"&gt;&lt;/div&gt;
+&lt;ul&gt;
+  &lt;li @for="n in doubledOdds"&gt;{{n}}&lt;/li&gt;
+&lt;/ul&gt;
+</pre>
+    <div style="margin-top:1em;">
+      <!-- First: filter odd numbers -->
+      <div @source="numbers" @filter="n => n % 2 !== 0" @result="odds"></div>
+      <!-- Then: double them -->
+      <div @source="odds" @map="n => n * 2" @result="doubledOdds"></div>
+      <ul>
+        <li @for="n in doubledOdds">{{n}}</li>
+      </ul>
+      <div class="tip"><b>Tip:</b> Chain operations by using one <code>@result</code> as the <code>@source</code> for the next operation. [1,2,3,4,5] → [1,3,5] → [2,6,10]</div>
     </div>
 
     <h2>7. Fetching Data: <code>@fetch</code>, <code>@result</code></h2>
