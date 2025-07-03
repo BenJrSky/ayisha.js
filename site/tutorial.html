@@ -21,11 +21,11 @@
       <li><strong>Expression Evaluation:</strong> JavaScript expressions in directives and templates</li>
     </ul>
 
-    <h2>2. Data Binding: <code>@model</code> vs <code>{{expressions}}</code></h2>
+    <h2>2. Data Binding: <code>@model</code> vs <code><no>{{ ... }}</no></code></h2>
     
     <h3>2.1 Basic Two-Way Binding</h3>
     <pre class="code-console">&lt;input @model="name" placeholder="Your name"&gt;
-Hello {{name}}!
+Hello &#123;&#123;name&#125;&#125;!
 </pre>
     <div style="margin-top:1em;">
       <input @model="name" placeholder="Your name">
@@ -34,6 +34,28 @@ Hello {{name}}!
       </p>
       <div class="tip"><b>Understanding @model:</b> Creates two-way data binding. When you type, the variable updates. When the variable changes programmatically, the input updates.</div>
     </div>
+    
+    <h3>2.1.1 Displaying Raw Code with &lt;no&gt; Tag</h3>
+    <p>Sometimes you need to show code examples without Ayisha.js processing them. Use the <code>&lt;no&gt;</code> tag to display content exactly as written:</p>
+    
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1em;margin:1em 0;">
+      <div>
+        <h4>With &lt;no&gt; tag (raw display):</h4>
+        <div style="background:#f8f9fa;padding:1em;border:1px solid #dee2e6;border-radius:4px;font-family:monospace;">
+          <no><input @model="username" placeholder="Your name">
+Hello {{username}}!</no>
+        </div>
+      </div>
+      <div>
+        <h4>Without &lt;no&gt; tag (processed):</h4>
+        <div style="background:#f8f9fa;padding:1em;border:1px solid #dee2e6;border-radius:4px;">
+          <input @model="username" placeholder="Your name">
+          Hello {{username}}!
+        </div>
+      </div>
+    </div>
+    
+    <div class="tip"><b>Pro Tip:</b> The <code>&lt;no&gt;</code> tag is perfect for documentation, tutorials, and showing code examples without triggering Ayisha.js processing.</div>
     
     <h3>2.2 Different Input Types with @model</h3>
     <pre class="code-console">&lt;!-- Text input --&gt;
@@ -93,11 +115,11 @@ Hello {{name}}!
     <pre class="code-console">&lt;!-- Direct event directives --&gt;
 &lt;button @click="count++"&gt;Increment&lt;/button&gt;
 &lt;input @input="inputMsg = 'Typed!'" placeholder="Type here..."&gt;
-&lt;p&gt;Input event: {{inputMsg}}&lt;/p&gt;
+&lt;p&gt;Input event: &#123;&#123;inputMsg&#125;&#125;&lt;/p&gt;
 &lt;input @focus="focusMsg = 'Focused!'" @blur="focusMsg = 'Blurred!'"&gt;
-&lt;p&gt;Focus/Blur event: {{focusMsg}}&lt;/p&gt;
+&lt;p&gt;Focus/Blur event: &#123;&#123;focusMsg&#125;&#125;&lt;/p&gt;
 &lt;input @change="changeMsg = 'Changed!'" placeholder="Change and blur..."&gt;
-&lt;p&gt;Change event: {{changeMsg}}&lt;/p&gt;
+&lt;p&gt;Change event: &#123;&#123;changeMsg&#125;&#125;&lt;/p&gt;
 </pre>
     <div style="margin-top:1em;">
       <init>inputMsg = 'Ready'; focusMsg = 'Ready'; changeMsg = 'Ready';</init>
@@ -129,7 +151,7 @@ Hello {{name}}!
 
 &lt;!-- Complex example: Form with validation --&gt;
 &lt;input @model="email" @input="validateEmail()" @class:focus="{'focused': true}" placeholder="Email"&gt;
-&lt;div @show="emailError" @class="{'error': emailError}"&gt;{{emailError}}&lt;/div&gt;
+&lt;div @show="emailError" @class="{'error': emailError}"&gt;&#123;&#123;emailError&#125;&#125;&lt;/div&gt;
 </pre>
     
     <div style="margin-top:1em;">
@@ -523,7 +545,7 @@ Hello {{name}}!
     
     <h3>5.1 Basic Looping</h3>
     <pre class="code-console">&lt;ul&gt;
-  &lt;li @for="item in items" @key="item.id"&gt;{{item.name}}&lt;/li&gt;
+  &lt;li @for="item in items" @key="item.id"&gt;&#123;&#123;item.name&#125;&#125;&lt;/li&gt;
 &lt;/ul&gt;
 </pre>
     <div style="margin-top:1em;">
@@ -536,14 +558,14 @@ Hello {{name}}!
     <h3>5.2 Complex Data Structures with Nested Loops</h3>
     <pre class="code-console">&lt;!-- Task Management App Example --&gt;
 &lt;div @for="project in projects" @key="project.id" class="project-card"&gt;
-  &lt;h3&gt;{{project.name}} ({{project.tasks.length}} tasks)&lt;/h3&gt;
+  &lt;h3&gt;&#123;&#123;project.name&#125;&#125; (&#123;&#123;project.tasks.length&#125;&#125; tasks)&lt;/h3&gt;
   &lt;div @for="task in project.tasks" @key="task.id" 
        @class="{completed: task.completed, priority-high: task.priority === 'high'}"&gt;
     &lt;label&gt;
       &lt;input type="checkbox" @model="task.completed"&gt;
-      {{task.name}} - {{task.priority}} priority
+      &#123;&#123;task.name&#125;&#125; - &#123;&#123;task.priority&#125;&#125; priority
     &lt;/label&gt;
-    &lt;span @if="task.dueDate"&gt; (Due: {{task.dueDate}})&lt;/span&gt;
+    &lt;span @if="task.dueDate"&gt; (Due: &#123;&#123;task.dueDate&#125;&#125;)&lt;/span&gt;
   &lt;/div&gt;
 &lt;/div&gt;
 </pre>
@@ -796,9 +818,9 @@ Hello {{name}}!
     <h3>7.1 Basic Fetch Operations</h3>
     <pre class="code-console">&lt;button @fetch="'https://jsonplaceholder.typicode.com/users'" @result="users"&gt;Load Users&lt;/button&gt;
 &lt;div @if="users"&gt;
-  &lt;h4&gt;Users ({{users.length}})&lt;/h4&gt;
+  &lt;h4&gt;Users (&#123;&#123;users.length&#125;&#125;)&lt;/h4&gt;
   &lt;ul&gt;
-    &lt;li @for="user in users" @key="user.id"&gt;{{user.name}} - {{user.email}}&lt;/li&gt;
+    &lt;li @for="user in users" @key="user.id"&gt;&#123;&#123;user.name&#125;&#125; - &#123;&#123;user.email&#125;&#125;&lt;/li&gt;
   &lt;/ul&gt;
 &lt;/div&gt;
 </pre>
@@ -967,7 +989,7 @@ Hello {{name}}!
     <h3>8.1 Basic Dynamic Classes and Styles</h3>
     <pre class="code-console">&lt;input @model="isActive" type="checkbox"&gt; Active
 &lt;div @class="{active: isActive, inactive: !isActive}" @style="{color: isActive ? 'green' : 'red'}"&gt;
-  Status: {{isActive ? 'Active' : 'Inactive'}}
+  Status: &#123;&#123;isActive ? 'Active' : 'Inactive'&#125;&#125;
 &lt;/div&gt;
 </pre>
     <div style="margin-top:1em;">

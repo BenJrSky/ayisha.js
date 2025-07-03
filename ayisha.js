@@ -172,6 +172,18 @@
         return null;
       }
 
+      // Special handling for <no> tag - preserve raw HTML content
+      if (tag === 'no') {
+        return {
+          tag: 'no',
+          attrs: {},
+          directives: {},
+          subDirectives: {},
+          children: [],
+          rawContent: node.innerHTML // Store the raw HTML content
+        };
+      }
+
       const vNode = { tag, attrs: {}, directives: {}, subDirectives: {}, children: [] };
 
       for (const attr of Array.from(node.attributes)) {
@@ -465,6 +477,7 @@
         '@state': `Esempio: <div @state></div> (renderizza lo stato corrente come JSON)`,
         '@log': `Esempio: <div @log></div> (mostra il log delle direttive sull'elemento)`,
         '@hover': `Esempio: <div @hover="doSomething()"></div>`,
+        'no': `Esempio: <no>{{nome}}</no> (mostra contenuto senza interpolazione)`,
         '@text:hover': `Esempio: <div @text:hover="'Testo hover'"></div>`,
         '@text:click': `Esempio: <div @text:click="'Testo click'"></div>`,
         '@text:input': `Esempio: <input @text:input="nome">`,
@@ -2094,6 +2107,10 @@
         return this._handleComponentDirective(vNode, ctx);
       }
 
+      if (vNode.tag === 'no') {
+        return this._handleNoDirective(vNode, ctx);
+      }
+
       const el = document.createElement(vNode.tag);
 
       Object.entries(vNode.attrs).forEach(([k, v]) => {
@@ -2344,6 +2361,63 @@
       placeholder.className = 'component-loading';
       placeholder.textContent = `Loading component: ${srcUrl}`;
       return placeholder;
+    }
+
+    _handleNoDirective(vNode, ctx) {
+      // Create a span element to hold the raw content
+      const span = document.createElement('span');
+      
+      // Use the raw content stored during parsing
+      if (vNode.rawContent !== undefined) {
+        span.innerHTML = vNode.rawContent;
+      } else {
+        // Fallback: reconstruct content without processing
+        let rawContent = '';
+        
+        const collectTextContent = (node) => {
+          if (typeof node === 'string') {
+            return node;
+          } else if (node.type === 'text') {
+            return node.content || '';
+          } else if (node.tag) {
+            // Reconstruct the HTML tag with all attributes and content
+            let attrs = '';
+            if (node.attrs) {
+              attrs = Object.entries(node.attrs)
+                .map(([k, v]) => ` ${k}="${v}"`)
+                .join('');
+            }
+            
+            let directives = '';
+            if (node.directives) {
+              directives = Object.entries(node.directives)
+                .map(([k, v]) => ` ${k}="${v}"`)
+                .join('');
+            }
+            
+            let subDirectives = '';
+            if (node.subDirectives) {
+              Object.entries(node.subDirectives).forEach(([dir, events]) => {
+                Object.entries(events).forEach(([event, value]) => {
+                  subDirectives += ` ${dir}:${event}="${value}"`;
+                });
+              });
+            }
+            
+            const innerContent = node.children ? node.children.map(collectTextContent).join('') : '';
+            return `<${node.tag}${attrs}${directives}${subDirectives}>${innerContent}</${node.tag}>`;
+          }
+          return '';
+        };
+        
+        if (vNode.children && vNode.children.length > 0) {
+          rawContent = vNode.children.map(collectTextContent).join('');
+        }
+        
+        span.innerHTML = rawContent;
+      }
+      
+      return span;
     }
 
     _handleSpecialDirectives(el, vNode, ctx) {
