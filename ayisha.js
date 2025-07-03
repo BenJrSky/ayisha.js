@@ -2364,12 +2364,12 @@
     }
 
     _handleNoDirective(vNode, ctx) {
-      // Create a span element to hold the raw content
+      // Create a span element to hold the raw content as text
       const span = document.createElement('span');
       
       // Use the raw content stored during parsing
       if (vNode.rawContent !== undefined) {
-        span.innerHTML = vNode.rawContent;
+        span.textContent = vNode.rawContent;
       } else {
         // Fallback: reconstruct content without processing
         let rawContent = '';
@@ -2414,7 +2414,7 @@
           rawContent = vNode.children.map(collectTextContent).join('');
         }
         
-        span.innerHTML = rawContent;
+        span.textContent = rawContent;
       }
       
       return span;
