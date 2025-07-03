@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Debug @input @focus @blur</title>
+</head>
+<body>
+  <h1>Debug Test for @input, @focus, @blur directives</h1>
+  
+  <init>
+    msg = 'Ready';
+  </init>
+  
+  <p>Message: {{msg}}</p>
+  
+  <input @input="msg = 'Typed!'" placeholder="Type here to test @input">
+  <br><br>
+  <input @focus="msg = 'Focused!'" @blur="msg = 'Blurred!'" placeholder="Focus/blur to test">
+  
+  <script src="ayisha.js"></script>
+</body>
+</html>

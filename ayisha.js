@@ -262,6 +262,7 @@
       this.renderCallback = renderCallback;
       this.watchersReady = false;
       this._isUpdating = false;
+      this._renderTimeout = null;
     }
 
     makeReactive() {
@@ -291,10 +292,16 @@
             });
           }
 
-          setTimeout(() => {
+          // Debounce renders to prevent loops
+          if (this._renderTimeout) {
+            clearTimeout(this._renderTimeout);
+          }
+          
+          this._renderTimeout = setTimeout(() => {
             this._isUpdating = false;
+            this._renderTimeout = null;
             this.renderCallback();
-          }, 0);
+          }, 10);
 
           return true;
         }
@@ -696,6 +703,118 @@
     }
   }
 
+  class InputLogger extends DirectiveLogger {
+    constructor(evaluator) {
+      super(evaluator);
+      this.inputCount = 0;
+      this.lastInput = null;
+    }
+
+    log(vNode, ctx, state) {
+      const base = super.log(vNode, ctx, state);
+      const inputExpr = vNode.directives['@input'];
+      return {
+        ...base,
+        type: '@input',
+        data: {
+          action: inputExpr,
+          inputCount: this.inputCount,
+          lastInput: this.lastInput ? `${Date.now() - this.lastInput}ms ago` : 'Never',
+          status: '✅ Ready'
+        }
+      };
+    }
+
+    recordInput() {
+      this.inputCount++;
+      this.lastInput = Date.now();
+    }
+  }
+
+  class FocusLogger extends DirectiveLogger {
+    constructor(evaluator) {
+      super(evaluator);
+      this.focusCount = 0;
+      this.lastFocus = null;
+    }
+
+    log(vNode, ctx, state) {
+      const base = super.log(vNode, ctx, state);
+      const focusExpr = vNode.directives['@focus'];
+      return {
+        ...base,
+        type: '@focus',
+        data: {
+          action: focusExpr,
+          focusCount: this.focusCount,
+          lastFocus: this.lastFocus ? `${Date.now() - this.lastFocus}ms ago` : 'Never',
+          status: '✅ Ready'
+        }
+      };
+    }
+
+    recordFocus() {
+      this.focusCount++;
+      this.lastFocus = Date.now();
+    }
+  }
+
+  class BlurLogger extends DirectiveLogger {
+    constructor(evaluator) {
+      super(evaluator);
+      this.blurCount = 0;
+      this.lastBlur = null;
+    }
+
+    log(vNode, ctx, state) {
+      const base = super.log(vNode, ctx, state);
+      const blurExpr = vNode.directives['@blur'];
+      return {
+        ...base,
+        type: '@blur',
+        data: {
+          action: blurExpr,
+          blurCount: this.blurCount,
+          lastBlur: this.lastBlur ? `${Date.now() - this.lastBlur}ms ago` : 'Never',
+          status: '✅ Ready'
+        }
+      };
+    }
+
+    recordBlur() {
+      this.blurCount++;
+      this.lastBlur = Date.now();
+    }
+  }
+
+  class ChangeLogger extends DirectiveLogger {
+    constructor(evaluator) {
+      super(evaluator);
+      this.changeCount = 0;
+      this.lastChange = null;
+    }
+
+    log(vNode, ctx, state) {
+      const base = super.log(vNode, ctx, state);
+      const changeExpr = vNode.directives['@change'];
+      return {
+        ...base,
+        type: '@change',
+        data: {
+          action: changeExpr,
+          changeCount: this.changeCount,
+          lastChange: this.lastChange ? `${Date.now() - this.lastChange}ms ago` : 'Never',
+          status: '✅ Ready'
+        }
+      };
+    }
+
+    recordChange() {
+      this.changeCount++;
+      this.lastChange = Date.now();
+    }
+  }
+
   class ComponentLogger extends DirectiveLogger {
     constructor(evaluator, componentManager) {
       super(evaluator);
@@ -757,7 +876,11 @@
         '@show': new ConditionalLogger(evaluator),
         '@hide': new ConditionalLogger(evaluator),
         '@click': new ClickLogger(evaluator),
-        '@component': new ComponentLogger(evaluator, componentManager)
+        '@component': new ComponentLogger(evaluator, componentManager),
+        '@input': new InputLogger(evaluator),
+        '@focus': new FocusLogger(evaluator),
+        '@blur': new BlurLogger(evaluator),
+        '@change': new ChangeLogger(evaluator)
       };
     }
 
@@ -879,6 +1002,10 @@
         '@hide': '#9c27b0',
         '@click': '#f44336',
         '@component': '#00bcd4',
+        '@input': '#e91e63',
+        '@focus': '#3f51b5',
+        '@blur': '#607d8b',
+        '@change': '#795548',
         'generic': '#666666'
       };
       return colors[type] || '#666666';
@@ -999,6 +1126,42 @@
               <div style="color: #cccccc; font-size: 10px; line-height: 1.3;">
                 Source: <strong>${source.slice(0, 30)}${source.length > 30 ? '...' : ''}</strong><br>
                 Status: ${data.status || 'unknown'} | Cached: ${data.cached ? 'Yes' : 'No'}
+              </div>
+            `;
+            break;
+          case '@input':
+            const inputAction = data.action || '';
+            html = `
+              <div style="color: #cccccc; font-size: 10px; line-height: 1.3;">
+                Action: <strong>${inputAction.slice(0, 30)}${inputAction.length > 30 ? '...' : ''}</strong><br>
+                Inputs: ${data.inputCount || 0} | Last: ${data.lastInput || 'Never'}
+              </div>
+            `;
+            break;
+          case '@focus':
+            const focusAction = data.action || '';
+            html = `
+              <div style="color: #cccccc; font-size: 10px; line-height: 1.3;">
+                Action: <strong>${focusAction.slice(0, 30)}${focusAction.length > 30 ? '...' : ''}</strong><br>
+                Focus events: ${data.focusCount || 0} | Last: ${data.lastFocus || 'Never'}
+              </div>
+            `;
+            break;
+          case '@blur':
+            const blurAction = data.action || '';
+            html = `
+              <div style="color: #cccccc; font-size: 10px; line-height: 1.3;">
+                Action: <strong>${blurAction.slice(0, 30)}${blurAction.length > 30 ? '...' : ''}</strong><br>
+                Blur events: ${data.blurCount || 0} | Last: ${data.lastBlur || 'Never'}
+              </div>
+            `;
+            break;
+          case '@change':
+            const changeAction = data.action || '';
+            html = `
+              <div style="color: #cccccc; font-size: 10px; line-height: 1.3;">
+                Action: <strong>${changeAction.slice(0, 30)}${changeAction.length > 30 ? '...' : ''}</strong><br>
+                Change events: ${data.changeCount || 0} | Last: ${data.lastChange || 'Never'}
               </div>
             `;
             break;
@@ -1715,6 +1878,42 @@
           </div>`;
           break;
 
+        case '@input':
+          const inputAction = data.action || '';
+          html += `<div style="color: #cccccc; font-size: 10px; line-height: 1.3;">
+            Action: <strong style="color: #ffcc66;">${inputAction.slice(0, 25)}${inputAction.length > 25 ? '...' : ''}</strong><br>
+            Inputs: <span style="color: #66ccff;">${data.inputCount || 0}</span><br>
+            Last: <span style="color: #999;">${data.lastInput || 'Never'}</span>
+          </div>`;
+          break;
+
+        case '@focus':
+          const focusAction = data.action || '';
+          html += `<div style="color: #cccccc; font-size: 10px; line-height: 1.3;">
+            Action: <strong style="color: #ffcc66;">${focusAction.slice(0, 25)}${focusAction.length > 25 ? '...' : ''}</strong><br>
+            Focus events: <span style="color: #66ccff;">${data.focusCount || 0}</span><br>
+            Last: <span style="color: #999;">${data.lastFocus || 'Never'}</span>
+          </div>`;
+          break;
+
+        case '@blur':
+          const blurAction = data.action || '';
+          html += `<div style="color: #cccccc; font-size: 10px; line-height: 1.3;">
+            Action: <strong style="color: #ffcc66;">${blurAction.slice(0, 25)}${blurAction.length > 25 ? '...' : ''}</strong><br>
+            Blur events: <span style="color: #66ccff;">${data.blurCount || 0}</span><br>
+            Last: <span style="color: #999;">${data.lastBlur || 'Never'}</span>
+          </div>`;
+          break;
+
+        case '@change':
+          const changeAction = data.action || '';
+          html += `<div style="color: #cccccc; font-size: 10px; line-height: 1.3;">
+            Action: <strong style="color: #ffcc66;">${changeAction.slice(0, 25)}${changeAction.length > 25 ? '...' : ''}</strong><br>
+            Change events: <span style="color: #66ccff;">${data.changeCount || 0}</span><br>
+            Last: <span style="color: #999;">${data.lastChange || 'Never'}</span>
+          </div>`;
+          break;
+
         default:
           html += `<div style="color: #cccccc; font-size: 10px;">
             Expression: <span style="color: #ffcc66;">${data.expression || 'N/A'}</span><br>
@@ -2322,7 +2521,6 @@
 
             const func = new Function('state', 'ctx', `with(state){with(ctx||{}){${processedCode}}}`);
             func(this.state, ctx || {});
-            setTimeout(() => this.render(), 0);
           } catch (err) {
             this.errorHandler.showAyishaError(el, err, processedCode);
           }
@@ -2346,6 +2544,82 @@
         };
         el.addEventListener('mouseover', applyHover);
         el.addEventListener('mouseout', applyHover);
+      }
+
+      // @input directive handler
+      if (vNode.directives['@input']) {
+        el.addEventListener('input', e => {
+          const expr = vNode.directives['@input'];
+          this.evaluator.ensureVarInState(expr);
+          let codeToRun = expr;
+          if (this.evaluator.hasInterpolation(expr)) {
+            codeToRun = this.evaluator.evalAttrValue(expr, ctx);
+          }
+          try {
+            const cleanCode = codeToRun.replace(/\bstate\./g, '');
+            new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
+              (this.state, ctx, e);
+          } catch (err) {
+            this.errorHandler.showAyishaError(el, err, codeToRun);
+          }
+        });
+      }
+
+      // @focus directive handler
+      if (vNode.directives['@focus']) {
+        el.addEventListener('focus', e => {
+          const expr = vNode.directives['@focus'];
+          this.evaluator.ensureVarInState(expr);
+          let codeToRun = expr;
+          if (this.evaluator.hasInterpolation(expr)) {
+            codeToRun = this.evaluator.evalAttrValue(expr, ctx);
+          }
+          try {
+            const cleanCode = codeToRun.replace(/\bstate\./g, '');
+            new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
+              (this.state, ctx, e);
+          } catch (err) {
+            this.errorHandler.showAyishaError(el, err, codeToRun);
+          }
+        });
+      }
+
+      // @blur directive handler
+      if (vNode.directives['@blur']) {
+        el.addEventListener('blur', e => {
+          const expr = vNode.directives['@blur'];
+          this.evaluator.ensureVarInState(expr);
+          let codeToRun = expr;
+          if (this.evaluator.hasInterpolation(expr)) {
+            codeToRun = this.evaluator.evalAttrValue(expr, ctx);
+          }
+          try {
+            const cleanCode = codeToRun.replace(/\bstate\./g, '');
+            new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
+              (this.state, ctx, e);
+          } catch (err) {
+            this.errorHandler.showAyishaError(el, err, codeToRun);
+          }
+        });
+      }
+
+      // @change directive handler
+      if (vNode.directives['@change']) {
+        el.addEventListener('change', e => {
+          const expr = vNode.directives['@change'];
+          this.evaluator.ensureVarInState(expr);
+          let codeToRun = expr;
+          if (this.evaluator.hasInterpolation(expr)) {
+            codeToRun = this.evaluator.evalAttrValue(expr, ctx);
+          }
+          try {
+            const cleanCode = codeToRun.replace(/\bstate\./g, '');
+            new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
+              (this.state, ctx, e);
+          } catch (err) {
+            this.errorHandler.showAyishaError(el, err, codeToRun);
+          }
+        });
       }
 
       if (vNode.directives['@fetch'] && !vNode.subDirectives['@fetch']) {

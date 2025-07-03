@@ -19,7 +19,9 @@ Hello {{name}}!
 </pre>
     <div style="margin-top:1em;">
       <input @model="name" placeholder="Your name">
-      Hello {{name}}!
+      <p @if="name?.length">
+        Hello {{name}}!
+      </p>
       <div class="tip"><b>Tip:</b> <code>@model</code> binds the input value to a variable. Use <code>{{name}}</code> to display it anywhere.</div>
     </div>
 
@@ -30,9 +32,14 @@ Hello {{name}}!
 Value: {{count}} | Message: {{msg}}
 </pre>
     <div style="margin-top:1em;">
+      <init>msg = 'Ready'; numbers = [1,2,3,4,5]; items = [{id:1, name:'Item 1'}, {id:2, name:'Item 2'}]; greeting = 'Hello World';</init>
       <button @set="count=0" @click="count++">Increment</button>
-      <input @input="msg = 'Typed!'" placeholder="Type here...">
-      <input @focus="msg = 'Focused!'" @blur="msg = 'Blurred!'">
+      <input @input="msg = 'Typed!'" @model="text_input" placeholder="Type here...">
+      <input @focus="msg = 'Focused!'" @model="text_both" @blur="msg = 'Focus and Blurred!'">
+      <input @model="text_blur" @blur="msg = 'Blurred!'">
+      <input @focus="msg = 'Juse Focused!'" @model="text_focus">
+
+
       <div>Value: {{count}} | Message: {{msg}}</div>
       <div class="tip"><b>Tip:</b> Use event directives to react to user actions. You can update any variable in the handler.</div>
     </div>
@@ -218,6 +225,6 @@ Value: {{foo}}
       <div class="tip"><b>Tip:</b> <code>@state</code> shows the full state object. <code>@log</code> prints debug info for the current context.</div>
     </div>
   </main>
-  <script src="/ayisha.js"></script>
+  <script src="../ayisha.js"></script>
 </body>
 </html>
