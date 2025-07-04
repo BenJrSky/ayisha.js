@@ -1519,10 +1519,14 @@
     _runInitBlocks() {
       this._initBlocks.forEach(code => {
         // Trasforma "foo = ..." in "state.foo = ..." solo se non già prefissato
-        const transformed = code.replace(/(^|;|\s)([a-zA-Z_$][\w$]*)\s*=/g, (match, sep, varName) => {
-          // Non toccare se già state., window., this., oppure se è dichiarazione let/const/var
+        const transformed = code.replace(/(^|[;\s])([a-zA-Z_$][\w$]*)\s*=/g, (match, sep, varName, offset) => {
+          // Non toccare se già state., window., this.
           if (/\b(state|window|this)\.$/.test(sep + varName + '.')) return match;
-          if (/let |const |var /.test(sep)) return match;
+          
+          // Check if this is a variable declaration (let/const/var)
+          const beforeMatch = code.substring(0, offset);
+          if (/\b(let|const|var)\s*$/.test(beforeMatch)) return match;
+          
           return `${sep}state.${varName}=`;
         });
         try {

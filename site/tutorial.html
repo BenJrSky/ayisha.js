@@ -3,110 +3,912 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ayisha.js - Tutorial</title>
+  <title>Ayisha.js - Complete Tutorial</title>
   <link rel="stylesheet" href="site.css">
+  <style>
+    .step-container {
+      margin: 2em 0;
+      padding: 1.5em;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      background: #fafafa;
+    }
+    .step-number {
+      background: #2196F3;
+      color: white;
+      padding: 0.3em 0.8em;
+      border-radius: 20px;
+      font-weight: bold;
+      display: inline-block;
+      margin-bottom: 1em;
+    }
+    .demo-box {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      padding: 1em;
+      margin: 1em 0;
+    }
+    .output-box {
+      background: #e8f5e8;
+      border: 1px solid #c3e6c3;
+      border-radius: 4px;
+      padding: 1em;
+      margin: 1em 0;
+    }
+    .code-result {
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      border-radius: 4px;
+      padding: 0.5em;
+      margin: 0.5em 0;
+      font-family: monospace;
+    }
+    /* Theme classes for @class:click examples */
+    .red-theme {
+      border: 3px solid #f44336 !important;
+      box-shadow: 0 0 10px rgba(244, 67, 54, 0.3) !important;
+    }
+    .green-theme {
+      border: 3px solid #4CAF50 !important;
+      box-shadow: 0 0 10px rgba(76, 175, 80, 0.3) !important;
+    }
+    .purple-theme {
+      border: 3px solid #9C27B0 !important;
+      box-shadow: 0 0 10px rgba(156, 39, 176, 0.3) !important;
+    }
+    /* Border classes for @class:click examples */
+    .green-border {
+      border: 3px solid #4CAF50 !important;
+      background: #e8f5e9 !important;
+    }
+    .red-border {
+      border: 3px solid #f44336 !important;
+      background: #ffebee !important;
+    }
+  </style>
 </head>
 <body>
   <component @src="header.html"></component>
   <main class="container">
-    <h2>1. Quick Setup & Introduction</h2>
-    <pre class="code-console">&lt;script src="ayisha.js"&gt;&lt;/script&gt;</pre>
-    <div class="tip"><b>What is Ayisha.js?</b> A lightweight reactive framework that brings Vue.js-like directives to vanilla HTML. No build tools, no complex setup - just include the script and start building!</div>
     
-    <h3>1.1 Core Concepts</h3>
-    <ul>
-      <li><strong>Directives:</strong> Special HTML attributes starting with <code>@</code> that add dynamic behavior</li>
-      <li><strong>Sub-directives:</strong> Event-specific directives like <code>@click</code>, <code>@hover</code>, <code>@focus</code> that respond to user interactions</li>
-      <li><strong>State Management:</strong> Automatic reactive updates when data changes</li>
-      <li><strong>Expression Evaluation:</strong> JavaScript expressions in directives and templates</li>
-    </ul>
+    <!-- INTRODUCTION -->
+    <h1>🚀 Ayisha.js Complete Tutorial</h1>
+    <p class="lead">Learn Ayisha.js step by step, from simple data binding to complex web applications. Follow this tutorial progressively - each step builds on the previous one.</p>
+    
+    <div class="tip">
+      <strong>💡 How to use this tutorial:</strong> 
+      <ul>
+        <li>Follow each step in order</li>
+        <li>Try typing in the examples to see them work</li>
+        <li>Experiment with variations of the code</li>
+        <li>Each section teaches you something new that you'll use later</li>
+      </ul>
+    </div>
 
-    <h2>2. Data Binding: <code>@model</code> vs <code><no>{{ ... }}</no></code></h2>
-    
-    <h3>2.1 Basic Two-Way Binding</h3>
-    <pre class="code-console">&lt;input @model="name" placeholder="Your name"&gt;
-Hello &#123;&#123;name&#125;&#125;!
-</pre>
-    <div style="margin-top:1em;">
-      <input @model="name" placeholder="Your name">
-      <p @if="name?.length">
-        Hello {{name}}!
-      </p>
-      <div class="tip"><b>Understanding @model:</b> Creates two-way data binding. When you type, the variable updates. When the variable changes programmatically, the input updates.</div>
-    </div>
-    
-    <h3>2.1.1 Displaying Raw Code with &lt;no&gt; Tag</h3>
-    <p>Sometimes you need to show code examples without Ayisha.js processing them. Use the <code>&lt;no&gt;</code> tag to display content exactly as written:</p>
-    
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1em;margin:1em 0;">
-      <div>
-        <h4>With &lt;no&gt; tag (raw display):</h4>
-        <div style="background:#f8f9fa;padding:1em;border:1px solid #dee2e6;border-radius:4px;font-family:monospace;">
-          <no><input @model="username" placeholder="Your name">
-Hello {{username}}!</no>
-        </div>
-      </div>
-      <div>
-        <h4>Without &lt;no&gt; tag (processed):</h4>
-        <div style="background:#f8f9fa;padding:1em;border:1px solid #dee2e6;border-radius:4px;">
-          <input @model="username" placeholder="Your name">
-          Hello {{username}}!
-        </div>
+    <!-- STEP 1: SETUP -->
+    <div class="step-container">
+      <span class="step-number">Step 1</span>
+      <h2>🛠️ Setup - Your First Ayisha.js Page</h2>
+      <p>Let's start with the absolute basics. All you need is one script tag!</p>
+      
+      <pre class="code-console">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;title&gt;My First Ayisha.js App&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;script src="ayisha.js"&gt;&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+      
+      <div class="tip">
+        <strong>✅ That's it!</strong> No build tools, no complex setup. Ayisha.js automatically scans your page and makes it reactive.
       </div>
     </div>
-    
-    <div class="tip"><b>Pro Tip:</b> The <code>&lt;no&gt;</code> tag is perfect for documentation, tutorials, and showing code examples without triggering Ayisha.js processing.</div>
-    
-    <h3>2.2 Different Input Types with @model</h3>
-    <pre class="code-console">&lt;!-- Text input --&gt;
-&lt;input @model="userText" type="text" placeholder="Enter text"&gt;
-&lt;!-- Number input --&gt;
-&lt;input @model="userAge" type="number" placeholder="Enter age"&gt;
-&lt;!-- Checkbox --&gt;
-&lt;input @model="isSubscribed" type="checkbox"&gt; Subscribe to newsletter
-&lt;!-- Select dropdown --&gt;
-&lt;select @model="userCountry"&gt;
-  &lt;option value=""&gt;Select country&lt;/option&gt;
-  &lt;option value="us"&gt;United States&lt;/option&gt;
-  &lt;option value="uk"&gt;United Kingdom&lt;/option&gt;
-  &lt;option value="ca"&gt;Canada&lt;/option&gt;
-&lt;/select&gt;
-&lt;!-- Textarea --&gt;
-&lt;textarea @model="userMessage" placeholder="Your message"&gt;&lt;/textarea&gt;
-</pre>
-    <div style="margin-top:1em;">
-      <div style="margin-bottom:1em;">
-        <label>Text: <input @model="userText" type="text" placeholder="Enter text"></label>
-      </div>
-      <div style="margin-bottom:1em;">
-        <label>Age: <input @model="userAge" type="number" placeholder="Enter age"></label>
-      </div>
-      <div style="margin-bottom:1em;">
-        <label><input @model="isSubscribed" type="checkbox"> Subscribe to newsletter</label>
-      </div>
-      <div style="margin-bottom:1em;">
-        <label>Country: 
-          <select @model="userCountry">
-            <option value="">Select country</option>
-            <option value="us">United States</option>
-            <option value="uk">United Kingdom</option>
-            <option value="ca">Canada</option>
-          </select>
-        </label>
-      </div>
-      <div style="margin-bottom:1em;">
-        <label>Message: <br><textarea @model="userMessage" placeholder="Your message" style="width:100%;height:60px;"></textarea></label>
+
+    <!-- STEP 2: FIRST INTERACTION -->
+    <div class="step-container">
+      <span class="step-number">Step 2</span>
+      <h2>👋 Your First Interactive Element</h2>
+      <p>Let's create your first interactive element. We'll ask for your name and greet you!</p>
+      
+      <h4>📝 The Code:</h4>
+      <pre class="code-console">&lt;input @model="userName" placeholder="What's your name?"&gt;
+&lt;p&gt;Hello &#123;&#123;userName&#125;&#125;! 👋&lt;/p&gt;</pre>
+      
+      <h4>🎮 Try it:</h4>
+      <div class="demo-box">
+        <input @model="userName" placeholder="What's your name?" style="padding:0.5em;border:2px solid #ddd;border-radius:4px;">
+        <p style="margin:0.5em 0;font-size:1.2em;">Hello {{userName || 'there'}}! 👋</p>
       </div>
       
-      <div style="background:#f5f5f5;padding:1em;border-radius:4px;">
-        <h4>Live Data Preview:</h4>
-        <p><strong>Text:</strong> {{userText || 'Not entered'}}</p>
-        <p><strong>Age:</strong> {{userAge || 'Not entered'}}</p>
-        <p><strong>Subscribed:</strong> {{isSubscribed ? 'Yes' : 'No'}}</p>
-        <p><strong>Country:</strong> {{userCountry || 'Not selected'}}</p>
-        <p><strong>Message:</strong> {{userMessage || 'No message'}}</p>
+      <div class="output-box">
+        <strong>🎯 What you learned:</strong>
+        <ul>
+          <li><code>@model="variableName"</code> creates two-way data binding</li>
+          <li><code>&#123;&#123;variableName&#125;&#125;</code> displays the variable's value</li>
+          <li>When you type, the display updates automatically!</li>
+        </ul>
       </div>
-      <div class="tip"><b>Pro Tip:</b> @model automatically handles different input types. Checkboxes bind to boolean values, numbers to numeric values, and text inputs to strings.</div>
+    </div>
+
+    <!-- STEP 3: BUTTONS AND ACTIONS -->
+    <div class="step-container">
+      <span class="step-number">Step 3</span>
+      <h2>🔘 Buttons and Actions</h2>
+      <p>Now let's add some buttons to perform actions. We'll create a simple counter.</p>
+      
+      <h4>📝 The Code:</h4>
+      <pre class="code-console">&lt;button @click="count++"&gt;➕ Add 1&lt;/button&gt;
+&lt;button @click="count--"&gt;➖ Subtract 1&lt;/button&gt;
+&lt;button @click="count = 0"&gt;🔄 Reset&lt;/button&gt;
+&lt;p&gt;Count: &#123;&#123;count || 0&#125;&#125;&lt;/p&gt;</pre>
+      
+      <h4>🎮 Try it:</h4>
+      <div class="demo-box">
+        <init>count = 0;</init>
+        <button @click="count++" style="padding:0.5em 1em;margin:0.25em;background:#4CAF50;color:white;border:none;border-radius:4px;cursor:pointer;">➕ Add 1</button>
+        <button @click="count--" style="padding:0.5em 1em;margin:0.25em;background:#f44336;color:white;border:none;border-radius:4px;cursor:pointer;">➖ Subtract 1</button>
+        <button @click="count = 0" style="padding:0.5em 1em;margin:0.25em;background:#9E9E9E;color:white;border:none;border-radius:4px;cursor:pointer;">🔄 Reset</button>
+        <p style="font-size:1.5em;font-weight:bold;color:#2196F3;">Count: {{count}}</p>
+      </div>
+      
+      <div class="output-box">
+        <strong>🎯 What you learned:</strong>
+        <ul>
+          <li><code>@click="expression"</code> runs code when clicked</li>
+          <li><code>count++</code> increases the number</li>
+          <li><code>count = 0</code> sets a specific value</li>
+          <li>Variables update the display automatically</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- STEP 4: DIFFERENT INPUT TYPES -->
+    <div class="step-container">
+      <span class="step-number">Step 4</span>
+      <h2>📋 Different Types of Inputs</h2>
+      <p>Ayisha.js works with all HTML input types. Let's try them all!</p>
+      
+      <h4>📝 The Code:</h4>
+      <pre class="code-console">&lt;input @model="name" placeholder="Your name"&gt;
+&lt;input @model="age" type="number" placeholder="Your age"&gt;
+&lt;input @model="agreed" type="checkbox"&gt; I agree to terms
+&lt;select @model="city"&gt;
+  &lt;option value=""&gt;Choose city&lt;/option&gt;
+  &lt;option value="paris"&gt;Paris&lt;/option&gt;
+  &lt;option value="tokyo"&gt;Tokyo&lt;/option&gt;
+  &lt;option value="newyork"&gt;New York&lt;/option&gt;
+&lt;/select&gt;</pre>
+      
+      <h4>🎮 Try it:</h4>
+      <div class="demo-box">
+        <div style="margin-bottom:1em;">
+          <label style="display:block;margin-bottom:0.5em;font-weight:bold;">👤 Name:</label>
+          <input @model="profileName" placeholder="Your name" style="width:100%;padding:0.5em;border:2px solid #ddd;border-radius:4px;">
+        </div>
+        
+        <div style="margin-bottom:1em;">
+          <label style="display:block;margin-bottom:0.5em;font-weight:bold;">🎂 Age:</label>
+          <input @model="profileAge" type="number" placeholder="Your age" style="width:100%;padding:0.5em;border:2px solid #ddd;border-radius:4px;">
+        </div>
+        
+        <div style="margin-bottom:1em;">
+          <label style="display:flex;align-items:center;font-weight:bold;">
+            <input @model="profileAgreed" type="checkbox" style="margin-right:0.5em;"> 
+            ✅ I agree to the terms
+          </label>
+        </div>
+        
+        <div style="margin-bottom:1em;">
+          <label style="display:block;margin-bottom:0.5em;font-weight:bold;">🌍 City:</label>
+          <select @model="profileCity" style="width:100%;padding:0.5em;border:2px solid #ddd;border-radius:4px;">
+            <option value="">Choose your city</option>
+            <option value="paris">🇫🇷 Paris</option>
+            <option value="tokyo">🇯🇵 Tokyo</option>
+            <option value="newyork">🇺🇸 New York</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="output-box">
+        <h4>📊 Your Profile:</h4>
+        <div class="code-result">
+          <strong>Name:</strong> {{profileName || '(not entered)'}}<br>
+          <strong>Age:</strong> {{profileAge || '(not entered)'}}<br>
+          <strong>Agreed:</strong> {{profileAgreed ? '✅ Yes' : '❌ No'}}<br>
+          <strong>City:</strong> {{profileCity || '(not selected)'}}
+        </div>
+      </div>
+      
+      <div class="output-box">
+        <strong>🎯 What you learned:</strong>
+        <ul>
+          <li><code>@model</code> works with all input types</li>
+          <li>Numbers, checkboxes, selects all bind automatically</li>
+          <li>Use <code>||</code> to provide fallback values</li>
+          <li>Ternary operators work great for conditions</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- STEP 5: CONDITIONAL DISPLAY -->
+    <div class="step-container">
+      <span class="step-number">Step 5</span>
+      <h2>🔍 Conditional Display - Show and Hide Things</h2>
+      <p>Learn to show/hide elements based on conditions. Very useful for dynamic interfaces!</p>
+      
+      <h4>📝 The Code:</h4>
+      <pre class="code-console">&lt;button @click="showSecret = !showSecret"&gt;Toggle Secret&lt;/button&gt;
+&lt;div @if="showSecret"&gt;🔐 This is a secret message!&lt;/div&gt;
+&lt;div @if="!showSecret"&gt;🔒 Secret is hidden&lt;/div&gt;
+
+&lt;!-- Show vs If difference --&gt;
+&lt;div @show="showSecret"&gt;📱 I stay in DOM but invisible&lt;/div&gt;
+&lt;div @if="showSecret"&gt;🗑️ I get removed from DOM completely&lt;/div&gt;</pre>
+      
+      <h4>🎮 Try it:</h4>
+      <div class="demo-box">
+        <init>showSecret = false;</init>
+        <button @click="showSecret = !showSecret" style="padding:0.8em 1.5em;background:#9C27B0;color:white;border:none;border-radius:4px;cursor:pointer;margin-bottom:1em;">
+          {{showSecret ? '🙈 Hide Secret' : '👁️ Show Secret'}}
+        </button>
+        
+        <div @if="showSecret" style="padding:1em;background:#e8f5e8;border:2px solid #4CAF50;border-radius:4px;margin:0.5em 0;">
+          🔐 <strong>Secret revealed!</strong> This element is created/destroyed with @if
+        </div>
+        
+        <div @if="!showSecret" style="padding:1em;background:#ffebee;border:2px solid #f44336;border-radius:4px;margin:0.5em 0;">
+          🔒 <strong>Secret hidden!</strong> Click the button to reveal it
+        </div>
+        
+        <div style="margin-top:1em;padding:1em;background:#f3e5f5;border-radius:4px;">
+          <h5>Difference between @show and @if:</h5>
+          <div @show="showSecret" style="padding:0.5em;background:#fff3e0;border-left:4px solid #ff9800;margin:0.3em 0;">
+            📱 <strong>@show:</strong> I'm always in the DOM, just hidden when false
+          </div>
+          <div @if="showSecret" style="padding:0.5em;background:#e3f2fd;border-left:4px solid #2196F3;margin:0.3em 0;">
+            🗑️ <strong>@if:</strong> I'm completely removed from DOM when false
+          </div>
+        </div>
+      </div>
+      
+      <div class="output-box">
+        <strong>🎯 What you learned:</strong>
+        <ul>
+          <li><code>@if="condition"</code> completely removes/adds elements</li>
+          <li><code>@show="condition"</code> just hides/shows (stays in DOM)</li>
+          <li>Use <code>!</code> for NOT conditions</li>
+          <li>Ternary operator <code>condition ? 'yes' : 'no'</code> for text</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- STEP 6: LISTS AND LOOPS -->
+    <div class="step-container">
+      <span class="step-number">Step 6</span>
+      <h2>📋 Lists and Loops - Working with Arrays</h2>
+      <p>Display lists of items dynamically. Essential for any data-driven app!</p>
+      
+      <h4>📝 The Code:</h4>
+      <pre class="code-console">&lt;ul @map="todoList"&gt;
+  &lt;li&gt;&#123;&#123;item&#125;&#125; &lt;button @click="todoList.splice(index, 1)"&gt;❌&lt;/button&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;input @model="newTodo" placeholder="Add new todo..."&gt;
+&lt;button @click="todoList.push(newTodo); newTodo = ''"&gt;➕ Add&lt;/button&gt;</pre>
+      
+      <h4>🎮 Try it:</h4>
+      <div class="demo-box">
+        <init>todoList = ['Learn Ayisha.js', 'Build awesome app', 'Share with friends']; newTodo = '';</init>
+        
+        <div style="margin-bottom:1em;">
+          <input @model="newTodo" placeholder="Add new todo..." style="padding:0.5em;border:2px solid #ddd;border-radius:4px;width:70%;">
+          <button @click="todoList.push(newTodo); newTodo = ''" style="padding:0.5em 1em;background:#4CAF50;color:white;border:none;border-radius:4px;cursor:pointer;margin-left:0.5em;">
+            ➕ Add
+          </button>
+        </div>
+        
+        <ul @map="todoList" style="list-style:none;padding:0;">
+          <li style="background:#f8f9fa;margin:0.5em 0;padding:0.8em;border-radius:4px;display:flex;justify-content:space-between;align-items:center;border-left:4px solid #2196F3;">
+            <span>{{item}}</span>
+            <button @click="todoList.splice(index, 1)" style="background:#f44336;color:white;border:none;padding:0.3em 0.6em;border-radius:3px;cursor:pointer;">
+              ❌
+            </button>
+          </li>
+        </ul>
+        
+        <div style="margin-top:1em;padding:1em;background:#e8f5e8;border-radius:4px;">
+          <strong>📊 Todo Stats:</strong>
+          <p style="margin:0.3em 0;">Total items: {{todoList.length}}</p>
+          <p style="margin:0.3em 0;">List content: {{todoList.join(', ') || 'Empty list'}}</p>
+        </div>
+      </div>
+      
+      <div class="output-box">
+        <strong>🎯 What you learned:</strong>
+        <ul>
+          <li><code>@map="arrayName"</code> loops through arrays</li>
+          <li>Inside loops: <code>item</code> = current item, <code>index</code> = position</li>
+          <li><code>array.push()</code> adds items, <code>array.splice()</code> removes</li>
+          <li>Multiple actions in one click: <code>@click="action1; action2"</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- STEP 7: FORMS AND VALIDATION -->
+    <div class="step-container">
+      <span class="step-number">Step 7</span>
+      <h2>📝 Forms and Validation</h2>
+      <p>Build proper forms with validation. Essential for user input!</p>
+      
+      <h4>📝 The Code:</h4>
+      <pre class="code-console">&lt;form @submit="submitForm()"&gt;
+  &lt;input @model="email" @input="validateEmail()" placeholder="Email"&gt;
+  &lt;div @if="emailError" style="color:red"&gt;&#123;&#123;emailError&#125;&#125;&lt;/div&gt;
+  
+  &lt;input @model="password" type="password" placeholder="Password"&gt;
+  &lt;div @if="password && password.length < 6" style="color:red"&gt;
+    Password too short!
+  &lt;/div&gt;
+  
+  &lt;button type="submit" @disabled="emailError || !email || !password"&gt;
+    Submit
+  &lt;/button&gt;
+&lt;/form&gt;</pre>
+      
+      <h4>🎮 Try it:</h4>
+      <div class="demo-box">
+        <init>
+          email = ''; 
+          password = ''; 
+          emailError = ''; 
+          formMessage = '';
+          validateEmail = function() {
+            if (email && !email.includes('@')) {
+              emailError = 'Please enter a valid email';
+            } else {
+              emailError = '';
+            }
+          };
+          submitForm = function() {
+            if (!emailError && email && password) {
+              formMessage = '✅ Form submitted successfully!';
+            }
+          };
+        </init>
+        
+        <form @submit="submitForm()" style="max-width:400px;">
+          <div style="margin-bottom:1em;">
+            <label style="display:block;margin-bottom:0.5em;font-weight:bold;">📧 Email:</label>
+            <input @model="email" @input="validateEmail()" placeholder="Enter your email" style="width:100%;padding:0.5em;border:2px solid #ddd;border-radius:4px;">
+            <div @if="emailError" style="color:#f44336;margin-top:0.3em;font-size:0.9em;">{{emailError}}</div>
+          </div>
+          
+          <div style="margin-bottom:1em;">
+            <label style="display:block;margin-bottom:0.5em;font-weight:bold;">🔒 Password:</label>
+            <input @model="password" type="password" placeholder="Enter password" style="width:100%;padding:0.5em;border:2px solid #ddd;border-radius:4px;">
+            <div @if="password && password.length < 6" style="color:#f44336;margin-top:0.3em;font-size:0.9em;">
+              Password must be at least 6 characters!
+            </div>
+            <div @if="password && password.length >= 6" style="color:#4CAF50;margin-top:0.3em;font-size:0.9em;">
+              ✅ Password looks good!
+            </div>
+          </div>
+          
+          <button type="submit" @disabled="emailError || !email || !password" 
+                  style="width:100%;padding:0.8em;background:#2196F3;color:white;border:none;border-radius:4px;cursor:pointer;font-weight:bold;">
+            {{emailError || !email || !password ? '⛔ Please fix errors' : '🚀 Submit Form'}}
+          </button>
+        </form>
+        
+        <div @if="formMessage" style="margin-top:1em;padding:1em;background:#e8f5e8;border:2px solid #4CAF50;border-radius:4px;">
+          {{formMessage}}
+        </div>
+      </div>
+      
+      <div class="output-box">
+        <strong>🎯 What you learned:</strong>
+        <ul>
+          <li><code>@submit</code> handles form submission</li>
+          <li><code>@disabled</code> dynamically enables/disables buttons</li>
+          <li><code>@input</code> runs validation on every keystroke</li>
+          <li>Complex conditions: <code>emailError || !email || !password</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- STEP 8: TABS AND SWITCHES -->
+    <div class="step-container">
+      <span class="step-number">Step 8</span>
+      <h2>🔄 Tabs and Switches</h2>
+      <p>Create tab interfaces and switch between different views easily!</p>
+      
+      <h4>📝 The Code:</h4>
+      <pre class="code-console">&lt;div class="tabs"&gt;
+  &lt;button @click="activeTab = 'home'" @class="{'active': activeTab === 'home'}"&gt;Home&lt;/button&gt;
+  &lt;button @click="activeTab = 'about'" @class="{'active': activeTab === 'about'}"&gt;About&lt;/button&gt;
+  &lt;button @click="activeTab = 'contact'" @class="{'active': activeTab === 'contact'}"&gt;Contact&lt;/button&gt;
+&lt;/div&gt;
+
+&lt;div @if="activeTab === 'home'"&gt;🏠 Welcome to the home page!&lt;/div&gt;
+&lt;div @if="activeTab === 'about'"&gt;ℹ️ About us page content...&lt;/div&gt;
+&lt;div @if="activeTab === 'contact'"&gt;📞 Contact us at...&lt;/div&gt;</pre>
+      
+      <h4>🎮 Try it:</h4>
+      <div class="demo-box">
+        <init>activeTab = 'home';</init>
+        
+        <div style="display:flex;border-bottom:2px solid #e0e0e0;margin-bottom:1em;">
+          <button @click="activeTab = 'home'" @class="{'tab-active': activeTab === 'home'}" 
+                  style="padding:0.8em 1.5em;border:none;background:transparent;cursor:pointer;border-bottom:3px solid transparent;">
+            🏠 Home
+          </button>
+          <button @click="activeTab = 'about'" @class="{'tab-active': activeTab === 'about'}" 
+                  style="padding:0.8em 1.5em;border:none;background:transparent;cursor:pointer;border-bottom:3px solid transparent;">
+            ℹ️ About
+          </button>
+          <button @click="activeTab = 'contact'" @class="{'tab-active': activeTab === 'contact'}" 
+                  style="padding:0.8em 1.5em;border:none;background:transparent;cursor:pointer;border-bottom:3px solid transparent;">
+            📞 Contact
+          </button>
+        </div>
+        
+        <div style="min-height:120px;padding:1.5em;background:#f8f9fa;border-radius:4px;">
+          <div @if="activeTab === 'home'" style="text-align:center;">
+            <h3 style="color:#2196F3;margin:0 0 1em 0;">🏠 Welcome Home!</h3>
+            <p>This is the home page. Navigate using the tabs above to see different content sections.</p>
+          </div>
+          
+          <div @if="activeTab === 'about'" style="text-align:center;">
+            <h3 style="color:#4CAF50;margin:0 0 1em 0;">ℹ️ About Ayisha.js</h3>
+            <p>Ayisha.js is a lightweight, powerful framework for building reactive web applications with minimal setup.</p>
+          </div>
+          
+          <div @if="activeTab === 'contact'" style="text-align:center;">
+            <h3 style="color:#ff9800;margin:0 0 1em 0;">📞 Get In Touch</h3>
+            <p>Contact us through our GitHub repository or join our community discussions!</p>
+          </div>
+        </div>
+        
+        <style>
+          .tab-active {
+            background: #2196F3 !important;
+            color: white !important;
+            border-bottom: 3px solid #1976D2 !important;
+          }
+        </style>
+      </div>
+      
+      <div class="output-box">
+        <strong>🎯 What you learned:</strong>
+        <ul>
+          <li><code>@class="{'className': condition}"</code> adds classes conditionally</li>
+          <li>Use string comparison for tab switching</li>
+          <li>CSS can style dynamic classes</li>
+          <li>Multiple tabs with clean conditional display</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- STEP 9: DYNAMIC STYLING -->
+    <div class="step-container">
+      <span class="step-number">Step 9</span>
+      <h2>🎨 Dynamic Styling</h2>
+      <p>Change colors, sizes, and styles based on user input and app state!</p>
+      
+      <h4>📝 The Code:</h4>
+      <pre class="code-console">&lt;div @style="{'background': bgColor, 'padding': '20px'}"&gt;
+  Styled dynamically!
+&lt;/div&gt;
+
+&lt;input @model="bgColor" type="color" value="#ff6b6b"&gt;
+&lt;input @model="textSize" type="range" min="12" max="48"&gt;
+
+&lt;p @style="{'font-size': textSize + 'px', 'color': bgColor}"&gt;
+  Dynamic text!
+&lt;/p&gt;</pre>
+      
+      <h4>🎮 Try it:</h4>
+      <div class="demo-box">
+        <init>bgColor = '#2196F3'; textSize = 18; borderRadius = 8;</init>
+        
+        <div style="margin-bottom:1.5em;">
+          <label style="display:block;margin-bottom:0.5em;font-weight:bold;">🎨 Background Color:</label>
+          <input @model="bgColor" type="color" style="width:60px;height:40px;border:none;border-radius:4px;cursor:pointer;">
+          <span style="margin-left:1em;">{{bgColor}}</span>
+        </div>
+        
+        <div style="margin-bottom:1.5em;">
+          <label style="display:block;margin-bottom:0.5em;font-weight:bold;">📏 Text Size: {{textSize}}px</label>
+          <input @model="textSize" type="range" min="12" max="48" style="width:100%;">
+        </div>
+        
+        <div style="margin-bottom:1.5em;">
+          <label style="display:block;margin-bottom:0.5em;font-weight:bold;">🔘 Border Radius: {{borderRadius}}px</label>
+          <input @model="borderRadius" type="range" min="0" max="50" style="width:100%;">
+        </div>
+        
+        <div @style="{'background': bgColor, 'padding': '20px', 'border-radius': borderRadius + 'px', 'color': 'white', 'text-align': 'center', 'transition': 'all 0.3s'}" style="margin-bottom:1em;">
+          <p @style="{'font-size': textSize + 'px'}" style="margin:0;font-weight:bold;">
+            🎨 Styled Dynamically!
+          </p>
+          <p style="margin:0.5em 0 0 0;opacity:0.9;font-size:14px;">
+            Change the controls above to see me transform!
+          </p>
+        </div>
+        
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:1em;margin-top:1em;">
+          <button @class:click="{ 'red-theme': true, 'green-theme': false, 'purple-theme': false }" 
+                  @click="bgColor='#f44336' textSize=24 borderRadius=25"
+                  style="padding:0.8em;background:#f44336;color:white;border:none;border-radius:4px;cursor:pointer;">
+            🔴 Red Theme
+          </button>
+          <button @class:click="{ 'green-theme': true, 'red-theme': false, 'purple-theme': false }" 
+                  @click="bgColor='#4CAF50'"
+                  style="padding:0.8em;background:#4CAF50;color:white;border:none;border-radius:4px;cursor:pointer;">
+            🟢 Green Theme
+          </button>
+          <button @class:click="{ 'purple-theme': true, 'red-theme': false, 'green-theme': false }" 
+                  @click="bgColor='#9C27B0'; textSize=32; borderRadius=0"
+                  style="padding:0.8em;background:#9C27B0;color:white;border:none;border-radius:4px;cursor:pointer;">
+            🟣 Purple Theme
+          </button>
+        </div>
+      </div>
+
+              BG COLOR ---> {{bgColor}}
+
+      
+      <div class="output-box">
+        <strong>🎯 What you learned:</strong>
+        <ul>
+          <li><code>@style="{'property': value}"</code> for dynamic inline styles</li>
+          <li>Use color inputs and range inputs for user control</li>
+          <li>Concatenate units: <code>textSize + 'px'</code></li>
+          <li>CSS transitions work great with dynamic styles</li>
+          <li><code>@class:click="{ 'className': true }"</code> for CSS class toggling</li>
+        </ul>
+      </div>
+
+      
+      <!-- Sub-directive Example -->
+      <div style="margin-top:1.5em;padding:1em;background:#f0f8ff;border-radius:4px;border-left:4px solid #2196F3;">
+        <h4 style="margin:0 0 1em 0;">🎯 Sub-directive Example: @class:click</h4>
+        <p style="margin:0 0 1em 0;">Try clicking these elements to see how <code>@class:click</code> works:</p>
+        
+        <div style="display:flex;gap:1em;margin-bottom:1em;">
+          <div @class:click="{ 'green-border': true }" 
+               style="padding:1em;border:2px solid #ccc;border-radius:4px;cursor:pointer;text-align:center;background:#f9f9f9;">
+            Click for Green Border
+          </div>
+          <div @class:click="{ 'red-border': true }" 
+               style="padding:1em;border:2px solid #ccc;border-radius:4px;cursor:pointer;text-align:center;background:#f9f9f9;">
+            Click for Red Border
+          </div>
+        </div>
+
+        
+        <p style="margin:0;font-size:0.9em;color:#666;">
+          <strong>Syntax:</strong> <code>@class:click="{ 'className': true }"</code> adds the class on click.
+        </p>
+      </div>
+    </div>
+
+    <!-- STEP 10: SIMPLE CAROUSEL -->
+    <div class="step-container">
+      <span class="step-number">Step 10</span>
+      <h2>🎠 Image Carousel</h2>
+      <p>Build an interactive image carousel with navigation!</p>
+      
+      <h4>📝 The Code:</h4>
+      <pre class="code-console">&lt;div class="carousel"&gt;
+  &lt;img @src="images[currentImage]" alt="Slide"&gt;
+  &lt;button @click="currentImage = (currentImage - 1 + images.length) % images.length"&gt;⬅️&lt;/button&gt;
+  &lt;button @click="currentImage = (currentImage + 1) % images.length"&gt;➡️&lt;/button&gt;
+&lt;/div&gt;
+
+&lt;div class="dots"&gt;
+  &lt;span @map="images" @click="currentImage = index" 
+        @class="{'active': index === currentImage}"&gt;●&lt;/span&gt;
+&lt;/div&gt;</pre>
+      
+      <h4>🎮 Try it:</h4>
+      <div class="demo-box">
+        <init>
+          images = [
+            'https://picsum.photos/400/250?random=1',
+            'https://picsum.photos/400/250?random=2', 
+            'https://picsum.photos/400/250?random=3',
+            'https://picsum.photos/400/250?random=4'
+          ];
+          currentImage = 0;
+        </init>
+        
+        <div style="position:relative;max-width:400px;margin:0 auto;background:#f0f0f0;border-radius:8px;overflow:hidden;">
+          <img @src="images[currentImage]" alt="Carousel slide" style="width:100%;height:250px;object-fit:cover;display:block;">
+          
+          <button @click="currentImage = (currentImage - 1 + images.length) % images.length" 
+                  style="position:absolute;left:10px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.5);color:white;border:none;padding:0.5em;border-radius:50%;cursor:pointer;font-size:1.2em;">
+            ⬅️
+          </button>
+          
+          <button @click="currentImage = (currentImage + 1) % images.length" 
+                  style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.5);color:white;border:none;padding:0.5em;border-radius:50%;cursor:pointer;font-size:1.2em;">
+            ➡️
+          </button>
+          
+          <div style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:0.5em;">
+            <span @map="images" @click="currentImage = index" @class="{'dot-active': index === currentImage}"
+                  style="width:12px;height:12px;background:rgba(255,255,255,0.5);border-radius:50%;cursor:pointer;transition:all 0.3s;"></span>
+          </div>
+        </div>
+        
+        <div style="text-align:center;margin-top:1em;padding:1em;background:#f8f9fa;border-radius:4px;">
+          <p style="margin:0;"><strong>Image {{currentImage + 1}} of {{images.length}}</strong></p>
+          <p style="margin:0.5em 0 0 0;font-size:0.9em;color:#666;">Click arrows or dots to navigate</p>
+        </div>
+        
+        <style>
+          .dot-active {
+            background: rgba(255,255,255,0.9) !important;
+            transform: scale(1.2);
+          }
+        </style>
+      </div>
+      
+      <div class="output-box">
+        <strong>🎯 What you learned:</strong>
+        <ul>
+          <li>Modulo operator <code>%</code> for circular navigation</li>
+          <li><code>@src</code> for dynamic image sources</li>
+          <li>Array indexing: <code>images[currentImage]</code></li>
+          <li>CSS positioning for carousel controls</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- STEP 11: API INTEGRATION -->
+    <div class="step-container">
+      <span class="step-number">Step 11</span>
+      <h2>🌐 API Integration</h2>
+      <p>Fetch data from APIs and display it dynamically!</p>
+      
+      <h4>📝 The Code:</h4>
+      <pre class="code-console">&lt;button @click="fetchData()"&gt;Load Jokes&lt;/button&gt;
+&lt;div @if="loading"&gt;⏳ Loading...&lt;/div&gt;
+&lt;div @if="error"&gt;❌ Error: &#123;&#123;error&#125;&#125;&lt;/div&gt;
+&lt;div @if="jokes"&gt;
+  &lt;div @map="jokes"&gt;
+    &lt;p&gt;😄 &#123;&#123;item.setup&#125;&#125;&lt;/p&gt;
+    &lt;p&gt;&lt;strong&gt;&#123;&#123;item.punchline&#125;&#125;&lt;/strong&gt;&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre>
+      
+      <h4>🎮 Try it:</h4>
+      <div class="demo-box">
+        <init>
+          loading = false;
+          error = null;
+          jokes = null;
+          fetchData = async function() {
+            loading = true;
+            error = null;
+            try {
+              const response = await fetch('https://official-joke-api.appspot.com/jokes/programming/ten');
+              jokes = await response.json();
+            } catch (e) {
+              error = 'Failed to load jokes';
+            }
+            loading = false;
+          };
+        </init>
+        
+        <button @click="fetchData()" style="padding:0.8em 1.5em;background:#2196F3;color:white;border:none;border-radius:4px;cursor:pointer;margin-bottom:1em;">
+          🎭 Load Programming Jokes
+        </button>
+        
+        <div @if="loading" style="text-align:center;padding:2em;background:#f8f9fa;border-radius:4px;">
+          <div style="font-size:2em;">⏳</div>
+          <p>Loading jokes...</p>
+        </div>
+        
+        <div @if="error" style="padding:1em;background:#ffebee;border:2px solid #f44336;border-radius:4px;color:#c62828;">
+          ❌ <strong>Error:</strong> {{error}}
+        </div>
+        
+        <div @if="jokes && !loading">
+          <h4 style="color:#2196F3;">🎭 Programming Jokes:</h4>
+          <div @map="jokes" style="margin-bottom:1.5em;padding:1em;background:#f3e5f5;border-radius:4px;border-left:4px solid #9C27B0;">
+            <p style="margin:0 0 0.5em 0;font-size:1.1em;">😄 {{item.setup}}</p>
+            <p style="margin:0;font-weight:bold;color:#7B1FA2;">{{item.punchline}}</p>
+          </div>
+        </div>
+        
+        <div @if="!jokes && !loading && !error" style="text-align:center;padding:2em;background:#f8f9fa;border:2px dashed #ddd;border-radius:4px;color:#666;">
+          Click the button above to load some programming jokes!
+        </div>
+      </div>
+      
+      <div class="output-box">
+        <strong>🎯 What you learned:</strong>
+        <ul>
+          <li>Use <code>async/await</code> for API calls</li>
+          <li>Handle loading states with boolean flags</li>
+          <li>Try/catch for error handling</li>
+          <li>Display different states: loading, error, success</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- STEP 12: COMPLETE APPLICATION -->
+    <div class="step-container">
+      <span class="step-number">Step 12</span>
+      <h2>🚀 Complete Application - Todo App with API</h2>
+      <p>Let's combine everything into a complete, real-world application!</p>
+      
+      <h4>📝 Features we'll include:</h4>
+      <ul>
+        <li>✅ Add/remove todos</li>
+        <li>🔄 Mark as complete/incomplete</li>
+        <li>🔍 Filter by status</li>
+        <li>📊 Statistics</li>
+        <li>💾 Local storage persistence</li>
+        <li>🎨 Dynamic styling</li>
+      </ul>
+      
+      <h4>🎮 Complete Todo Application:</h4>
+      <div class="demo-box">
+        <init>
+          todos = JSON.parse(localStorage.getItem('ayisha-todos') || '[]');
+          newTodo = '';
+          filter = 'all';
+          
+          saveTodos = function() {
+            localStorage.setItem('ayisha-todos', JSON.stringify(todos));
+          };
+          
+          addTodo = function() {
+            if (newTodo.trim()) {
+              todos.push({
+                id: Date.now(),
+                text: newTodo.trim(),
+                completed: false,
+                createdAt: new Date().toLocaleDateString()
+              });
+              newTodo = '';
+              saveTodos();
+            }
+          };
+          
+          toggleTodo = function(id) {
+            const todo = todos.find(t => t.id === id);
+            if (todo) {
+              todo.completed = !todo.completed;
+              saveTodos();
+            }
+          };
+          
+          removeTodo = function(id) {
+            todos = todos.filter(t => t.id !== id);
+            saveTodos();
+          };
+          
+          getFilteredTodos = function() {
+            if (filter === 'active') return todos.filter(t => !t.completed);
+            if (filter === 'completed') return todos.filter(t => t.completed);
+            return todos;
+          };
+          
+          clearCompleted = function() {
+            todos = todos.filter(t => !t.completed);
+            saveTodos();
+          };
+        </init>
+        
+        <div style="max-width:600px;margin:0 auto;background:white;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.1);overflow:hidden;">
+          <!-- Header -->
+          <div style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:white;padding:2em;text-align:center;">
+            <h2 style="margin:0 0 0.5em 0;">📋 Ayisha.js Todo App</h2>
+            <p style="margin:0;opacity:0.9;">Manage your tasks efficiently</p>
+          </div>
+          
+          <!-- Add Todo Form -->
+          <div style="padding:1.5em;border-bottom:1px solid #eee;">
+            <div style="display:flex;gap:0.5em;">
+              <input @model="newTodo" @keyup.enter="addTodo()" 
+                     placeholder="What needs to be done?" 
+                     style="flex:1;padding:0.8em;border:2px solid #ddd;border-radius:6px;font-size:1em;">
+              <button @click="addTodo()" 
+                      style="padding:0.8em 1.5em;background:#4CAF50;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:bold;">
+                ➕ Add
+              </button>
+            </div>
+          </div>
+          
+          <!-- Filters -->
+          <div style="padding:1em 1.5em;background:#f8f9fa;display:flex;justify-content:center;gap:1em;">
+            <button @click="filter = 'all'" @class="{'filter-active': filter === 'all'}"
+                    style="padding:0.5em 1em;border:2px solid #ddd;background:white;border-radius:20px;cursor:pointer;">
+              All ({{todos.length}})
+            </button>
+            <button @click="filter = 'active'" @class="{'filter-active': filter === 'active'}"
+                    style="padding:0.5em 1em;border:2px solid #ddd;background:white;border-radius:20px;cursor:pointer;">
+              Active ({{todos.filter(t => !t.completed).length}})
+            </button>
+            <button @click="filter = 'completed'" @class="{'filter-active': filter === 'completed'}"
+                    style="padding:0.5em 1em;border:2px solid #ddd;background:white;border-radius:20px;cursor:pointer;">
+              Completed ({{todos.filter(t => t.completed).length}})
+            </button>
+          </div>
+          
+          <!-- Todo List -->
+          <div style="max-height:400px;overflow-y:auto;">
+            <div @if="getFilteredTodos().length === 0" style="text-align:center;padding:3em;color:#666;">
+              <div style="font-size:3em;margin-bottom:0.5em;">📭</div>
+              <p>{{filter === 'completed' ? 'No completed tasks yet!' : filter === 'active' ? 'No active tasks!' : 'No todos yet. Add one above!'}}</p>
+            </div>
+            
+            <div @map="getFilteredTodos()" style="border-bottom:1px solid #eee;padding:1em 1.5em;display:flex;align-items:center;gap:1em;transition:background 0.2s;" 
+                 @class="{'todo-completed': item.completed}">
+              <input type="checkbox" @checked="item.completed" @change="toggleTodo(item.id)" 
+                     style="width:18px;height:18px;cursor:pointer;">
+              
+              <div style="flex:1;">
+                <div @class="{'completed-text': item.completed}" style="font-size:1.1em;transition:all 0.3s;">
+                  {{item.text}}
+                </div>
+                <div style="font-size:0.8em;color:#666;margin-top:0.2em;">
+                  Created: {{item.createdAt}}
+                </div>
+              </div>
+              
+              <button @click="removeTodo(item.id)" 
+                      style="background:#f44336;color:white;border:none;padding:0.5em;border-radius:4px;cursor:pointer;">
+                🗑️
+              </button>
+            </div>
+          </div>
+          
+          <!-- Footer -->
+          <div style="padding:1em 1.5em;background:#f8f9fa;display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:0.9em;color:#666;">
+              {{todos.filter(t => !t.completed).length}} item{{todos.filter(t => !t.completed).length !== 1 ? 's' : ''}} left
+            </div>
+            <button @click="clearCompleted()" @if="todos.filter(t => t.completed).length > 0"
+                    style="background:#ff9800;color:white;border:none;padding:0.5em 1em;border-radius:4px;cursor:pointer;">
+              Clear Completed
+            </button>
+          </div>
+        </div>
+        
+        <style>
+          .filter-active {
+            background: #2196F3 !important;
+            color: white !important;
+            border-color: #2196F3 !important;
+          }
+          .todo-completed {
+            background: #f8f9fa !important;
+          }
+          .completed-text {
+            text-decoration: line-through !important;
+            opacity: 0.6 !important;
+          }
+        </style>
+      </div>
+      
+      <div class="output-box">
+        <strong>🎯 What you learned:</strong>
+        <ul>
+          <li>Combining multiple Ayisha.js features in one app</li>
+          <li>Local storage for data persistence</li>
+          <li>Complex filtering and state management</li>
+          <li>Professional UI/UX patterns</li>
+          <li>Event handling: <code>@keyup.enter</code>, <code>@change</code></li>
+        </ul>
+      </div>
     </div>
 
     <h2>3. Event Handling: Directives vs Sub-directives</h2>
