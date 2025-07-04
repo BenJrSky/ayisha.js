@@ -62,33 +62,81 @@
     }
 
     /**
+     * General helper for executing expressions with multiple expressions support
+     * This can be used by ANY directive that needs to execute code
+     */
+    executeDirectiveExpression(expr, ctx = {}, event = null, triggerRender = true) {
+      let codeToRun = expr;
+      
+      // Handle interpolation
+      if (this.hasInterpolation(expr)) {
+        codeToRun = this.evalAttrValue(expr, ctx);
+      }
+
+      // Remove state. prefix
+      const processedCode = codeToRun.replace(/\bstate\./g, '');
+
+      try {
+        // Try multiple expressions first
+        if (this.executeMultipleExpressions(processedCode, ctx, event)) {
+          if (triggerRender) {
+            setTimeout(() => window.ayisha && window.ayisha.render(), 0);
+          }
+          return true;
+        }
+
+        // Fallback to single expression
+        const cleanCode = processedCode;
+        new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
+          (this.state, ctx || {}, event);
+        
+        if (triggerRender) {
+          setTimeout(() => window.ayisha && window.ayisha.render(), 0);
+        }
+        return true;
+      } catch (error) {
+        console.error('Error executing directive expression:', error, 'Expression:', expr);
+        return false;
+      }
+    }
+
+    /**
      * Check if expression contains multiple assignments
      */
     hasMultipleAssignments(expr) {
+      console.log('DEBUG hasMultipleAssignments:', expr);
+      
       // If expression contains arrow functions, it's likely a single complex expression
       if (expr.includes('=>')) {
+        console.log('  -> has arrow function, returning false');
         return false;
       }
       
       // If expression contains function calls with parentheses, be cautious
       if (expr.includes('(') && expr.includes(')')) {
         // Only consider semicolon separation for complex expressions with functions
-        return expr.includes(';');
+        const result = expr.includes(';');
+        console.log('  -> has parentheses, checking semicolon:', result);
+        return result;
       }
       
       // Quick checks for obvious separators
       if (expr.includes(';')) {
+        console.log('  -> has semicolon, returning true');
         return true;
       }
       
       // Check comma separation (but be careful with function calls)
       if (expr.includes(',') && !expr.includes('(')) {
+        console.log('  -> has comma (no parens), returning true');
         return true;
       }
       
       // Check space separation - look for pattern: var=value space var=value
       const spacePattern = /\w+\s*=\s*[^=\s]+\s+\w+\s*=\s*/;
-      return spacePattern.test(expr);
+      const spaceResult = spacePattern.test(expr);
+      console.log('  -> space pattern test:', spaceResult);
+      return spaceResult;
     }
 
     /**
@@ -2557,9 +2605,14 @@
       // --- @set as one-time init ---
       if (vNode.directives && vNode.directives['@set']) {
         try {
-          let expr = vNode.directives['@set'];
-          expr = String(expr).replace(/\bstate\./g, '');
-          new Function('state', 'ctx', `with(state){with(ctx||{}){${expr}}}`)(this.state, ctx);
+          const expr = vNode.directives['@set'];
+          
+          // Use the new helper that supports multiple expressions
+          if (!this.evaluator.executeDirectiveExpression(expr, ctx, null, false)) {
+            // Fallback to old method if helper fails
+            const cleanExpr = String(expr).replace(/\bstate\./g, '');
+            new Function('state', 'ctx', `with(state){with(ctx||{}){${cleanExpr}}}`)(this.state, ctx);
+          }
         } catch (e) {
           el.setAttribute('data-ayisha-set-error', e.message);
         }
@@ -2794,6 +2847,19 @@
               return;
             }
 
+            // Check for multiple expressions first (semicolon-separated)
+            if (processedCode.includes(';')) {
+              try {
+                if (this.evaluator.executeMultipleExpressions(processedCode, ctx, e)) {
+                  setTimeout(() => this.render(), 0);
+                  return;
+                }
+              } catch (multiError) {
+                console.warn('Multiple expressions handler failed:', multiError);
+                // Continue to try individual assignment handling
+              }
+            }
+
             const assignMatch = processedCode.match(/^(\w+)\s*=\s*(.+)$/);
             if (assignMatch) {
               const [, varName, valueExpr] = assignMatch;
@@ -2830,16 +2896,20 @@
       if (vNode.directives['@hover']) {
         const rawExpr = vNode.directives['@hover'];
         const applyHover = e => {
-          let codeToRun = rawExpr;
-          if (this.evaluator.hasInterpolation(rawExpr)) {
-            codeToRun = this.evaluator.evalAttrValue(rawExpr, ctx);
-          }
           try {
-            const cleanCode = codeToRun.replace(/\bstate\./g, '');
-            new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
-              (this.state, ctx, e);
+            // Use the new helper that supports multiple expressions
+            if (!this.evaluator.executeDirectiveExpression(rawExpr, ctx, e, true)) {
+              // Fallback to old method
+              let codeToRun = rawExpr;
+              if (this.evaluator.hasInterpolation(rawExpr)) {
+                codeToRun = this.evaluator.evalAttrValue(rawExpr, ctx);
+              }
+              const cleanCode = codeToRun.replace(/\bstate\./g, '');
+              new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
+                (this.state, ctx, e);
+            }
           } catch (err) {
-            this.errorHandler.showAyishaError(el, err, codeToRun);
+            this.errorHandler.showAyishaError(el, err, rawExpr);
           }
         };
         el.addEventListener('mouseover', applyHover);
@@ -2851,16 +2921,21 @@
         el.addEventListener('input', e => {
           const expr = vNode.directives['@input'];
           this.evaluator.ensureVarInState(expr);
-          let codeToRun = expr;
-          if (this.evaluator.hasInterpolation(expr)) {
-            codeToRun = this.evaluator.evalAttrValue(expr, ctx);
-          }
+          
           try {
-            const cleanCode = codeToRun.replace(/\bstate\./g, '');
-            new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
-              (this.state, ctx, e);
+            // Use the new helper that supports multiple expressions
+            if (!this.evaluator.executeDirectiveExpression(expr, ctx, e, true)) {
+              // Fallback to old method
+              let codeToRun = expr;
+              if (this.evaluator.hasInterpolation(expr)) {
+                codeToRun = this.evaluator.evalAttrValue(expr, ctx);
+              }
+              const cleanCode = codeToRun.replace(/\bstate\./g, '');
+              new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
+                (this.state, ctx, e);
+            }
           } catch (err) {
-            this.errorHandler.showAyishaError(el, err, codeToRun);
+            this.errorHandler.showAyishaError(el, err, expr);
           }
         });
       }
@@ -2870,16 +2945,21 @@
         el.addEventListener('focus', e => {
           const expr = vNode.directives['@focus'];
           this.evaluator.ensureVarInState(expr);
-          let codeToRun = expr;
-          if (this.evaluator.hasInterpolation(expr)) {
-            codeToRun = this.evaluator.evalAttrValue(expr, ctx);
-          }
+          
           try {
-            const cleanCode = codeToRun.replace(/\bstate\./g, '');
-            new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
-              (this.state, ctx, e);
+            // Use the new helper that supports multiple expressions
+            if (!this.evaluator.executeDirectiveExpression(expr, ctx, e, true)) {
+              // Fallback to old method
+              let codeToRun = expr;
+              if (this.evaluator.hasInterpolation(expr)) {
+                codeToRun = this.evaluator.evalAttrValue(expr, ctx);
+              }
+              const cleanCode = codeToRun.replace(/\bstate\./g, '');
+              new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
+                (this.state, ctx, e);
+            }
           } catch (err) {
-            this.errorHandler.showAyishaError(el, err, codeToRun);
+            this.errorHandler.showAyishaError(el, err, expr);
           }
         });
       }
@@ -2889,16 +2969,21 @@
         el.addEventListener('blur', e => {
           const expr = vNode.directives['@blur'];
           this.evaluator.ensureVarInState(expr);
-          let codeToRun = expr;
-          if (this.evaluator.hasInterpolation(expr)) {
-            codeToRun = this.evaluator.evalAttrValue(expr, ctx);
-          }
+          
           try {
-            const cleanCode = codeToRun.replace(/\bstate\./g, '');
-            new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
-              (this.state, ctx, e);
+            // Use the new helper that supports multiple expressions
+            if (!this.evaluator.executeDirectiveExpression(expr, ctx, e, true)) {
+              // Fallback to old method
+              let codeToRun = expr;
+              if (this.evaluator.hasInterpolation(expr)) {
+                codeToRun = this.evaluator.evalAttrValue(expr, ctx);
+              }
+              const cleanCode = codeToRun.replace(/\bstate\./g, '');
+              new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
+                (this.state, ctx, e);
+            }
           } catch (err) {
-            this.errorHandler.showAyishaError(el, err, codeToRun);
+            this.errorHandler.showAyishaError(el, err, expr);
           }
         });
       }
@@ -2908,16 +2993,21 @@
         el.addEventListener('change', e => {
           const expr = vNode.directives['@change'];
           this.evaluator.ensureVarInState(expr);
-          let codeToRun = expr;
-          if (this.evaluator.hasInterpolation(expr)) {
-            codeToRun = this.evaluator.evalAttrValue(expr, ctx);
-          }
+          
           try {
-            const cleanCode = codeToRun.replace(/\bstate\./g, '');
-            new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
-              (this.state, ctx, e);
+            // Use the new helper that supports multiple expressions
+            if (!this.evaluator.executeDirectiveExpression(expr, ctx, e, true)) {
+              // Fallback to old method
+              let codeToRun = expr;
+              if (this.evaluator.hasInterpolation(expr)) {
+                codeToRun = this.evaluator.evalAttrValue(expr, ctx);
+              }
+              const cleanCode = codeToRun.replace(/\bstate\./g, '');
+              new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
+                (this.state, ctx, e);
+            }
           } catch (err) {
-            this.errorHandler.showAyishaError(el, err, codeToRun);
+            this.errorHandler.showAyishaError(el, err, expr);
           }
         });
       }
@@ -2938,13 +3028,25 @@
 
       if (vNode.directives['@text'] && !vNode.subDirectives['@text']) {
         try {
-          const textValue = this.evaluator.evalExpr(vNode.directives['@text'], ctx);
-          if (textValue === undefined) {
-            el.textContent = '';
-          } else if (textValue === null) {
-            el.textContent = 'null';
+          const expr = vNode.directives['@text'];
+          
+          // Check if this is a multiple assignment expression that should be executed
+          const isMultiple = this.evaluator.hasMultipleAssignments(expr);
+          console.log('DEBUG @text:', expr, 'isMultiple:', isMultiple);
+          
+          if (isMultiple) {
+            // For multiple expressions, execute them and don't set text
+            this.evaluator.executeDirectiveExpression(expr, ctx, null, false);
           } else {
-            el.textContent = String(textValue);
+            // For single expressions, evaluate to get the text value
+            const textValue = this.evaluator.evalExpr(expr, ctx);
+            if (textValue === undefined) {
+              el.textContent = '';
+            } else if (textValue === null) {
+              el.textContent = 'null';
+            } else {
+              el.textContent = String(textValue);
+            }
           }
         } catch (error) {
           console.error('Error in @text directive:', error, 'Expression:', vNode.directives['@text']);
@@ -3206,7 +3308,11 @@
             const state = window.ayisha.state;
             try {
               window.ayisha.evaluator.ensureVarInState(code);
-              new Function('state', 'newVal', `with(state) { ${code} }`)(state, newVal);
+              // Use the new helper that supports multiple expressions
+              if (!window.ayisha.evaluator.executeDirectiveExpression(code, {}, { newVal }, true)) {
+                // Fallback to old method
+                new Function('state', 'newVal', `with(state) { ${code} }`)(state, newVal);
+              }
             } catch (e) {
               console.error('Watcher error:', e, 'Code:', code, 'Prop:', prop, 'NewVal:', newVal);
             }
@@ -3230,7 +3336,11 @@
             const state = window.ayisha.state;
             window.ayisha.evaluator.ensureVarInState(code);
             try {
-              new Function('state', 'newVal', `with(state){ ${code} }`)(state, newVal);
+              // Use the new helper that supports multiple expressions
+              if (!window.ayisha.evaluator.executeDirectiveExpression(code, {}, { newVal }, true)) {
+                // Fallback to old method
+                new Function('state', 'newVal', `with(state){ ${code} }`)(state, newVal);
+              }
             } catch (e) {
               console.error('Generic watcher error:', e, 'Code:', code);
             }

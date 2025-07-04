@@ -1,0 +1,25 @@
+ <div class="step-container">
+      <span class="step-number">Step 2</span>
+      <h2>👋 Your First Interactive Element</h2>
+      <p>Let's create your first interactive element. We'll ask for your name and greet you!</p>
+
+      <h4>📝 The Code:</h4>
+      <pre class="code-console">&lt;input @model="userName" placeholder="What's your name?"&gt;
+&lt;p&gt;Hello &#123;&#123;userName&#125;&#125;! 👋&lt;/p&gt;</pre>
+
+      <h4>🎮 Try it:</h4>
+      <div class="demo-box">
+        <input @model="userName" placeholder="What's your name?"
+          style="padding:0.5em;border:2px solid #ddd;border-radius:4px;">
+        <p style="margin:0.5em 0;font-size:1.2em;">Hello {{userName || 'there'}}! 👋</p>
+      </div>
+
+      <div class="output-box">
+        <strong>🎯 What you learned:</strong>
+        <ul>
+          <li><code>@model="variableName"</code> creates two-way data binding</li>
+          <li><code><no>&#123;&#123;variableName&#125;&#125;</no></code> displays the variable's value</li>
+          <li>When you type, the display updates automatically!</li>
+        </ul>
+      </div>
+    </div>

@@ -98,54 +98,11 @@
     </div>
 
     <!-- STEP 1: SETUP -->
-    <div class="step-container">
-      <span class="step-number">Step 1</span>
-      <h2>🛠️ Setup - Your First Ayisha.js Page</h2>
-      <p>Let's start with the absolute basics. All you need is one script tag!</p>
-
-      <pre class="code-console">&lt;!DOCTYPE html&gt;
-&lt;html&gt;
-&lt;head&gt;
-  &lt;title&gt;My First Ayisha.js App&lt;/title&gt;
-&lt;/head&gt;
-&lt;body&gt;
-  &lt;script src="ayisha.js"&gt;&lt;/script&gt;
-&lt;/body&gt;
-&lt;/html&gt;</pre>
-
-      <div class="tip">
-        <strong>✅ That's it!</strong> No build tools, no complex setup. Ayisha.js automatically scans your page and
-        makes it reactive.
-      </div>
-    </div>
+    <component @src="./components/steps/step_1.html"></component>
 
     <!-- STEP 2: FIRST INTERACTION -->
-    <div class="step-container">
-      <span class="step-number">Step 2</span>
-      <h2>👋 Your First Interactive Element</h2>
-      <p>Let's create your first interactive element. We'll ask for your name and greet you!</p>
-
-      <h4>📝 The Code:</h4>
-      <pre class="code-console">&lt;input @model="userName" placeholder="What's your name?"&gt;
-&lt;p&gt;Hello &#123;&#123;userName&#125;&#125;! 👋&lt;/p&gt;</pre>
-
-      <h4>🎮 Try it:</h4>
-      <div class="demo-box">
-        <input @model="userName" placeholder="What's your name?"
-          style="padding:0.5em;border:2px solid #ddd;border-radius:4px;">
-        <p style="margin:0.5em 0;font-size:1.2em;">Hello {{userName || 'there'}}! 👋</p>
-      </div>
-
-      <div class="output-box">
-        <strong>🎯 What you learned:</strong>
-        <ul>
-          <li><code>@model="variableName"</code> creates two-way data binding</li>
-          <li><code><no>&#123;&#123;variableName&#125;&#125;</no></code> displays the variable's value</li>
-          <li>When you type, the display updates automatically!</li>
-        </ul>
-      </div>
-    </div>
-
+    <component @src="./components/steps/step_2.html"></component>
+   
     <!-- STEP 3: BUTTONS AND ACTIONS -->
     <div class="step-container">
       <span class="step-number">Step 3</span>
@@ -578,7 +535,7 @@
 
         <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:1em;margin-top:1em;">
           <button @class:click="{ 'red-theme': true, 'green-theme': false, 'purple-theme': false }"
-            @click="bgColor='#f44336' textSize=24 borderRadius=25"
+            @click="bgColor='#f44336'; textSize=24; borderRadius=25"
             style="padding:0.8em;background:#f44336;color:white;border:none;border-radius:4px;cursor:pointer;">
             🔴 Red Theme
           </button>
