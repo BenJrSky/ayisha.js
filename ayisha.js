@@ -2557,7 +2557,7 @@
             if (!this._isRendering) requestAnimationFrame(() => this.render());
           })
           .catch(err => {
-            this.componentManager.cache[srcUrl] = `<div class="component-error">Errore: ${err.message}</div>`;
+            this.componentManager.cache[srcUrl] = `<div class="component-error">Error: ${err.message}</div>`;
             if (!this._isRendering) requestAnimationFrame(() => this.render());
           });
       }
