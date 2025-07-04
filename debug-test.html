@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Multiple Expressions - Ayisha.js</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-button {
+            padding: 15px 25px;
+            margin: 10px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        .debug-info {
+            background: #f0f0f0;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>Debug Multiple Expressions</h1>
+    
+    <div class="debug-info">
+        <strong>Current State:</strong><br>
+        bgColor: {{bgColor}}<br>
+        textSize: {{textSize}}<br>
+        borderRadius: {{borderRadius}}
+    </div>
+
+    <h2>Test 1: Simple Assignment</h2>
+    <button class="test-button" 
+            @click="bgColor='red'"
+            :style="{ backgroundColor: bgColor, fontSize: textSize + 'px', borderRadius: borderRadius + 'px' }">
+        Single: bgColor='red'
+    </button>
+
+    <h2>Test 2: Semicolon Separated</h2>
+    <button class="test-button" 
+            @click="bgColor='blue'; textSize=20"
+            :style="{ backgroundColor: bgColor, fontSize: textSize + 'px', borderRadius: borderRadius + 'px' }">
+        Semi: bgColor='blue'; textSize=20
+    </button>
+
+    <h2>Test 3: Space Separated</h2>
+    <button class="test-button" 
+            @click="bgColor='green' textSize=24"
+            :style="{ backgroundColor: bgColor, fontSize: textSize + 'px', borderRadius: borderRadius + 'px' }">
+        Space: bgColor='green' textSize=24
+    </button>
+
+    <h2>Test 4: All Three Variables</h2>
+    <button class="test-button" 
+            @click="bgColor='purple'; textSize=18; borderRadius=15"
+            :style="{ backgroundColor: bgColor, fontSize: textSize + 'px', borderRadius: borderRadius + 'px' }">
+        All: bgColor='purple'; textSize=18; borderRadius=15
+    </button>
+
+    <h2>Reset</h2>
+    <button class="test-button" 
+            @click="bgColor='gray'; textSize=16; borderRadius=5"
+            style="background-color: gray; color: white;">
+        Reset All
+    </button>
+
+    <script src="ayisha.js"></script>
+    <script>
+        // Initialize with logging
+        console.log('🚀 Starting Ayisha.js debug test...');
+        
+        try {
+            const app = new AyishaJS({
+                bgColor: 'lightblue',
+                textSize: 16,
+                borderRadius: 5
+            });
+            console.log('✅ Ayisha.js initialized successfully');
+            console.log('📊 Initial state:', app.state);
+        } catch (error) {
+            console.error('❌ Error initializing Ayisha.js:', error);
+        }
+
+        // Log clicks for debugging
+        document.addEventListener('click', (e) => {
+            if (e.target.hasAttribute('@click')) {
+                console.log('🖱️ Click detected on element with @click:', e.target.getAttribute('@click'));
+            }
+        });
+    </script>
+</body>
+</html>

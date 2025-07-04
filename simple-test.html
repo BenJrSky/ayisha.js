@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Semplice Multiple Expressions</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-button {
+            padding: 15px 30px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .debug {
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Semplice Multiple Expressions</h1>
+    
+    <div class="debug">
+        <h3>Valori Correnti:</h3>
+        <p>bgColor: {{bgColor}}</p>
+        <p>textSize: {{textSize}}</p>
+        <p>borderRadius: {{borderRadius}}</p>
+    </div>
+
+    <h2>Test con Semicolon:</h2>
+    <button class="test-button" 
+            @click="bgColor='red'; textSize=20; borderRadius=10"
+            :style="{ backgroundColor: bgColor, fontSize: textSize + 'px', borderRadius: borderRadius + 'px' }">
+        Click me (Semicolon Test)
+    </button>
+
+    <h2>Test Singola Espressione:</h2>
+    <button class="test-button" 
+            @click="bgColor='blue'"
+            :style="{ backgroundColor: bgColor, fontSize: textSize + 'px', borderRadius: borderRadius + 'px' }">
+        Click me (Single)
+    </button>
+
+    <h2>Test Reset:</h2>
+    <button class="test-button" 
+            @click="bgColor='gray'; textSize=16; borderRadius=5"
+            style="background-color: gray; color: white;">
+        Reset
+    </button>
+
+    <script src="ayisha.js"></script>
+    <script>
+        // Initialize Ayisha.js with default values
+        const app = new AyishaJS({
+            bgColor: 'lightblue',
+            textSize: 16,
+            borderRadius: 5
+        });
+
+        console.log('App initialized with state:', app.state);
+    </script>
+</body>
+</html>

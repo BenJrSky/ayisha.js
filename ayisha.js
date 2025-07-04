@@ -28,6 +28,138 @@
       }
     }
 
+    /**
+     * Execute multiple expressions separated by various delimiters
+     * Supports: semicolon (;), comma (,), or space-separated assignments
+     */
+    executeMultipleExpressions(expr, ctx = {}, event) {
+      const trimmed = expr.trim();
+      
+      console.log('🔍 DEBUG executeMultipleExpressions:', {
+        expr: trimmed,
+        hasMultiple: this.hasMultipleAssignments(trimmed)
+      });
+      
+      // If it's a simple expression, use regular evalExpr
+      if (!this.hasMultipleAssignments(trimmed)) {
+        try {
+          const sp = new Proxy(this.state, {
+            get: (o, k) => o[k],
+            set: (o, k, v) => { o[k] = v; return true; }
+          });
+          new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${trimmed}}}`)(sp, ctx, event);
+          return true;
+        } catch {
+          return false;
+        }
+      }
+
+      // Parse multiple expressions
+      const expressions = this.parseMultipleExpressions(trimmed);
+      
+      try {
+        const sp = new Proxy(this.state, {
+          get: (o, k) => o[k],
+          set: (o, k, v) => { o[k] = v; return true; }
+        });
+
+        for (const singleExpr of expressions) {
+          if (singleExpr.trim()) {
+            new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${singleExpr.trim()}}}`)(sp, ctx, event);
+          }
+        }
+        return true;
+      } catch (error) {
+        console.warn('Error executing multiple expressions:', error, 'Original:', expr);
+        return false;
+      }
+    }
+
+    /**
+     * Check if expression contains multiple assignments
+     */
+    hasMultipleAssignments(expr) {
+      // Quick checks for obvious separators
+      if (expr.includes(';')) {
+        return true;
+      }
+      
+      // Check comma separation (but be careful with function calls)
+      if (expr.includes(',') && !expr.includes('(')) {
+        return true;
+      }
+      
+      // Check space separation - look for pattern: var=value space var=value
+      const spacePattern = /\w+\s*=\s*[^=\s]+\s+\w+\s*=\s*/;
+      return spacePattern.test(expr);
+    }
+
+    /**
+     * Parse multiple expressions from various formats
+     */
+    parseMultipleExpressions(expr) {
+      // First try semicolon separation
+      if (expr.includes(';')) {
+        return expr.split(';').map(e => e.trim()).filter(e => e);
+      }
+      
+      // Then try comma separation (but be careful with function calls)
+      if (expr.includes(',') && !expr.includes('(')) {
+        return expr.split(',').map(e => e.trim()).filter(e => e);
+      }
+      
+      // Finally try space separation using a more robust approach
+      // Look for patterns like: variable=value followed by space and another variable=value
+      const expressions = [];
+      let currentExpr = '';
+      let inString = false;
+      let stringChar = '';
+      let parenCount = 0;
+      let i = 0;
+      
+      while (i < expr.length) {
+        const char = expr[i];
+        
+        if (!inString && (char === '"' || char === "'")) {
+          inString = true;
+          stringChar = char;
+          currentExpr += char;
+        } else if (inString && char === stringChar && expr[i-1] !== '\\') {
+          inString = false;
+          stringChar = '';
+          currentExpr += char;
+        } else if (!inString && char === '(') {
+          parenCount++;
+          currentExpr += char;
+        } else if (!inString && char === ')') {
+          parenCount--;
+          currentExpr += char;
+        } else if (!inString && char === ' ' && parenCount === 0) {
+          // Check if we're at a space that could separate expressions
+          // Look ahead to see if there's a variable assignment pattern
+          const remaining = expr.substring(i + 1).trim();
+          if (remaining.match(/^\w+\s*=/) && currentExpr.trim().includes('=')) {
+            expressions.push(currentExpr.trim());
+            currentExpr = '';
+            // Skip the space
+          } else {
+            currentExpr += char;
+          }
+        } else {
+          currentExpr += char;
+        }
+        i++;
+      }
+      
+      // Add the last expression
+      if (currentExpr.trim()) {
+        expressions.push(currentExpr.trim());
+      }
+      
+      // Return multiple expressions if we found more than one, otherwise single
+      return expressions.length > 1 ? expressions : [expr];
+    }
+
     evalText(text, ctx) {
       return text.replace(/{{(.*?)}}/g, (_, e) => {
         const r = this.evalExpr(e.trim(), ctx);
@@ -2528,6 +2660,15 @@
 
           let processedCode = codeToRun.replace(/\bstate\./g, '');
 
+          // Try the new multiple expressions handler first (before all other checks)
+          try {
+            if (this.evaluator.executeMultipleExpressions(processedCode, ctx, e)) {
+              return;
+            }
+          } catch (multiError) {
+            console.warn('Multiple expressions failed, trying individual handlers:', multiError);
+          }
+
           try {
             const contextObjMatch = processedCode.match(/^(\w+)\.(\w+)(\+\+|--|=.+)$/);
             if (contextObjMatch) {
@@ -2645,6 +2786,7 @@
               return;
             }
 
+            // Fallback to single expression handlers
             const func = new Function('state', 'ctx', `with(state){with(ctx||{}){${processedCode}}}`);
             func(this.state, ctx || {});
           } catch (err) {
@@ -2868,8 +3010,13 @@
               let codeToRun = getEvaluatedExpr();
               try {
                 const cleanCode = String(codeToRun).replace(/\bstate\./g, '');
-                new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
-                  (this.state, ctx, e);
+                
+                // Try multiple expressions handler first
+                if (!this.evaluator.executeMultipleExpressions(cleanCode, ctx, e)) {
+                  // Fallback to single expression
+                  new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
+                    (this.state, ctx, e);
+                }
               } catch (err) {
                 this.errorHandler.showAyishaError(el, err, codeToRun);
               }
