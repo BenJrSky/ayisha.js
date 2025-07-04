@@ -35,23 +35,9 @@
     executeMultipleExpressions(expr, ctx = {}, event) {
       const trimmed = expr.trim();
       
-      console.log('🔍 DEBUG executeMultipleExpressions:', {
-        expr: trimmed,
-        hasMultiple: this.hasMultipleAssignments(trimmed)
-      });
-      
-      // If it's a simple expression, use regular evalExpr
+      // If it's a simple expression, don't handle it here - let individual handlers take care of it
       if (!this.hasMultipleAssignments(trimmed)) {
-        try {
-          const sp = new Proxy(this.state, {
-            get: (o, k) => o[k],
-            set: (o, k, v) => { o[k] = v; return true; }
-          });
-          new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${trimmed}}}`)(sp, ctx, event);
-          return true;
-        } catch {
-          return false;
-        }
+        return false;
       }
 
       // Parse multiple expressions
@@ -79,6 +65,17 @@
      * Check if expression contains multiple assignments
      */
     hasMultipleAssignments(expr) {
+      // If expression contains arrow functions, it's likely a single complex expression
+      if (expr.includes('=>')) {
+        return false;
+      }
+      
+      // If expression contains function calls with parentheses, be cautious
+      if (expr.includes('(') && expr.includes(')')) {
+        // Only consider semicolon separation for complex expressions with functions
+        return expr.includes(';');
+      }
+      
       // Quick checks for obvious separators
       if (expr.includes(';')) {
         return true;
@@ -2660,16 +2657,10 @@
 
           let processedCode = codeToRun.replace(/\bstate\./g, '');
 
-          // Try the new multiple expressions handler first (before all other checks)
-          try {
-            if (this.evaluator.executeMultipleExpressions(processedCode, ctx, e)) {
-              return;
-            }
-          } catch (multiError) {
-            console.warn('Multiple expressions failed, trying individual handlers:', multiError);
-          }
+
 
           try {
+            // Handle context object operations (e.g., post.likes++, post.editing = !post.editing)
             const contextObjMatch = processedCode.match(/^(\w+)\.(\w+)(\+\+|--|=.+)$/);
             if (contextObjMatch) {
               const [, objName, propName, operation] = contextObjMatch;
@@ -2677,11 +2668,13 @@
               if (ctx && ctx[objName]) {
                 const targetObj = ctx[objName];
 
+                // Check if the target object has an id (most context objects from @for loops do)
                 if (targetObj && typeof targetObj === 'object' && targetObj.id) {
+                  // Search all state arrays for the object with matching id
                   for (const [stateKey, stateValue] of Object.entries(this.state)) {
                     if (Array.isArray(stateValue)) {
                       const index = stateValue.findIndex(item =>
-                        item && item.id === targetObj.id
+                        item && typeof item === 'object' && item.id === targetObj.id
                       );
                       if (index !== -1) {
                         if (operation === '++') {
@@ -2693,7 +2686,8 @@
                           setTimeout(() => this.render(), 0);
                           return;
                         } else if (operation.startsWith('=')) {
-                          const value = this.evaluator.evalExpr(operation.substring(1).trim(), ctx);
+                          const valueExpr = operation.substring(1).trim();
+                          const value = this.evaluator.evalExpr(valueExpr, ctx);
                           this.state[stateKey][index][propName] = value;
                           setTimeout(() => this.render(), 0);
                           return;
@@ -2702,33 +2696,52 @@
                     }
                   }
                 }
+                
+                // If no id or not found in state arrays, try direct modification
+                // This handles cases where the context object is directly from state
+                if (operation === '++') {
+                  targetObj[propName] = (targetObj[propName] || 0) + 1;
+                  setTimeout(() => this.render(), 0);
+                  return;
+                } else if (operation === '--') {
+                  targetObj[propName] = (targetObj[propName] || 0) - 1;
+                  setTimeout(() => this.render(), 0);
+                  return;
+                } else if (operation.startsWith('=')) {
+                  const valueExpr = operation.substring(1).trim();
+                  const value = this.evaluator.evalExpr(valueExpr, ctx);
+                  targetObj[propName] = value;
+                  setTimeout(() => this.render(), 0);
+                  return;
+                }
               }
             }
 
+            // Handle array filter operations (e.g., posts = posts.filter(p => p.id !== post.id))
             const filterMatch = processedCode.match(/^(\w+)\s*=\s*(\w+)\.filter\((.+)\)$/);
             if (filterMatch) {
               const [, targetVar, sourceVar, filterExpr] = filterMatch;
+              
               if (ctx && filterExpr.includes('!==') && targetVar === sourceVar) {
                 const varMatch = filterExpr.match(/!==\s*(\w+)\.id/);
-                let postToDelete = null;
+                let objectToDelete = null;
 
                 if (varMatch) {
                   const varName = varMatch[1];
-                  postToDelete = ctx[varName];
+                  objectToDelete = ctx[varName];
                 } else {
+                  // Find any object with an id in the context (fallback)
                   for (const [ctxKey, ctxValue] of Object.entries(ctx)) {
                     if (ctxValue && typeof ctxValue === 'object' && ctxValue.id && ctxKey !== 'users') {
-                      postToDelete = ctxValue;
+                      objectToDelete = ctxValue;
                       break;
                     }
                   }
                 }
 
-                if (postToDelete && postToDelete.id) {
-                  const originalLength = this.state[targetVar].length;
-                  const itemToDeleteId = postToDelete.id;
+                if (objectToDelete && objectToDelete.id) {
+                  const itemToDeleteId = objectToDelete.id;
                   this.state[targetVar] = this.state[targetVar].filter(p => p.id !== itemToDeleteId);
-                  const newLength = this.state[targetVar].length;
                   setTimeout(() => this.render(), 0);
                   return;
                 }
@@ -2753,6 +2766,7 @@
               }
               let currentValue = Number(this.state[varName]) || 0;
               this.state[varName] = currentValue + 1;
+              setTimeout(() => this.render(), 0);
               return;
             }
 
@@ -2761,6 +2775,7 @@
               const varName = decrementMatch[1];
               let currentValue = Number(this.state[varName]) || 0;
               this.state[varName] = currentValue - 1;
+              setTimeout(() => this.render(), 0);
               return;
             }
 
@@ -2775,20 +2790,37 @@
                 case '*': this.state[varName] = currentValue * operandValue; break;
                 case '/': this.state[varName] = operandValue !== 0 ? currentValue / operandValue : currentValue; break;
               }
+              setTimeout(() => this.render(), 0);
               return;
             }
 
             const assignMatch = processedCode.match(/^(\w+)\s*=\s*(.+)$/);
             if (assignMatch) {
               const [, varName, valueExpr] = assignMatch;
+              // Skip assignment pattern if the value expression contains arrow functions
+              // Let it fall through to the generic handler
+              if (valueExpr.includes('=>')) {
+                throw new Error('Assignment with arrow function, using fallback');
+              }
               const value = this.evaluator.evalExpr(valueExpr, ctx);
               this.state[varName] = value;
+              setTimeout(() => this.render(), 0);
               return;
             }
 
-            // Fallback to single expression handlers
+            // Fallback to multiple expressions handler if all individual handlers fail
+            try {
+              if (this.evaluator.executeMultipleExpressions(processedCode, ctx, e)) {
+                return;
+              }
+            } catch (multiError) {
+              console.warn('Multiple expressions handler also failed:', multiError);
+            }
+
+            // Final fallback to single expression handlers - with render trigger
             const func = new Function('state', 'ctx', `with(state){with(ctx||{}){${processedCode}}}`);
             func(this.state, ctx || {});
+            setTimeout(() => this.render(), 0);
           } catch (err) {
             this.errorHandler.showAyishaError(el, err, processedCode);
           }
