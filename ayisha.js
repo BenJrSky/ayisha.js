@@ -1660,6 +1660,7 @@
       this._initBlocks = [];
       this._vdom = null;
       this._isRendering = false;
+      this._processedSetDirectives = new Set(); // Track processed @set directives
 
       // Initialize modules in correct order
       this.evaluator = new ExpressionEvaluator(this.state);
@@ -2679,19 +2680,30 @@
     _handleSpecialDirectives(el, vNode, ctx) {
       // --- @set as one-time init ---
       if (vNode.directives && vNode.directives['@set']) {
-        try {
-          const expr = vNode.directives['@set'];
+        // Create a unique identifier for this @set directive
+        const setExpr = vNode.directives['@set'];
+        const setId = `${vNode.tag}-${JSON.stringify(vNode.attrs)}-${setExpr}`;
+        
+        // Only execute if not already processed
+        if (!this._processedSetDirectives.has(setId)) {
+          this._processedSetDirectives.add(setId);
           
-          // Use the new helper that supports multiple expressions
-          if (!this.evaluator.executeDirectiveExpression(expr, ctx, null, false)) {
-            // Fallback to old method if helper fails
-            const cleanExpr = String(expr).replace(/\bstate\./g, '');
-            new Function('state', 'ctx', `with(state){with(ctx||{}){${cleanExpr}}}`)(this.state, ctx);
+          try {
+            const expr = vNode.directives['@set'];
+            
+            // Use the new helper that supports multiple expressions
+            if (!this.evaluator.executeDirectiveExpression(expr, ctx, null, false)) {
+              // Fallback to old method if helper fails
+              const cleanExpr = String(expr).replace(/\bstate\./g, '');
+              new Function('state', 'ctx', `with(state){with(ctx||{}){${cleanExpr}}}`)(this.state, ctx);
+            }
+          } catch (e) {
+            console.error('Error in @set directive:', e, 'Expression:', vNode.directives['@set']);
+            el.setAttribute('data-ayisha-set-error', e.message);
           }
-        } catch (e) {
-          el.setAttribute('data-ayisha-set-error', e.message);
         }
-        // Remove @set after initialization
+        
+        // Always remove @set from the current vNode to prevent re-execution in this render cycle
         delete vNode.directives['@set'];
       }
 
