@@ -1,0 +1,174 @@
+<!-- Conditional Rendering: Complete Guide -->
+<div class="step-container">
+  <span class="step-number">Step 18</span>
+  <h2>4. Conditional Rendering: Complete Guide</h2>
+  <p>Master conditional rendering with @if, @show, @hide and nested logic patterns.</p>
+
+  <h3>4.1 Basic Conditional Directives</h3>
+  <pre class="code-console">&lt;button @click="show = !show"&gt;Toggle&lt;/button&gt;
+&lt;div @if="show"&gt;Visible with @if (DOM add/remove)&lt;/div&gt;
+&lt;div @show="show"&gt;Visible with @show (display toggle)&lt;/div&gt;
+&lt;div @hide="show"&gt;Hidden when show is true&lt;/div&gt;</pre>
+
+  <h4>🎮 Try it:</h4>
+  <div class="demo-box">
+    <init>
+      show = false;
+    </init>
+
+    <button @click="show = !show"
+      style="padding:0.8em 1.5em;background:#2196F3;color:white;border:none;border-radius:4px;cursor:pointer;margin-bottom:1em;">
+      Toggle (Currently: {{show ? 'Shown' : 'Hidden'}})
+    </button>
+
+    <div @if="show" style="background:#e8f5e8;padding:1em;margin:0.5em 0;border-radius:4px;">
+      ✓ Visible with @if (DOM add/remove)
+    </div>
+    <div @show="show" style="background:#e8f0ff;padding:1em;margin:0.5em 0;border-radius:4px;">
+      ✓ Visible with @show (display toggle)
+    </div>
+    <div @hide="show" style="background:#fff0e8;padding:1em;margin:0.5em 0;border-radius:4px;">
+      ✓ Hidden when show is true (@hide directive)
+    </div>
+
+    <div style="background:#fff8dc;padding:1em;border-radius:4px;margin-top:1em;">
+      <h4>Performance Comparison:</h4>
+      <ul>
+        <li><strong>@if:</strong> Better for content that changes rarely - completely removes from DOM</li>
+        <li><strong>@show/@hide:</strong> Better for frequent toggles - just changes CSS display property</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>4.2 Nested Conditional Logic</h3>
+  <pre class="code-console">&lt;select @model="userRole"&gt;
+  &lt;option value=""&gt;Select Role&lt;/option&gt;
+  &lt;option value="guest"&gt;Guest&lt;/option&gt;
+  &lt;option value="user"&gt;User&lt;/option&gt;
+  &lt;option value="admin"&gt;Admin&lt;/option&gt;
+&lt;/select&gt;
+
+&lt;div @if="userRole"&gt;
+  &lt;div @if="userRole === 'guest'"&gt;
+    &lt;p&gt;Welcome, Guest! Limited access.&lt;/p&gt;
+    &lt;div @if="guestActions"&gt;
+      &lt;button @click="guestActions = false"&gt;Disable Guest Actions&lt;/button&gt;
+    &lt;/div&gt;
+    &lt;div @if="!guestActions"&gt;
+      &lt;button @click="guestActions = true"&gt;Enable Guest Actions&lt;/button&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+  
+  &lt;div @if="userRole === 'user'"&gt;
+    &lt;p&gt;Welcome, User! You have standard access.&lt;/p&gt;
+    &lt;div @show="showUserPanel"&gt;
+      &lt;h4&gt;User Panel&lt;/h4&gt;
+      &lt;p&gt;Your profile settings and preferences.&lt;/p&gt;
+    &lt;/div&gt;
+    &lt;button @click="showUserPanel = !showUserPanel"&gt;
+      {{showUserPanel ? 'Hide' : 'Show'}} User Panel
+    &lt;/button&gt;
+  &lt;/div&gt;
+  
+  &lt;div @if="userRole === 'admin'"&gt;
+    &lt;p&gt;Welcome, Admin! Full system access.&lt;/p&gt;
+    &lt;div @if="adminMode === 'basic'"&gt;
+      &lt;p&gt;Basic admin tools loaded.&lt;/p&gt;
+      &lt;button @click="adminMode = 'advanced'"&gt;Switch to Advanced Mode&lt;/button&gt;
+    &lt;/div&gt;
+    &lt;div @if="adminMode === 'advanced'"&gt;
+      &lt;p style="color:red;"&gt;⚠️ Advanced admin tools - use with caution!&lt;/p&gt;
+      &lt;button @click="adminMode = 'basic'"&gt;Switch to Basic Mode&lt;/button&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div @if="!userRole"&gt;
+  &lt;p style="color:#666;"&gt;Please select a role to see available options.&lt;/p&gt;
+&lt;/div&gt;</pre>
+
+  <h4>🎮 Try it:</h4>
+  <div class="demo-box">
+    <init>
+      userRole = '';
+      guestActions = true;
+      adminMode = 'basic';
+      showUserPanel = false;
+    </init>
+
+    <select @model="userRole" style="padding:0.5em;margin-bottom:1em;border:2px solid #ddd;border-radius:4px;">
+      <option value="">Select Role</option>
+      <option value="guest">Guest</option>
+      <option value="user">User</option>
+      <option value="admin">Admin</option>
+    </select>
+
+    <div @if="userRole" style="border:2px solid #4CAF50;padding:1em;border-radius:8px;background:#f8fff8;">
+      <div @if="userRole === 'guest'">
+        <p><strong>Welcome, Guest!</strong> Limited access granted.</p>
+        <div @if="guestActions" style="background:#e8f5e8;padding:0.5em;border-radius:4px;margin:0.5em 0;">
+          <p>✓ Guest actions are enabled</p>
+          <button @click="guestActions = false"
+            style="padding:0.5em 1em;background:#f44336;color:white;border:none;border-radius:4px;cursor:pointer;">
+            Disable Guest Actions
+          </button>
+        </div>
+        <div @if="!guestActions" style="background:#ffe8e8;padding:0.5em;border-radius:4px;margin:0.5em 0;">
+          <p>✗ Guest actions are disabled</p>
+          <button @click="guestActions = true"
+            style="padding:0.5em 1em;background:#4CAF50;color:white;border:none;border-radius:4px;cursor:pointer;">
+            Enable Guest Actions
+          </button>
+        </div>
+      </div>
+
+      <div @if="userRole === 'user'">
+        <p><strong>Welcome, User!</strong> You have standard access.</p>
+        <div @show="showUserPanel" style="background:#f0f8ff;padding:1em;border-radius:4px;margin:0.5em 0;">
+          <h4>User Panel</h4>
+          <p>Your profile settings and preferences.</p>
+          <p>Recent activity, notifications, and account settings would be here.</p>
+        </div>
+        <button @click="showUserPanel = !showUserPanel"
+          style="padding:0.5em 1em;background:#2196F3;color:white;border:none;border-radius:4px;cursor:pointer;">
+          {{showUserPanel ? 'Hide' : 'Show'}} User Panel
+        </button>
+      </div>
+
+      <div @if="userRole === 'admin'">
+        <p><strong>Welcome, Admin!</strong> Full system access granted.</p>
+        <div @if="adminMode === 'basic'" style="background:#e8f0ff;padding:1em;border-radius:4px;margin:0.5em 0;">
+          <p>📊 Basic admin tools loaded.</p>
+          <p>User management, basic reports, and system monitoring.</p>
+          <button @click="adminMode = 'advanced'"
+            style="padding:0.5em 1em;background:#ff9800;color:white;border:none;border-radius:4px;cursor:pointer;">
+            Switch to Advanced Mode
+          </button>
+        </div>
+        <div @if="adminMode === 'advanced'"
+          style="background:#fff0f0;padding:1em;border-radius:4px;margin:0.5em 0;border:2px solid #ff6b6b;">
+          <p style="color:red;"><strong>⚠️ Advanced admin tools - use with caution!</strong></p>
+          <p>Database access, system configuration, and security settings.</p>
+          <button @click="adminMode = 'basic'"
+            style="padding:0.5em 1em;background:#4CAF50;color:white;border:none;border-radius:4px;cursor:pointer;">
+            Switch to Basic Mode
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div @if="!userRole" style="background:#f5f5f5;padding:1em;border-radius:4px;color:#666;">
+      <p>Please select a role to see available options.</p>
+    </div>
+  </div>
+
+  <div class="output-box">
+    <strong>🎯 What you learned:</strong>
+    <ul>
+      <li>@if completely removes/adds elements from DOM</li>
+      <li>@show/@hide just toggle CSS display property</li>
+      <li>Nested @if directives create complex conditional logic</li>
+      <li>Use @show for frequent toggles, @if for heavy content</li>
+    </ul>
+  </div>
+</div>

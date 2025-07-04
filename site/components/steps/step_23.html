@@ -1,0 +1,204 @@
+<!-- Text and Content Manipulation -->
+<div class="step-container">
+  <span class="step-number">Step 23</span>
+  <h2>9. Text and Content Manipulation</h2>
+  <p>Master dynamic text content, formatting, and interactive text manipulation patterns.</p>
+
+  <h3>9.1 Dynamic Text Content</h3>
+  <pre class="code-console">&lt;div @text="greeting"&gt;Default text&lt;/div&gt;
+&lt;div @text:hover="'Hovered!'"&gt;Hover me for text change&lt;/div&gt;
+&lt;div @text:click="'Clicked!'" @text:dblclick="'Double clicked!'"&gt;Click or double-click me&lt;/div&gt;</pre>
+
+  <h4>🎮 Try it:</h4>
+  <div class="demo-box">
+    <init>
+      greeting = 'Hello World'; 
+      textState = 'ready';
+    </init>
+
+    <div @text="greeting" style="padding:1em;background:#f5f5f5;border-radius:4px;margin:0.5em 0;">
+      Default text
+    </div>
+
+    <div @text:hover="'🖱️ Hovered!'" @text:leave="'Hover me for text change'"
+      style="padding:1em;border:2px solid #ccc;border-radius:4px;cursor:pointer;margin:0.5em 0;text-align:center;">
+      Hover me for text change
+    </div>
+
+    <div @text:click="'👆 Clicked!'" @text:dblclick="'👆👆 Double clicked!'" @text:mousedown="'⬇️ Mouse down'"
+      @text:mouseup="'⬆️ Mouse up'"
+      style="padding:1em;border:2px solid #2196F3;border-radius:4px;cursor:pointer;margin:0.5em 0;text-align:center;background:#e3f2fd;">
+      Click or double-click me
+    </div>
+  </div>
+
+  <h3>9.2 Advanced Text Formatting and Templates</h3>
+  <pre class="code-console">&lt;!-- Dynamic text with complex expressions --&gt;
+&lt;input @model="userName" placeholder="Enter your name"&gt;
+&lt;input @model="userAge" type="number" placeholder="Enter your age"&gt;
+
+&lt;div @text="userName &amp;&amp; userAge ? 
+           `Hello ${userName}! You are ${userAge} years old. ${
+             userAge &lt; 18 ? 'You are a minor.' : 
+             userAge &lt; 65 ? 'You are an adult.' : 
+             'You are a senior.'
+           }` :
+           'Please enter your name and age above.'"&gt;&lt;/div&gt;</pre>
+
+  <h4>🎮 Try it:</h4>
+  <div class="demo-box">
+    <init>
+      userName = '';
+      userAge = '';
+      formatType = 'uppercase';
+      inputText = 'Hello World';
+    </init>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1em;margin-bottom:1em;">
+      <input @model="userName" placeholder="Enter your name"
+        style="padding:0.8em;border:2px solid #ddd;border-radius:4px;">
+      <input @model="userAge" type="number" placeholder="Enter your age"
+        style="padding:0.8em;border:2px solid #ddd;border-radius:4px;">
+    </div>
+
+    <div @text="userName && userAge ? 
+               `Hello ${userName}! You are ${userAge} years old. ${
+                 userAge < 18 ? 'You are a minor.' : 
+                 userAge < 65 ? 'You are an adult.' : 
+                 'You are a senior.'
+               }` :
+               'Please enter your name and age above.'"
+      style="padding:1em;background:#f0f8ff;border-radius:4px;border-left:4px solid #2196F3;font-size:1.1em;">
+      Please enter your name and age above.
+    </div>
+
+    <!-- Text Formatting Demo -->
+    <div style="margin-top:2em;">
+      <h4>Text Formatting Demo:</h4>
+      <input @model="inputText" placeholder="Type text to format..."
+        style="width:100%;padding:0.8em;border:2px solid #ddd;border-radius:4px;margin-bottom:1em;">
+
+      <div style="display:flex;gap:0.5em;margin-bottom:1em;">
+        <button @click="formatType = 'uppercase'"
+          @class="{'format-active': formatType === 'uppercase'}"
+          style="padding:0.5em 1em;border:2px solid #ddd;background:white;border-radius:4px;cursor:pointer;">
+          UPPERCASE
+        </button>
+        <button @click="formatType = 'lowercase'"
+          @class="{'format-active': formatType === 'lowercase'}"
+          style="padding:0.5em 1em;border:2px solid #ddd;background:white;border-radius:4px;cursor:pointer;">
+          lowercase
+        </button>
+        <button @click="formatType = 'title'"
+          @class="{'format-active': formatType === 'title'}"
+          style="padding:0.5em 1em;border:2px solid #ddd;background:white;border-radius:4px;cursor:pointer;">
+          Title Case
+        </button>
+        <button @click="formatType = 'reverse'"
+          @class="{'format-active': formatType === 'reverse'}"
+          style="padding:0.5em 1em;border:2px solid #ddd;background:white;border-radius:4px;cursor:pointer;">
+          esreveR
+        </button>
+      </div>
+
+      <div @text="formatType === 'uppercase' ? inputText.toUpperCase() :
+                  formatType === 'lowercase' ? inputText.toLowerCase() :
+                  formatType === 'title' ? inputText.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') :
+                  formatType === 'reverse' ? inputText.split('').reverse().join('') :
+                  inputText"
+        style="padding:1em;background:#fff8dc;border-radius:4px;border:2px solid #f0ad4e;font-size:1.2em;min-height:20px;">
+        {{inputText}}
+      </div>
+    </div>
+
+    <style>
+      .format-active {
+        background: #2196F3 !important;
+        color: white !important;
+        border-color: #2196F3 !important;
+      }
+    </style>
+  </div>
+
+  <h3>9.3 Interactive Text Effects</h3>
+  <pre class="code-console">&lt;!-- Text that changes based on interaction --&gt;
+&lt;div @text:hover="'Hover effect active!'" 
+     @text:leave="'Hover to activate'"
+     @style:hover="{fontSize: '1.2em', color: '#2196F3'}"&gt;
+  Interactive text
+&lt;/div&gt;
+
+&lt;!-- Typing effect simulation --&gt;
+&lt;div @text="typedText"&gt;&lt;/div&gt;
+&lt;button @click="startTyping()"&gt;Start Typing Effect&lt;/button&gt;</pre>
+
+  <h4>🎮 Try it:</h4>
+  <div class="demo-box">
+    <init>
+      typedText = '';
+      fullText = 'This is a typing effect simulation!';
+      currentIndex = 0;
+      isTyping = false;
+      
+      startTyping = function() {
+        if (isTyping) return;
+        isTyping = true;
+        typedText = '';
+        currentIndex = 0;
+        typeNextChar();
+      };
+      
+      typeNextChar = function() {
+        if (currentIndex < fullText.length) {
+          typedText = fullText.substring(0, currentIndex + 1);
+          currentIndex++;
+          setTimeout(typeNextChar, 100);
+        } else {
+          isTyping = false;
+        }
+      };
+    </init>
+
+    <div @text:hover="'✨ Hover effect is active!'" 
+         @text:leave="'Hover me to see magic'"
+         @style:hover="{fontSize: '1.2em', color: '#2196F3', transform: 'scale(1.05)'}"
+         style="padding:1em;border:2px solid #ccc;border-radius:4px;cursor:pointer;text-align:center;transition:all 0.3s ease;margin-bottom:1em;">
+      Hover me to see magic
+    </div>
+
+    <!-- Typing Effect -->
+    <div style="background:#f8f9fa;padding:1em;border-radius:4px;margin-bottom:1em;">
+      <h5>Typing Effect Demo:</h5>
+      <div style="background:#2d2d2d;color:#00ff00;padding:1em;border-radius:4px;font-family:monospace;min-height:30px;margin:0.5em 0;">
+        <span @text="typedText + (isTyping ? '|' : '')">{{typedText}}</span>
+      </div>
+      <button @click="startTyping()" @disabled="isTyping"
+        style="padding:0.5em 1em;background:#4CAF50;color:white;border:none;border-radius:4px;cursor:pointer;">
+        {{isTyping ? 'Typing...' : 'Start Typing Effect'}}
+      </button>
+    </div>
+
+    <!-- Character Counter -->
+    <div style="background:#fff3e0;padding:1em;border-radius:4px;">
+      <h5>Character Counter:</h5>
+      <textarea @model="counterText" placeholder="Type something..."
+        style="width:100%;height:80px;padding:0.5em;border:2px solid #ddd;border-radius:4px;resize:vertical;"></textarea>
+      <div style="display:flex;justify-content:space-between;margin-top:0.5em;">
+        <span @text="`Characters: ${counterText ? counterText.length : 0}`">Characters: 0</span>
+        <span @text="`Words: ${counterText ? counterText.trim().split(/\s+/).filter(w => w.length > 0).length : 0}`">Words: 0</span>
+        <span @text="`Lines: ${counterText ? counterText.split('\n').length : 0}`">Lines: 0</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="output-box">
+    <strong>🎯 What you learned:</strong>
+    <ul>
+      <li>@text directive for dynamic text content</li>
+      <li>Event-based text changes with sub-directives</li>
+      <li>Template literals for complex text formatting</li>
+      <li>Interactive text effects and animations</li>
+      <li>Real-time text processing and manipulation</li>
+    </ul>
+  </div>
+</div>

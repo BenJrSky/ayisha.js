@@ -1,0 +1,194 @@
+<!-- API Integration: @fetch and Data Loading -->
+<div class="step-container">
+  <span class="step-number">Step 21</span>
+  <h2>7. API Integration: @fetch and Data Loading</h2>
+  <p>Learn to fetch data from APIs and handle loading states, errors, and different trigger events.</p>
+
+  <h3>7.1 Basic Fetch Operations</h3>
+  <pre class="code-console">&lt;button @fetch="'https://jsonplaceholder.typicode.com/users'" @result="users"&gt;Load Users&lt;/button&gt;
+&lt;div @if="users"&gt;
+  &lt;h4&gt;Users (&#123;&#123;users.length&#125;&#125;)&lt;/h4&gt;
+  &lt;ul&gt;
+    &lt;li @for="user in users" @key="user.id"&gt;&#123;&#123;user.name&#125;&#125; - &#123;&#123;user.email&#125;&#125;&lt;/li&gt;
+  &lt;/ul&gt;
+&lt;/div&gt;</pre>
+
+  <h4>🎮 Try it:</h4>
+  <div class="demo-box">
+    <init>
+      loadingState = 'ready'; 
+      errorMessage = null;
+    </init>
+
+    <button @fetch="'https://jsonplaceholder.typicode.com/users'" @result="users"
+      @click="loadingState = 'loading'; errorMessage = null" @success="loadingState = 'success'"
+      @error="loadingState = 'error'; errorMessage = 'Failed to load users'"
+      style="padding:0.8em 1.5em;background:#4CAF50;color:white;border:none;border-radius:4px;cursor:pointer;">
+      {{loadingState === 'loading' ? 'Loading...' : 'Load Users'}}
+    </button>
+
+    <div @if="loadingState === 'loading'" style="margin:1em 0;padding:1em;background:#f0f8ff;border-radius:4px;">
+      <p>🔄 Loading users... Please wait.</p>
+    </div>
+
+    <div @if="errorMessage"
+      style="margin:1em 0;padding:1em;background:#fff0f0;border:2px solid #ff6b6b;border-radius:4px;">
+      <p style="color:#d63031;margin:0;">❌ {{errorMessage}}</p>
+    </div>
+
+    <div @if="users && loadingState === 'success'"
+      style="margin:1em 0;padding:1em;background:#f8fff8;border-radius:4px;border:2px solid #4CAF50;">
+      <h4 style="margin:0 0 1em 0;">✅ Users Loaded Successfully ({{users.length}})</h4>
+      <div style="max-height:300px;overflow-y:auto;">
+        <div @for="user in users" @key="user.id"
+          style="border:1px solid #ddd;padding:0.8em;margin:0.5em 0;border-radius:4px;background:white;">
+          <h5 style="margin:0 0 0.5em 0;">{{user.name}}</h5>
+          <p style="margin:0.2em 0;"><strong>Email:</strong> {{user.email}}</p>
+          <p style="margin:0.2em 0;"><strong>Phone:</strong> {{user.phone}}</p>
+          <p style="margin:0.2em 0;"><strong>Website:</strong> {{user.website}}</p>
+          <p style="margin:0.2em 0;"><strong>Company:</strong> {{user.company.name}}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>7.2 Event-Triggered Fetch with Sub-directives</h3>
+  <pre class="code-console">&lt;!-- Different trigger events --&gt;
+&lt;button @fetch:click="'https://jsonplaceholder.typicode.com/posts'" @result="posts"&gt;Load Posts on Click&lt;/button&gt;
+&lt;div @fetch:hover="'https://jsonplaceholder.typicode.com/todos'" @result="todos"&gt;Hover to Load Todos&lt;/div&gt;
+&lt;input @fetch:focus="'https://jsonplaceholder.typicode.com/comments'" @result="comments" placeholder="Focus to load comments"&gt;</pre>
+
+  <h4>🎮 Try it:</h4>
+  <div class="demo-box">
+    <div style="display:flex;flex-direction:column;gap:1em;">
+      <button @fetch:click="'https://jsonplaceholder.typicode.com/posts'" @result="posts"
+        style="padding:0.8em;background:#2196F3;color:white;border:none;border-radius:4px;cursor:pointer;">
+        Load Posts on Click
+      </button>
+
+      <div @fetch:hover="'https://jsonplaceholder.typicode.com/todos'" @result="todos"
+        style="padding:1em;background:#f5f5f5;border:2px dashed #ccc;text-align:center;cursor:pointer;border-radius:4px;">
+        🖱️ Hover to Load Todos
+      </div>
+
+      <input @fetch:focus="'https://jsonplaceholder.typicode.com/comments'" @result="comments"
+        placeholder="Focus this input to load comments"
+        style="padding:0.8em;border:2px solid #ddd;border-radius:4px;">
+    </div>
+
+    <!-- Posts Display -->
+    <div @if="posts" style="margin:1em 0;padding:1em;background:#e3f2fd;border-radius:4px;">
+      <h4>📝 Posts ({{posts.length}})</h4>
+      <div style="max-height:200px;overflow-y:auto;">
+        <div @for="post in posts.slice(0, 5)" @key="post.id" style="border-bottom:1px solid #ccc;padding:0.5em 0;">
+          <h6 style="margin:0 0 0.3em 0;">{{post.title}}</h6>
+          <p style="margin:0;font-size:0.9em;color:#666;">{{post.body.substring(0, 100)}}...</p>
+        </div>
+      </div>
+      <p style="margin:0.5em 0 0 0;font-size:0.9em;color:#666;">Showing first 5 of {{posts.length}} posts</p>
+    </div>
+
+    <!-- Todos Display -->
+    <div @if="todos" style="margin:1em 0;padding:1em;background:#f3e5f5;border-radius:4px;">
+      <h4>✅ Todos ({{todos.length}})</h4>
+      <div style="max-height:200px;overflow-y:auto;">
+        <div @for="todo in todos.slice(0, 10)" @key="todo.id" style="padding:0.3em 0;border-bottom:1px solid #eee;">
+          <label style="display:flex;align-items:center;">
+            <input type="checkbox" @checked="todo.completed" disabled style="margin-right:0.5em;">
+            <span
+              @style="{textDecoration: todo.completed ? 'line-through' : 'none', opacity: todo.completed ? 0.6 : 1}">
+              {{todo.title}}
+            </span>
+          </label>
+        </div>
+      </div>
+      <p style="margin:0.5em 0 0 0;font-size:0.9em;color:#666;">Showing first 10 of {{todos.length}} todos</p>
+    </div>
+
+    <!-- Comments Display -->
+    <div @if="comments" style="margin:1em 0;padding:1em;background:#fff3e0;border-radius:4px;">
+      <h4>💬 Comments ({{comments.length}})</h4>
+      <div style="max-height:200px;overflow-y:auto;">
+        <div @for="comment in comments.slice(0, 5)" @key="comment.id"
+          style="border:1px solid #ddd;padding:0.8em;margin:0.5em 0;border-radius:4px;background:white;">
+          <h6 style="margin:0 0 0.3em 0;">{{comment.name}}</h6>
+          <p style="margin:0.2em 0;font-size:0.9em;color:#666;"><strong>Email:</strong> {{comment.email}}</p>
+          <p style="margin:0.3em 0 0 0;font-size:0.9em;">{{comment.body}}</p>
+        </div>
+      </div>
+      <p style="margin:0.5em 0 0 0;font-size:0.9em;color:#666;">Showing first 5 of {{comments.length}} comments</p>
+    </div>
+  </div>
+
+  <h3>7.3 Real-World Example: Dynamic Search</h3>
+  <pre class="code-console">&lt;!-- Search with debounced input --&gt;
+&lt;input @model="searchTerm" 
+       @input="searchTerm.length &gt; 2 ? (searchUsers = true) : (searchUsers = false)"
+       placeholder="Search users (type at least 3 characters)"&gt;
+       
+&lt;div @if="searchUsers && searchTerm.length &gt; 2"
+     @fetch="'https://jsonplaceholder.typicode.com/users'"
+     @result="allUsers"&gt;&lt;/div&gt;
+     
+&lt;div @if="allUsers"
+     @source="allUsers"
+     @filter="user =&gt; user.name.toLowerCase().includes(searchTerm.toLowerCase()) || user.email.toLowerCase().includes(searchTerm.toLowerCase())"
+     @result="filteredUsers"&gt;&lt;/div&gt;</pre>
+
+  <h4>🎮 Try it:</h4>
+  <div class="demo-box">
+    <init>
+      searchUsers = false;
+      searchTerm = '';
+    </init>
+
+    <input @model="searchTerm"
+      @input="searchTerm && searchTerm.length > 2 ? (searchUsers = true) : (searchUsers = false)"
+      placeholder="Search users (type at least 3 characters)"
+      style="width:100%;padding:0.8em;border:2px solid #ddd;border-radius:4px;margin-bottom:1em;">
+
+    <div @if="searchUsers && searchTerm && searchTerm.length > 2"
+      @fetch="'https://jsonplaceholder.typicode.com/users'" @result="allUsers"></div>
+
+    <div @if="allUsers && searchTerm" @source="allUsers"
+      @filter="user => user.name.toLowerCase().includes(searchTerm.toLowerCase()) || user.email.toLowerCase().includes(searchTerm.toLowerCase())"
+      @result="filteredUsers"></div>
+
+    <div @if="searchTerm && searchTerm.length > 0 && searchTerm.length <= 2"
+      style="padding:1em;background:#fff8dc;border-radius:4px;color:#856404;">
+      <p>🔍 Type at least 3 characters to search...</p>
+    </div>
+
+    <div @if="searchTerm && searchTerm.length > 2 && searchUsers && !allUsers"
+      style="padding:1em;background:#f0f8ff;border-radius:4px;">
+      <p>🔄 Loading users...</p>
+    </div>
+
+    <div @if="filteredUsers && searchTerm && searchTerm.length > 2" style="margin:1em 0;">
+      <h4>🔍 Search Results for "{{searchTerm}}" ({{filteredUsers.length}} found)</h4>
+      <div @if="filteredUsers.length > 0" style="max-height:300px;overflow-y:auto;">
+        <div @for="user in filteredUsers" @key="user.id"
+          style="border:1px solid #4CAF50;padding:1em;margin:0.5em 0;border-radius:4px;background:#f8fff8;">
+          <h5 style="margin:0 0 0.5em 0;">{{user.name}}</h5>
+          <p style="margin:0.2em 0;"><strong>Email:</strong> {{user.email}}</p>
+          <p style="margin:0.2em 0;"><strong>Username:</strong> @{{user.username}}</p>
+          <p style="margin:0.2em 0;"><strong>Phone:</strong> {{user.phone}}</p>
+        </div>
+      </div>
+      <div @if="filteredUsers.length === 0"
+        style="padding:1em;background:#f5f5f5;border-radius:4px;text-align:center;color:#666;">
+        <p>No users found matching "{{searchTerm}}"</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="output-box">
+    <strong>🎯 What you learned:</strong>
+    <ul>
+      <li>@fetch directive for API calls with loading states</li>
+      <li>Event-triggered fetch with sub-directives</li>
+      <li>Combining @fetch with @filter for search functionality</li>
+      <li>Error handling and user feedback patterns</li>
+    </ul>
+  </div>
+</div>

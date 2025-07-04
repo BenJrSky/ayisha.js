@@ -1,0 +1,226 @@
+<!-- Event Handling: Directives vs Sub-directives -->
+<div class="step-container">
+  <span class="step-number">Step 17</span>
+  <h2>3. Event Handling: Directives vs Sub-directives</h2>
+  <p>Learn the difference between standard directives and sub-directives for efficient event handling.</p>
+
+  <h3>3.1 Standard Event Directives</h3>
+  <pre class="code-console">&lt;!-- Direct event directives --&gt;
+&lt;button @click="count++"&gt;Increment&lt;/button&gt;
+&lt;input @input="inputMsg = 'Typed!'" placeholder="Type here..."&gt;
+&lt;p&gt;Input event: &#123;&#123;inputMsg&#125;&#125;&lt;/p&gt;
+&lt;input @focus="focusMsg = 'Focused!'" @blur="focusMsg = 'Blurred!'"&gt;
+&lt;p&gt;Focus/Blur event: &#123;&#123;focusMsg&#125;&#125;&lt;/p&gt;
+&lt;input @change="changeMsg = 'Changed!'" placeholder="Change and blur..."&gt;
+&lt;p&gt;Change event: &#123;&#123;changeMsg&#125;&#125;&lt;/p&gt;</pre>
+
+  <h4>🎮 Try it:</h4>
+  <div class="demo-box">
+    <init>
+      inputMsg = 'Ready'; 
+      focusMsg = 'Ready'; 
+      changeMsg = 'Ready';
+      count = 0;
+      inputText = '';
+      focusText = '';
+      changeText = '';
+    </init>
+    
+    <button @click="count++"
+      style="padding:0.8em 1.5em;background:#4CAF50;color:white;border:none;border-radius:4px;cursor:pointer;margin-bottom:1em;">
+      Increment ({{count}})
+    </button>
+    <br>
+    <input @input="inputMsg = 'Typed!'" @model="inputText" placeholder="Type here..."
+      style="padding:0.5em;margin:0.5em 0;border:2px solid #ddd;border-radius:4px;width:100%;">
+    <p style="margin:0.5em 0;"><strong>Input event:</strong> {{inputMsg}}</p>
+    
+    <input @focus="focusMsg = 'Focused!'" @blur="focusMsg = 'Blurred!'" @model="focusText"
+      placeholder="Focus and blur..."
+      style="padding:0.5em;margin:0.5em 0;border:2px solid #ddd;border-radius:4px;width:100%;">
+    <p style="margin:0.5em 0;"><strong>Focus/Blur event:</strong> {{focusMsg}}</p>
+    
+    <input @change="changeMsg = 'Changed!'" @model="changeText" placeholder="Change and blur..."
+      style="padding:0.5em;margin:0.5em 0;border:2px solid #ddd;border-radius:4px;width:100%;">
+    <p style="margin:0.5em 0;"><strong>Change event:</strong> {{changeMsg}}</p>
+  </div>
+
+  <h3>3.2 Comparing Standard vs Sub-directives</h3>
+  <p>Ayisha.js provides two approaches to event handling: <strong>standard directives</strong> that execute
+    expressions directly, and <strong>sub-directives</strong> that combine specific actions with trigger events.
+    Understanding when to use each approach is crucial for building efficient applications.</p>
+
+  <pre class="code-console">&lt;!-- Standard directives (direct expression execution) --&gt;
+&lt;input @input="inputMsg = 'You typed: ' + event.target.value" placeholder="Type here for @input"&gt;
+&lt;div @hover="hoverMsg = 'Mouse is hovering!'" @leave="hoverMsg = 'Mouse left!'"&gt;Hover me for @hover&lt;/div&gt;
+&lt;input @focus="focusMsg = 'Input focused with @focus!'" @blur="focusMsg = 'Input lost focus!'"&gt;
+
+&lt;!-- Sub-directives (action + event trigger) --&gt;
+&lt;button @click="clickMsg = 'Set via @click at ' + new Date().toLocaleTimeString()"&gt;Click me&lt;/button&gt;
+&lt;div @text:hover="'Text changed on hover!'" @text:leave="'Hover me'"&gt;Hover for text change&lt;/div&gt;
+&lt;button @focus="focusMsg = 'Focus set via @focus!'"&gt;Focus me&lt;/button&gt;</pre>
+
+  <h4>🎮 Try it:</h4>
+  <div class="demo-box">
+    <init>
+      directInputMsg = 'Ready';
+      directHoverMsg = 'Ready';
+      directFocusMsg = 'Ready';
+      clickInputMsg = 'Ready';
+      clickFocusMsg = 'Ready';
+      value = '';
+      hoverMsg = 'Ready';
+    </init>
+
+    <div style="background:#e3f2fd;padding:1em;border-radius:4px;margin-bottom:1em;">
+      <h4 style="margin:0 0 0.5em 0;">🎯 Standard Directives (Direct Execution)</h4>
+
+      <div style="margin-bottom:1em;">
+        <input @input="directInputMsg = 'You typed: ' + value" placeholder="Type here for @input" @model="value"
+          style="width:100%;padding:0.5em;border:2px solid #ddd;border-radius:4px;">
+        <p style="margin:0.3em 0;"><strong>@input:</strong> {{directInputMsg}}</p>
+        <p style="margin:0.3em 0;"><strong>Current value:</strong> {{value}}</p>
+      </div>
+
+      <div style="margin-bottom:1em;">
+        <div @hover="hoverMsg = 'Mouse is hovering!'" @leave="hoverMsg = 'Mouse left!'"
+          style="padding:1em;border:2px solid #2196F3;border-radius:4px;cursor:pointer;text-align:center;">
+          Hover me for @hover
+        </div>
+        <p style="margin:0.3em 0;"><strong>@hover/@leave:</strong> {{hoverMsg}}</p>
+      </div>
+
+      <div style="margin-bottom:1em;">
+        <input @focus="directFocusMsg = 'Direct @focus triggered!'" @blur="directFocusMsg = 'Direct @focus lost!'"
+          placeholder="Focus me for direct @focus" style="width:100%;padding:0.5em;border:2px solid #ddd;border-radius:4px;">
+        <p style="margin:0.3em 0;"><strong>@focus/@blur:</strong> {{directFocusMsg}}</p>
+      </div>
+
+      <div style="background:#f0f7ff;padding:0.8em;border-radius:4px;border-left:4px solid #2196F3;">
+        <strong>Use standard directives when:</strong> You need complex logic, multiple operations, or custom validation
+        on events.
+      </div>
+    </div>
+
+    <div style="background:#e8f5e9;padding:1em;border-radius:4px;margin-bottom:1em;">
+      <h4 style="margin:0 0 0.5em 0;">⚡ Sub-directives (Event-triggered Actions)</h4>
+
+      <div style="margin-bottom:1em;">
+        <button @click="clickInputMsg = 'Message set via @click at ' + new Date().toLocaleTimeString()"
+          style="padding:0.5em 1em;cursor:pointer;background:#4CAF50;color:white;border:none;border-radius:4px;">
+          Click to set message (@click)
+        </button>
+        <p style="margin:0.3em 0;"><strong>@click:</strong> {{clickInputMsg}}</p>
+      </div>
+
+      <div style="margin-bottom:1em;">
+        <div @text:hover="'✨ Text changed on hover!'" @text:leave="'Hover me to change text'"
+          style="padding:1em;border:2px solid #4CAF50;border-radius:4px;cursor:pointer;text-align:center;min-height:20px;">
+          Hover me to change text
+        </div>
+        <p style="margin:0.3em 0;"><strong>@text:hover/@text:leave:</strong> Text changes directly in the element above</p>
+      </div>
+
+      <div style="margin-bottom:1em;">
+        <button @focus="clickFocusMsg = 'Message set via @focus!'" @blur="clickFocusMsg = 'Focus lost via @blur!'"
+          style="padding:0.5em 1em;cursor:pointer;background:#2196F3;color:white;border:none;border-radius:4px;">
+          Focus me to set message (@focus)
+        </button>
+        <p style="margin:0.3em 0;"><strong>@focus/@blur:</strong> {{clickFocusMsg}}</p>
+      </div>
+
+      <div style="background:#f0fff0;padding:0.8em;border-radius:4px;border-left:4px solid #4CAF50;">
+        <strong>Use sub-directives when:</strong> You need simple, specific actions like setting values, changing text,
+        or toggling classes.
+      </div>
+    </div>
+
+    <div style="background:#fff8dc;padding:1em;border-radius:4px;margin-top:1em;">
+      <h4>🔍 Performance & Usage Comparison:</h4>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1em;">
+        <div>
+          <h5 style="color:#2196F3;">Standard Directives</h5>
+          <ul style="margin:0;font-size:0.9em;">
+            <li><strong>@input:</strong> Complex validation logic</li>
+            <li><strong>@hover:</strong> Dynamic calculations</li>
+            <li><strong>@focus:</strong> Multi-step operations</li>
+            <li><strong>Performance:</strong> Slower (full expression evaluation)</li>
+            <li><strong>Flexibility:</strong> Maximum flexibility</li>
+            <li><strong>Best for:</strong> Complex business logic</li>
+          </ul>
+        </div>
+        <div>
+          <h5 style="color:#4CAF50;">Sub-directives</h5>
+          <ul style="margin:0;font-size:0.9em;">
+            <li><strong>@click:</strong> Simple value assignment</li>
+            <li><strong>@text:hover:</strong> Direct text changes</li>
+            <li><strong>@class:focus:</strong> CSS class toggling</li>
+            <li><strong>Performance:</strong> Faster (optimized actions)</li>
+            <li><strong>Flexibility:</strong> Limited but efficient</li>
+            <li><strong>Best for:</strong> UI interactions & animations</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="margin-top:1em;padding:0.8em;background:#e8f4fd;border-radius:4px;">
+        <strong>💡 Pro Tip:</strong> Combine both approaches! Use sub-directives for simple UI changes and standard
+        directives for business logic. This gives you the best performance and maintainability.
+      </div>
+    </div>
+  </div>
+
+  <h3>3.3 Sub-directives for Specific Events</h3>
+  <pre class="code-console">&lt;!-- Using sub-directives for better control --&gt;
+&lt;div @click="status='Clicked'" @hover="status='Hovered'" @leave="status='Left'"&gt;
+  Multi-event element
+&lt;/div&gt;
+&lt;button @fetch:click="'https://api.github.com/users/octocat'" @result="userData"&gt;
+  Fetch on Click
+&lt;/button&gt;
+&lt;input @class:focus="{'focused': true}" @class:blur="{'focused': false}" placeholder="Dynamic classes on focus/blur"&gt;</pre>
+
+  <h4>🎮 Try it:</h4>
+  <div class="demo-box">
+    <init>
+      status = 'Ready';
+      userData = null;
+      focusInput = '';
+    </init>
+
+    <div @click="status='Clicked'" @hover="status='Hovered'" @leave="status='Left'"
+      style="padding:1em;border:2px solid #ccc;text-align:center;cursor:pointer;margin-bottom:1em;border-radius:4px;">
+      Multi-event element (Status: {{status}})
+    </div>
+
+    <button @fetch:click="'https://api.github.com/users/octocat'" @result="userData"
+      style="padding:0.8em 1.5em;background:#2196F3;color:white;border:none;border-radius:4px;cursor:pointer;margin-bottom:1em;">
+      Fetch GitHub User on Click
+    </button>
+    
+    <div @if="userData" style="background:#f5f5f5;padding:1em;border-radius:4px;margin-bottom:1em;">
+      <p><strong>User:</strong> {{userData.name}} (@{{userData.login}})</p>
+      <p><strong>Bio:</strong> {{userData.bio}}</p>
+      <p><strong>Public Repos:</strong> {{userData.public_repos}}</p>
+    </div>
+
+    <input @class:focus="{'focused': true}" @class:blur="{'focused': false}" @model="focusInput"
+      placeholder="Dynamic classes on focus/blur" style="width:100%;padding:0.5em;border:2px solid #ddd;border-radius:4px;">
+
+    <style>
+      .focused {
+        border-color: #4CAF50 !important;
+        box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+      }
+    </style>
+  </div>
+
+  <div class="output-box">
+    <strong>🎯 What you learned:</strong>
+    <ul>
+      <li>Standard directives execute expressions directly</li>
+      <li>Sub-directives combine actions with trigger events</li>
+      <li>Choose based on complexity and performance needs</li>
+      <li>Multiple events can be handled on the same element</li>
+    </ul>
+  </div>
+</div>

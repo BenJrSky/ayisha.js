@@ -1,0 +1,68 @@
+<div class="step-container">
+  <span class="step-number">Step 4</span>
+  <h2>📋 Different Types of Inputs</h2>
+  <p>Ayisha.js works with all HTML input types. Let's try them all!</p>
+
+  <h4>📝 The Code:</h4>
+  <pre class="code-console">&lt;input @model="name" placeholder="Your name"&gt;
+&lt;input @model="age" type="number" placeholder="Your age"&gt;
+&lt;input @model="agreed" type="checkbox"&gt; I agree to terms
+&lt;select @model="city"&gt;
+  &lt;option value=""&gt;Choose city&lt;/option&gt;
+  &lt;option value="paris"&gt;Paris&lt;/option&gt;
+  &lt;option value="tokyo"&gt;Tokyo&lt;/option&gt;
+  &lt;option value="newyork"&gt;New York&lt;/option&gt;
+&lt;/select&gt;</pre>
+
+  <h4>🎮 Try it:</h4>
+  <div class="demo-box">
+    <div style="margin-bottom:1em;">
+      <label style="display:block;margin-bottom:0.5em;font-weight:bold;">👤 Name:</label>
+      <input @model="profileName" placeholder="Your name"
+        style="width:100%;padding:0.5em;border:2px solid #ddd;border-radius:4px;">
+    </div>
+
+    <div style="margin-bottom:1em;">
+      <label style="display:block;margin-bottom:0.5em;font-weight:bold;">🎂 Age:</label>
+      <input @model="profileAge" type="number" placeholder="Your age"
+        style="width:100%;padding:0.5em;border:2px solid #ddd;border-radius:4px;">
+    </div>
+
+    <div style="margin-bottom:1em;">
+      <label style="display:flex;align-items:center;font-weight:bold;">
+        <input @model="profileAgreed" type="checkbox" style="margin-right:0.5em;">
+        ✅ I agree to the terms
+      </label>
+    </div>
+
+    <div style="margin-bottom:1em;">
+      <label style="display:block;margin-bottom:0.5em;font-weight:bold;">🌍 City:</label>
+      <select @model="profileCity" style="width:100%;padding:0.5em;border:2px solid #ddd;border-radius:4px;">
+        <option value="">Choose your city</option>
+        <option value="paris">🇫🇷 Paris</option>
+        <option value="tokyo">🇯🇵 Tokyo</option>
+        <option value="newyork">🇺🇸 New York</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="output-box">
+    <h4>📊 Your Profile:</h4>
+    <div class="code-result">
+      <strong>Name:</strong> {{profileName || '(not entered)'}}<br>
+      <strong>Age:</strong> {{profileAge || '(not entered)'}}<br>
+      <strong>Agreed:</strong> {{profileAgreed ? '✅ Yes' : '❌ No'}}<br>
+      <strong>City:</strong> {{profileCity || '(not selected)'}}
+    </div>
+  </div>
+
+  <div class="output-box">
+    <strong>🎯 What you learned:</strong>
+    <ul>
+      <li><code>@model</code> works with all input types</li>
+      <li>Numbers, checkboxes, selects all bind automatically</li>
+      <li>Use <code>||</code> to provide fallback values</li>
+      <li>Ternary operators work great for conditions</li>
+    </ul>
+  </div>
+</div>

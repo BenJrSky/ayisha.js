@@ -1,0 +1,204 @@
+<!-- Functional Array Operations: Complete Guide -->
+<div class="step-container">
+  <span class="step-number">Step 20</span>
+  <h2>6. Functional Array Operations: Complete Guide</h2>
+  <p>Transform, filter, and process arrays declaratively using functional programming patterns.</p>
+
+  <h3>6.1. Transform Array with @map</h3>
+  <pre class="code-console">&lt;!-- Basic transformation --&gt;
+&lt;div @source="numbers" @map="n =&gt; n * 2" @result="doubled"&gt;&lt;/div&gt;
+&lt;!-- Complex object transformation --&gt;
+&lt;div @source="products" @map="p =&gt; ({...p, totalPrice: p.price * p.quantity})" @result="enhancedProducts"&gt;&lt;/div&gt;</pre>
+
+  <h4>🎮 Try it:</h4>
+  <div class="demo-box">
+    <init>
+      products = [
+        {id: 1, name: 'Laptop', price: 999, quantity: 2, category: 'Electronics'},
+        {id: 2, name: 'Book', price: 25, quantity: 3, category: 'Education'},
+        {id: 3, name: 'Headphones', price: 150, quantity: 1, category: 'Electronics'}
+      ];
+    </init>
+
+    <ini>items='cioa'</ini>
+
+    <!-- Basic number transformation -->
+    <div @source="numbers" @map="n => n * 2" @result="doubled"></div>
+    <div style="background:#f0f8ff;padding:1em;border-radius:4px;margin:1em 0;">
+      <h4>Number Transformation Example:</h4>
+      <p><strong>Original:</strong> [{{numbers.join(', ')}}]</p>
+      <p><strong>Doubled:</strong> [{{doubled ? doubled.join(', ') : 'Loading...'}}]</p>
+    </div>
+
+    <!-- Complex object transformation -->
+    <div @source="products"
+      @map="p => ({...p, totalPrice: p.price * p.quantity, priceCategory: p.price > 100 ? 'Expensive' : 'Affordable'})"
+      @result="enhancedProducts"></div>
+    <div style="background:#f8fff8;padding:1em;border-radius:4px;margin:1em 0;">
+      <h4>Product Enhancement Example:</h4>
+      <div @for="product in enhancedProducts" @key="product.id"
+        style="border:1px solid #ddd;padding:0.8em;margin:0.5em 0;border-radius:4px;">
+        <h5 style="margin:0 0 0.5em 0;">{{product.name}}</h5>
+        <p style="margin:0.2em 0;"><strong>Category:</strong> {{product.category}}</p>
+        <p style="margin:0.2em 0;"><strong>Unit Price:</strong> ${{product.price}}</p>
+        <p style="margin:0.2em 0;"><strong>Quantity:</strong> {{product.quantity}}</p>
+        <p style="margin:0.2em 0;"><strong>Total Price:</strong> ${{product.totalPrice}}</p>
+        <p style="margin:0.2em 0;"><strong>Category:</strong> {{product.priceCategory}}</p>
+      </div>
+    </div>
+  </div>
+
+  <h3>6.2. Filter Array with @filter</h3>
+  <pre class="code-console">&lt;!-- Simple filtering --&gt;
+&lt;div @source="numbers" @filter="n =&gt; n % 2 === 0" @result="evens"&gt;&lt;/div&gt;
+&lt;!-- Complex object filtering with multiple conditions --&gt;
+&lt;div @source="enhancedProducts" @filter="p =&gt; p.category === 'Electronics' && p.totalPrice &gt; 500" @result="expensiveElectronics"&gt;&lt;/div&gt;</pre>
+
+  <h4>🎮 Try it:</h4>
+  <div class="demo-box">
+    <!-- Simple number filtering -->
+    <div @source="numbers" @filter="n => n % 2 === 0" @result="evens"></div>
+    <div style="background:#fff8f0;padding:1em;border-radius:4px;margin:1em 0;">
+      <h4>Even Numbers Filter:</h4>
+      <p><strong>All Numbers:</strong> [{{numbers.join(', ')}}]</p>
+      <p><strong>Even Numbers:</strong> [{{evens ? evens.join(', ') : 'Loading...'}}]</p>
+    </div>
+
+    <!-- Complex product filtering -->
+    <div @source="enhancedProducts" @filter="p => p.category === 'Electronics' && p.totalPrice > 500"
+      @result="expensiveElectronics"></div>
+    <div style="background:#f0fff8;padding:1em;border-radius:4px;margin:1em 0;">
+      <h4>Expensive Electronics Filter:</h4>
+      <p><strong>Filter Criteria:</strong> Category = 'Electronics' AND Total Price > $500</p>
+      <div @if="expensiveElectronics && expensiveElectronics.length">
+        <div @for="product in expensiveElectronics" @key="product.id"
+          style="border:2px solid #4CAF50;padding:0.8em;margin:0.5em 0;border-radius:4px;background:#f8fff8;">
+          <h5 style="margin:0 0 0.5em 0;">✓ {{product.name}}</h5>
+          <p style="margin:0.2em 0;">Total: ${{product.totalPrice}} | Category: {{product.category}}</p>
+        </div>
+      </div>
+      <p @if="!expensiveElectronics || !expensiveElectronics.length" style="color:#666;">No products match the criteria.</p>
+    </div>
+  </div>
+
+  <h3>6.3. Reduce Array with @reduce and @initial</h3>
+  <pre class="code-console">&lt;!-- Simple sum --&gt;
+&lt;div @source="numbers" @reduce="(a, n) =&gt; a + n" @initial="0" @result="sum"&gt;&lt;/div&gt;
+&lt;!-- Complex analytics --&gt;
+&lt;div @source="enhancedProducts" 
+     @reduce="(acc, p) =&gt; ({...acc, totalRevenue: acc.totalRevenue + p.totalPrice, itemCount: acc.itemCount + p.quantity})" 
+     @initial="{totalRevenue: 0, itemCount: 0}" 
+     @result="analytics"&gt;&lt;/div&gt;</pre>
+
+  <h4>🎮 Try it:</h4>
+  <div class="demo-box">
+    <!-- Simple sum calculation -->
+    <div @source="numbers" @reduce="(a, n) => a + n" @initial="0" @result="sum"></div>
+
+    <!-- Complex analytics -->
+    <div @source="enhancedProducts"
+      @reduce="(acc, p) => ({...acc, totalRevenue: acc.totalRevenue + p.totalPrice, itemCount: acc.itemCount + p.quantity, categories: acc.categories.includes(p.category) ? acc.categories : [...acc.categories, p.category]})"
+      @initial="{totalRevenue: 0, itemCount: 0, categories: []}" @result="analytics"></div>
+
+    <div style="background:#fff0ff;padding:1em;border-radius:4px;margin:1em 0;">
+      <h4>Business Analytics Dashboard:</h4>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1em;margin:1em 0;">
+        <div style="background:white;padding:1em;border-radius:4px;text-align:center;border:2px solid #4CAF50;">
+          <h5 style="margin:0;color:#4CAF50;">Sum of Numbers</h5>
+          <p style="font-size:1.5em;margin:0.5em 0;color:#333;">{{sum}}</p>
+        </div>
+        <div style="background:white;padding:1em;border-radius:4px;text-align:center;border:2px solid #2196F3;">
+          <h5 style="margin:0;color:#2196F3;">Total Revenue</h5>
+          <p style="font-size:1.5em;margin:0.5em 0;color:#333;">${{analytics ? analytics.totalRevenue : 'Loading...'}}</p>
+        </div>
+        <div style="background:white;padding:1em;border-radius:4px;text-align:center;border:2px solid #FF9800;">
+          <h5 style="margin:0;color:#FF9800;">Total Items</h5>
+          <p style="font-size:1.5em;margin:0.5em 0;color:#333;">{{analytics ? analytics.itemCount : 'Loading...'}}</p>
+        </div>
+      </div>
+      <div @if="analytics" style="background:white;padding:1em;border-radius:4px;margin-top:1em;">
+        <h5 style="margin:0 0 0.5em 0;">Categories:</h5>
+        <div style="display:flex;gap:0.5em;">
+          <span @for="category in analytics.categories" @key="category"
+            style="background:#f0f0f0;padding:0.3em 0.8em;border-radius:20px;font-size:0.9em;">
+            {{category}}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>6.4. Chain Operations for Complex Data Processing</h3>
+  <pre class="code-console">&lt;!-- Multi-step data pipeline --&gt;
+&lt;!-- Step 1: Filter products by category --&gt;
+&lt;div @source="products" @filter="p =&gt; p.category === 'Electronics'" @result="electronics"&gt;&lt;/div&gt;
+&lt;!-- Step 2: Add calculated fields --&gt;
+&lt;div @source="electronics" @map="p =&gt; ({...p, totalValue: p.price * p.quantity, discount: p.price &gt; 500 ? 0.1 : 0})" @result="processedElectronics"&gt;&lt;/div&gt;
+&lt;!-- Step 3: Apply discounts --&gt;
+&lt;div @source="processedElectronics" @map="p =&gt; ({...p, finalPrice: p.price * (1 - p.discount)})" @result="finalElectronics"&gt;&lt;/div&gt;
+&lt;!-- Step 4: Calculate total savings --&gt;
+&lt;div @source="finalElectronics" @reduce="(acc, p) =&gt; acc + (p.price * p.discount * p.quantity)" @initial="0" @result="totalSavings"&gt;&lt;/div&gt;</pre>
+
+  <h4>🎮 Try it:</h4>
+  <div class="demo-box">
+    <!-- Data processing pipeline -->
+    <div @source="products" @filter="p => p.category === 'Electronics'" @result="electronics"></div>
+    <div @source="electronics"
+      @map="p => ({...p, totalValue: p.price * p.quantity, discount: p.price > 500 ? 0.1 : 0})"
+      @result="processedElectronics"></div>
+    <div @source="processedElectronics" @map="p => ({...p, finalPrice: p.price * (1 - p.discount)})"
+      @result="finalElectronics"></div>
+    <div @source="finalElectronics" @reduce="(acc, p) => acc + (p.price * p.discount * p.quantity)" @initial="0"
+      @result="totalSavings"></div>
+
+    <div style="background:#f8f8ff;padding:1em;border-radius:4px;margin:1em 0;">
+      <h4>Electronics Processing Pipeline:</h4>
+      <div style="display:flex;flex-direction:column;gap:1em;">
+
+        <div style="background:white;padding:1em;border-radius:4px;border-left:4px solid #9C27B0;">
+          <h5 style="margin:0 0 0.5em 0;">📊 Pipeline Summary</h5>
+          <p style="margin:0.2em 0;"><strong>Original Products:</strong> {{products.length}}</p>
+          <p style="margin:0.2em 0;"><strong>Electronics Found:</strong> {{electronics ? electronics.length : 'Processing...'}}</p>
+          <p style="margin:0.2em 0;"><strong>Total Savings Available:</strong> ${{totalSavings ? totalSavings.toFixed(2) : 'Calculating...'}}</p>
+        </div>
+
+        <div @if="finalElectronics"
+          style="background:white;padding:1em;border-radius:4px;border-left:4px solid #4CAF50;">
+          <h5 style="margin:0 0 0.5em 0;">💰 Final Electronics with Discounts</h5>
+          <div @for="product in finalElectronics" @key="product.id"
+            style="border:1px solid #ddd;padding:0.8em;margin:0.5em 0;border-radius:4px;background:#f9fff9;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <h6 style="margin:0 0 0.3em 0;">{{product.name}}</h6>
+                <p style="margin:0.1em 0;font-size:0.9em;">Quantity: {{product.quantity}}</p>
+              </div>
+              <div style="text-align:right;">
+                <p style="margin:0.1em 0;font-size:0.9em;" @if="product.discount > 0">
+                  <span style="text-decoration:line-through;color:#666;">${{product.price}}</span>
+                  <strong style="color:#4CAF50;"> ${{product.finalPrice.toFixed(2)}}</strong>
+                </p>
+                <p style="margin:0.1em 0;font-size:0.9em;" @if="product.discount === 0">
+                  <strong>${{product.price}}</strong>
+                </p>
+                <p style="margin:0.1em 0;font-size:0.8em;color:#4CAF50;" @if="product.discount > 0">
+                  {{(product.discount * 100).toFixed(0)}}% OFF
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="output-box">
+    <strong>🎯 What you learned:</strong>
+    <ul>
+      <li>@map transforms array elements with functions</li>
+      <li>@filter creates new arrays with matching elements</li>
+      <li>@reduce aggregates arrays into single values or objects</li>
+      <li>Chain operations to create powerful data pipelines</li>
+    </ul>
+  </div>
+  <p @state></p>
+</div>

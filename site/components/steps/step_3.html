@@ -1,0 +1,36 @@
+<div class="step-container">
+  <span class="step-number">Step 3</span>
+  <h2>🔘 Buttons and Actions</h2>
+  <p>Now let's add some buttons to perform actions. We'll create a simple counter.</p>
+
+  <h4>📝 The Code:</h4>
+  <pre class="code-console">&lt;button @click="count++"&gt;➕ Add 1&lt;/button&gt;
+&lt;button @click="count--"&gt;➖ Subtract 1&lt;/button&gt;
+&lt;button @click="count = 0"&gt;🔄 Reset&lt;/button&gt;
+&lt;p&gt;Count: &#123;&#123;count || 0&#125;&#125;&lt;/p&gt;</pre>
+
+  <h4>🎮 Try it:</h4>
+  <div class="demo-box">
+    <init>count = 0;</init>
+    <button @click="count++"
+      style="padding:0.5em 1em;margin:0.25em;background:#4CAF50;color:white;border:none;border-radius:4px;cursor:pointer;">➕
+      Add 1</button>
+    <button @click="count--"
+      style="padding:0.5em 1em;margin:0.25em;background:#f44336;color:white;border:none;border-radius:4px;cursor:pointer;">➖
+      Subtract 1</button>
+    <button @click="count = 0"
+      style="padding:0.5em 1em;margin:0.25em;background:#9E9E9E;color:white;border:none;border-radius:4px;cursor:pointer;">🔄
+      Reset</button>
+    <p style="font-size:1.5em;font-weight:bold;color:#2196F3;">Count: {{count}}</p>
+  </div>
+
+  <div class="output-box">
+    <strong>🎯 What you learned:</strong>
+    <ul>
+      <li><code>@click="expression"</code> runs code when clicked</li>
+      <li><code>count++</code> increases the number</li>
+      <li><code>count = 0</code> sets a specific value</li>
+      <li>Variables update the display automatically</li>
+    </ul>
+  </div>
+</div>

@@ -1,0 +1,182 @@
+<!-- Advanced Loops: @for with Complex Data -->
+<div class="step-container">
+  <span class="step-number">Step 19</span>
+  <h2>5. Advanced Loops: @for with Complex Data</h2>
+  <p>Master complex data structures, nested loops, and the importance of @key for performance.</p>
+
+  <h3>5.1 Basic Looping</h3>
+  <pre class="code-console">&lt;ul&gt;
+  &lt;li @for="item in items" @key="item.id"&gt;&#123;&#123;item.name&#125;&#125;&lt;/li&gt;
+&lt;/ul&gt;</pre>
+
+  <h4>🎮 Try it:</h4>
+  <div class="demo-box">
+    <init>
+      items = [
+        {id:1, name:'Task 1', priority: 'high', completed: false}, 
+        {id:2, name:'Task 2', priority: 'medium', completed: true}, 
+        {id:3, name:'Task 3', priority: 'low', completed: false}
+      ];
+    </init>
+
+    <ul style="list-style-type:none;padding:0;">
+      <li @for="item in items" @key="item.id"
+        style="padding:0.5em;margin:0.3em 0;background:#f0f8ff;border-radius:4px;border-left:4px solid #2196F3;">
+        {{item.name}}
+      </li>
+    </ul>
+  </div>
+
+  <h3>5.2 Complex Data Structures with Nested Loops</h3>
+  <pre class="code-console">&lt;!-- Task Management App Example --&gt;
+&lt;div @for="project in projects" @key="project.id" class="project-card"&gt;
+  &lt;h3&gt;&#123;&#123;project.name&#125;&#125; (&#123;&#123;project.tasks.length&#125;&#125; tasks)&lt;/h3&gt;
+  &lt;div @for="task in project.tasks" @key="task.id" 
+       @class="{completed: task.completed, priority-high: task.priority === 'high'}"&gt;
+    &lt;label&gt;
+      &lt;input type="checkbox" @model="task.completed"&gt;
+      &#123;&#123;task.name&#125;&#125; - &#123;&#123;task.priority&#125;&#125; priority
+    &lt;/label&gt;
+    &lt;span @if="task.dueDate"&gt; (Due: &#123;&#123;task.dueDate&#125;&#125;)&lt;/span&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre>
+
+  <h4>🎮 Try it:</h4>
+  <div class="demo-box">
+    <init>
+      projects = [
+        {
+          id: 1,
+          name: 'Website Redesign',
+          tasks: [
+            {id: 1, name: 'Design mockups', priority: 'high', completed: false, dueDate: '2024-01-15'},
+            {id: 2, name: 'Frontend development', priority: 'high', completed: false, dueDate: '2024-01-20'},
+            {id: 3, name: 'Testing', priority: 'medium', completed: false, dueDate: '2024-01-25'}
+          ]
+        },
+        {
+          id: 2,
+          name: 'Mobile App',
+          tasks: [
+            {id: 4, name: 'User research', priority: 'medium', completed: true, dueDate: '2024-01-10'},
+            {id: 5, name: 'Prototype', priority: 'high', completed: false, dueDate: '2024-01-18'},
+            {id: 6, name: 'UI Implementation', priority: 'low', completed: false}
+          ]
+        }
+      ];
+    </init>
+
+    <div @for="project in projects" @key="project.id"
+      style="border:2px solid #ddd;padding:1em;margin:1em 0;border-radius:8px;background:#fafafa;">
+      <h3 style="margin-top:0;color:#333;">{{project.name}} ({{project.tasks.length}} tasks)</h3>
+      
+      <div @for="task in project.tasks" @key="task.id" @class="{completed: task.completed}"
+        style="padding:0.5em;margin:0.3em 0;border-radius:4px;background:white;border-left:4px solid"
+        @style="{borderLeftColor: task.priority === 'high' ? '#ff4757' : task.priority === 'medium' ? '#ffa502' : '#7bed9f'}">
+        
+        <label style="display:flex;align-items:center;cursor:pointer;">
+          <input type="checkbox" @model="task.completed" style="margin-right:0.5em;">
+          <span
+            @style="{textDecoration: task.completed ? 'line-through' : 'none', opacity: task.completed ? 0.6 : 1}">
+            {{task.name}} - <strong>{{task.priority}}</strong> priority
+          </span>
+        </label>
+        
+        <div @if="task.dueDate" style="font-size:0.9em;color:#666;margin-top:0.3em;">
+          📅 Due: {{task.dueDate}}
+        </div>
+      </div>
+
+      <!-- Project Statistics -->
+      <div style="margin-top:1em;padding:0.5em;background:#e8f4fd;border-radius:4px;font-size:0.9em;">
+        <strong>Progress:</strong>
+        {{Math.round((project.tasks.filter(t => t.completed).length / project.tasks.length) * 100)}}%
+        ({{project.tasks.filter(t => t.completed).length}}/{{project.tasks.length}} completed)
+      </div>
+    </div>
+
+    <style>
+      .completed {
+        opacity: 0.7;
+      }
+    </style>
+  </div>
+
+  <h3>5.3 Loop Performance with @key</h3>
+  <div style="background:#fff8dc;padding:1em;border-radius:4px;margin:1em 0;">
+    <h4>Why @key matters:</h4>
+    <ul>
+      <li><strong>Without @key:</strong> Elements are recreated when array changes, losing state</li>
+      <li><strong>With @key:</strong> Elements are tracked and reused efficiently</li>
+      <li><strong>Best practice:</strong> Use unique, stable values like IDs for @key</li>
+    </ul>
+
+    <pre class="code-console">❌ Bad: @key="$index" (index changes when items move)
+✅ Good: @key="item.id" (stable unique identifier)</pre>
+  </div>
+
+  <h4>🎮 Key Performance Demo:</h4>
+  <div class="demo-box">
+    <init>
+      itemsWithoutKey = [
+        {id: 1, name: 'Item 1', input: ''},
+        {id: 2, name: 'Item 2', input: ''},
+        {id: 3, name: 'Item 3', input: ''}
+      ];
+      itemsWithKey = [
+        {id: 1, name: 'Item 1', input: ''},
+        {id: 2, name: 'Item 2', input: ''},
+        {id: 3, name: 'Item 3', input: ''}
+      ];
+    </init>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:2em;">
+      <div>
+        <h4>❌ Without @key (loses input state)</h4>
+        <button @click="itemsWithoutKey.reverse()"
+          style="padding:0.5em 1em;background:#f44336;color:white;border:none;border-radius:4px;cursor:pointer;margin-bottom:1em;">
+          Reverse Order
+        </button>
+        <div @for="item in itemsWithoutKey"
+          style="padding:0.5em;margin:0.3em 0;background:#ffebee;border-radius:4px;">
+          <strong>{{item.name}}</strong>
+          <input @model="item.input" placeholder="Type something..." 
+            style="width:100%;padding:0.3em;margin-top:0.3em;border:1px solid #ccc;border-radius:3px;">
+        </div>
+      </div>
+
+      <div>
+        <h4>✅ With @key (preserves input state)</h4>
+        <button @click="itemsWithKey.reverse()"
+          style="padding:0.5em 1em;background:#4CAF50;color:white;border:none;border-radius:4px;cursor:pointer;margin-bottom:1em;">
+          Reverse Order
+        </button>
+        <div @for="item in itemsWithKey" @key="item.id"
+          style="padding:0.5em;margin:0.3em 0;background:#e8f5e9;border-radius:4px;">
+          <strong>{{item.name}}</strong>
+          <input @model="item.input" placeholder="Type something..." 
+            style="width:100%;padding:0.3em;margin-top:0.3em;border:1px solid #ccc;border-radius:3px;">
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#fff3cd;padding:1em;border-radius:4px;margin-top:1em;">
+      <strong>🧪 Test Instructions:</strong>
+      <ol>
+        <li>Type different text in the input fields on both sides</li>
+        <li>Click the "Reverse Order" buttons</li>
+        <li>Notice how the left side loses input values, but the right side preserves them!</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="output-box">
+    <strong>🎯 What you learned:</strong>
+    <ul>
+      <li>@for directive creates loops over arrays and objects</li>
+      <li>Nested loops handle complex data structures</li>
+      <li>@key is essential for performance and state preservation</li>
+      <li>Use unique, stable identifiers for @key values</li>
+    </ul>
+  </div>
+</div>

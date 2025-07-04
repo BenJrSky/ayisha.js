@@ -1694,14 +1694,27 @@
     }
 
     _runInitBlocks() {
+      // Avoid running init blocks during rendering to prevent loops
+      if (this._isRendering) {
+        return;
+      }
+      
       this._initBlocks.forEach(code => {
+        // Skip empty or whitespace-only code
+        if (!code || !code.trim()) {
+          return;
+        }
+        
+        // Clean the code of potential problematic characters
+        const cleanCode = code.trim().replace(/[\u200B-\u200D\uFEFF]/g, ''); // Remove zero-width characters
+        
         // Trasforma "foo = ..." in "state.foo = ..." solo se non già prefissato
-        const transformed = code.replace(/(^|[;\s])([a-zA-Z_$][\w$]*)\s*=/g, (match, sep, varName, offset) => {
+        const transformed = cleanCode.replace(/(^|[;\s])([a-zA-Z_$][\w$]*)\s*=/g, (match, sep, varName, offset) => {
           // Non toccare se già state., window., this.
           if (/\b(state|window|this)\.$/.test(sep + varName + '.')) return match;
           
           // Check if this is a variable declaration (let/const/var)
-          const beforeMatch = code.substring(0, offset);
+          const beforeMatch = cleanCode.substring(0, offset);
           if (/\b(let|const|var)\s*$/.test(beforeMatch)) return match;
           
           return `${sep}state.${varName}=`;
@@ -1709,7 +1722,7 @@
         try {
           new Function('state', transformed)(this.state);
         } catch (e) {
-          console.error('Init error:', e);
+          console.error('Init error:', e, 'Original code:', code, 'Cleaned:', cleanCode, 'Transformed:', transformed);
         }
       });
 
@@ -2511,6 +2524,10 @@
         const componentHtml = this.componentManager.getCachedComponent(srcUrl);
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = componentHtml;
+        
+        // CORREZIONE: Process init blocks in components before parsing
+        this._processComponentInitBlocks(tempDiv);
+        
         const componentVNode = this.parse(tempDiv);
         if (componentVNode && componentVNode.children) {
           const frag = document.createDocumentFragment();
@@ -2529,7 +2546,13 @@
             return res.text();
           })
           .then(html => {
-            this.componentManager.cache[srcUrl] = html;
+            // CORREZIONE: Process init blocks when caching components
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            this._processComponentInitBlocks(tempDiv);
+            
+            // Store the processed HTML (without init blocks)
+            this.componentManager.cache[srcUrl] = tempDiv.innerHTML;
             if (!this._isRendering) requestAnimationFrame(() => this.render());
           })
           .catch(err => {
@@ -2542,6 +2565,58 @@
       placeholder.className = 'component-loading';
       placeholder.textContent = `Loading component: ${srcUrl}`;
       return placeholder;
+    }
+
+    _processComponentInitBlocks(tempDiv) {
+      // Process all init blocks in the component before parsing
+      const initElements = tempDiv.querySelectorAll('init');
+      const newInitBlocks = [];
+      
+      initElements.forEach(initEl => {
+        const initContent = initEl.textContent.trim();
+        if (initContent) {
+          // Check if this init block was already processed to avoid duplicates
+          if (!this._initBlocks.includes(initContent)) {
+            newInitBlocks.push(initContent);
+            this._initBlocks.push(initContent);
+          }
+        }
+        // Remove the init element after processing
+        initEl.remove();
+      });
+      
+      // Run only the new init blocks immediately (without triggering render)
+      this._runInitBlocksImmediate(newInitBlocks);
+    }
+
+    _runInitBlocksImmediate(initBlocks) {
+      initBlocks.forEach(code => {
+        // Skip empty or whitespace-only code
+        if (!code || !code.trim()) {
+          return;
+        }
+        
+        // Clean the code of potential problematic characters
+        const cleanCode = code.trim().replace(/[\u200B-\u200D\uFEFF]/g, ''); // Remove zero-width characters
+        
+        // Trasforma "foo = ..." in "state.foo = ..." solo se non già prefissato
+        const transformed = cleanCode.replace(/(^|[;\s])([a-zA-Z_$][\w$]*)\s*=/g, (match, sep, varName, offset) => {
+          // Non toccare se già state., window., this.
+          if (/\b(state|window|this)\.$/.test(sep + varName + '.')) return match;
+          
+          // Check if this is a variable declaration (let/const/var)
+          const beforeMatch = cleanCode.substring(0, offset);
+          if (/\b(let|const|var)\s*$/.test(beforeMatch)) return match;
+          
+          return `${sep}state.${varName}=`;
+        });
+        
+        try {
+          new Function('state', transformed)(this.state);
+        } catch (e) {
+          console.error('Component init error:', e, 'Original code:', code, 'Cleaned:', cleanCode, 'Transformed:', transformed);
+        }
+      });
     }
 
     _handleNoDirective(vNode, ctx) {
@@ -3350,6 +3425,14 @@
     }
 
     mount() {
+      // First pass: process all init blocks
+      this.root.childNodes.forEach(child => {
+        if (child.nodeType === 1 && child.tagName && child.tagName.toLowerCase() === 'init') {
+          this.parser.parse(child);
+        }
+      });
+
+      // Second pass: build the VDOM (excluding init blocks)
       if (this.root.childNodes.length > 1) {
         const fragVNode = { tag: 'fragment', attrs: {}, directives: {}, subDirectives: {}, children: [] };
         this.root.childNodes.forEach(child => {

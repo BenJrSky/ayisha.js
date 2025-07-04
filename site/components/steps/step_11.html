@@ -1,0 +1,75 @@
+<div class="step-container">
+  <span class="step-number">Step 11</span>
+  <h2>🌐 API Integration</h2>
+  <p>Fetch data from APIs and display it dynamically!</p>
+
+  <h4>📝 The Code:</h4>
+  <pre class="code-console">&lt;button @click="fetchData()"&gt;Load Jokes&lt;/button&gt;
+&lt;div @if="loading"&gt;⏳ Loading...&lt;/div&gt;
+&lt;div @if="error"&gt;❌ Error: &#123;&#123;error&#125;&#125;&lt;/div&gt;
+&lt;div @if="jokes"&gt;
+  &lt;div @map="jokes"&gt;
+    &lt;p&gt;😄 &#123;&#123;item.setup&#125;&#125;&lt;/p&gt;
+    &lt;p&gt;&lt;strong&gt;&#123;&#123;item.punchline&#125;&#125;&lt;/strong&gt;&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre>
+
+  <h4>🎮 Try it:</h4>
+  <div class="demo-box">
+    <init>
+      loading = false;
+      error = null;
+      jokes = null;
+      fetchData = async function() {
+      loading = true;
+      error = null;
+      try {
+      const response = await fetch('https://official-joke-api.appspot.com/jokes/programming/ten');
+      jokes = await response.json();
+      } catch (e) {
+      error = 'Failed to load jokes';
+      }
+      loading = false;
+      };
+    </init>
+
+    <button @click="fetchData()"
+      style="padding:0.8em 1.5em;background:#2196F3;color:white;border:none;border-radius:4px;cursor:pointer;margin-bottom:1em;">
+      🎭 Load Programming Jokes
+    </button>
+
+    <div @if="loading" style="text-align:center;padding:2em;background:#f8f9fa;border-radius:4px;">
+      <div style="font-size:2em;">⏳</div>
+      <p>Loading jokes...</p>
+    </div>
+
+    <div @if="error"
+      style="padding:1em;background:#ffebee;border:2px solid #f44336;border-radius:4px;color:#c62828;">
+      ❌ <strong>Error:</strong> {{error}}
+    </div>
+
+    <div @if="jokes && !loading">
+      <h4 style="color:#2196F3;">🎭 Programming Jokes:</h4>
+      <div @map="jokes"
+        style="margin-bottom:1.5em;padding:1em;background:#f3e5f5;border-radius:4px;border-left:4px solid #9C27B0;">
+        <p style="margin:0 0 0.5em 0;font-size:1.1em;">😄 {{item.setup}}</p>
+        <p style="margin:0;font-weight:bold;color:#7B1FA2;">{{item.punchline}}</p>
+      </div>
+    </div>
+
+    <div @if="!jokes && !loading && !error"
+      style="text-align:center;padding:2em;background:#f8f9fa;border:2px dashed #ddd;border-radius:4px;color:#666;">
+      Click the button above to load some programming jokes!
+    </div>
+  </div>
+
+  <div class="output-box">
+    <strong>🎯 What you learned:</strong>
+    <ul>
+      <li>Use <code>async/await</code> for API calls</li>
+      <li>Handle loading states with boolean flags</li>
+      <li>Try/catch for error handling</li>
+      <li>Display different states: loading, error, success</li>
+    </ul>
+  </div>
+</div>

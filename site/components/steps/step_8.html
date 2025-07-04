@@ -1,0 +1,70 @@
+<div class="step-container">
+  <span class="step-number">Step 8</span>
+  <h2>🔄 Tabs and Switches</h2>
+  <p>Create tab interfaces and switch between different views easily!</p>
+
+  <h4>📝 The Code:</h4>
+  <pre class="code-console">&lt;div class="tabs"&gt;
+  &lt;button @click="activeTab = 'home'" @class="{'active': activeTab === 'home'}"&gt;Home&lt;/button&gt;
+  &lt;button @click="activeTab = 'about'" @class="{'active': activeTab === 'about'}"&gt;About&lt;/button&gt;
+  &lt;button @click="activeTab = 'contact'" @class="{'active': activeTab === 'contact'}"&gt;Contact&lt;/button&gt;
+&lt;/div&gt;
+
+&lt;div @if="activeTab === 'home'"&gt;🏠 Welcome to the home page!&lt;/div&gt;
+&lt;div @if="activeTab === 'about'"&gt;ℹ️ About us page content...&lt;/div&gt;
+&lt;div @if="activeTab === 'contact'"&gt;📞 Contact us at...&lt;/div&gt;</pre>
+
+  <h4>🎮 Try it:</h4>
+  <div class="demo-box">
+    <init>activeTab = 'home';</init>
+
+    <div style="display:flex;border-bottom:2px solid #e0e0e0;margin-bottom:1em;">
+      <button @click="activeTab = 'home'" 
+        style="padding:0.8em 1.5em;margin-right:0.5em;border:none;border-radius:4px 4px 0 0;cursor:pointer;font-weight:bold;"
+        @style="{'background': activeTab === 'home' ? '#2196F3' : '#f5f5f5', 'color': activeTab === 'home' ? 'white' : '#666'}">
+        🏠 Home
+      </button>
+      <button @click="activeTab = 'about'"
+        style="padding:0.8em 1.5em;margin-right:0.5em;border:none;border-radius:4px 4px 0 0;cursor:pointer;font-weight:bold;"
+        @style="{'background': activeTab === 'about' ? '#2196F3' : '#f5f5f5', 'color': activeTab === 'about' ? 'white' : '#666'}">
+        ℹ️ About
+      </button>
+      <button @click="activeTab = 'contact'"
+        style="padding:0.8em 1.5em;border:none;border-radius:4px 4px 0 0;cursor:pointer;font-weight:bold;"
+        @style="{'background': activeTab === 'contact' ? '#2196F3' : '#f5f5f5', 'color': activeTab === 'contact' ? 'white' : '#666'}">
+        📞 Contact
+      </button>
+    </div>
+
+    <div style="min-height:120px;padding:1.5em;background:#f8f9fa;border-radius:4px;">
+      <div @if="activeTab === 'home'" style="text-align:center;">
+        <h3>🏠 Welcome to our Homepage!</h3>
+        <p>This is the main page where you can find all the latest updates and news.</p>
+        <p>Feel free to explore our website and discover amazing features!</p>
+      </div>
+      
+      <div @if="activeTab === 'about'" style="text-align:center;">
+        <h3>ℹ️ About Our Company</h3>
+        <p>We are a passionate team dedicated to creating amazing web experiences.</p>
+        <p>Our mission is to make web development accessible and fun for everyone!</p>
+      </div>
+      
+      <div @if="activeTab === 'contact'" style="text-align:center;">
+        <h3>📞 Get in Touch</h3>
+        <p><strong>Email:</strong> hello@company.com</p>
+        <p><strong>Phone:</strong> +1 (555) 123-4567</p>
+        <p><strong>Address:</strong> 123 Web Street, Internet City</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="output-box">
+    <strong>🎯 What you learned:</strong>
+    <ul>
+      <li><code>@class="{'className': condition}"</code> adds classes conditionally</li>
+      <li>Use <code>===</code> for exact comparison</li>
+      <li>Combine <code>@if</code> and variables for dynamic content</li>
+      <li>Dynamic styling with <code>@style</code> for interactive elements</li>
+    </ul>
+  </div>
+</div>

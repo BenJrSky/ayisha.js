@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Component Init</title>
+    <script src="ayisha.js"></script>
+</head>
+<body>
+    <h1>Test Component Init</h1>
+    
+    <init>
+        mainMessage = "This is from main page";
+        showComponent = true;
+    </init>
+
+    <div style="background: #f0f0f0; padding: 1em; margin: 1em 0;">
+        <h2>Main Page</h2>
+        <p>Main message: <strong>{{mainMessage}}</strong></p>
+        <button @click="showComponent = !showComponent">Toggle Component</button>
+    </div>
+
+    <div @if="showComponent">
+        <component @src="'test-component.html'"></component>
+    </div>
+
+    <div style="background: #e0e0e0; padding: 1em; margin: 1em 0;">
+        <h2>State Debug</h2>
+        <div @state></div>
+    </div>
+</body>
+</html>

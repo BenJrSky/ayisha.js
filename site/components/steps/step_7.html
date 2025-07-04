@@ -1,0 +1,81 @@
+<div class="step-container">
+  <span class="step-number">Step 7</span>
+  <h2>📝 Forms and Validation</h2>
+  <p>Build proper forms with validation. Essential for user input!</p>
+
+  <h4>📝 The Code:</h4>
+  <pre class="code-console">&lt;form @submit="submitForm()"&gt;
+  &lt;input @model="email" @input="validateEmail()" placeholder="Email"&gt;
+  &lt;div @if="emailError" style="color:red"&gt;&#123;&#123;emailError&#125;&#125;&lt;/div&gt;
+  
+  &lt;input @model="password" type="password" placeholder="Password"&gt;
+  &lt;div @if="password && password.length < 6" style="color:red"&gt;
+    Password too short!
+  &lt;/div&gt;
+  
+  &lt;button type="submit" @disabled="emailError || !email || !password"&gt;
+    Submit
+  &lt;/button&gt;
+&lt;/form&gt;</pre>
+
+  <h4>🎮 Try it:</h4>
+  <div class="demo-box">
+    <init>
+      email = '';
+      password = '';
+      emailError = '';
+      formMessage = '';
+      validateEmail = function() {
+        if (email && !email.includes('@')) {
+          emailError = 'Please enter a valid email';
+        } else {
+          emailError = '';
+        }
+      };
+      submitForm = function() {
+        if (!emailError && email && password) {
+          formMessage = '✅ Form submitted successfully!';
+        }
+      };
+    </init>
+
+    <form @submit="submitForm()" style="max-width:400px;">
+      <div style="margin-bottom:1em;">
+        <label style="display:block;margin-bottom:0.5em;font-weight:bold;">📧 Email:</label>
+        <input @model="email" @input="validateEmail()" placeholder="Enter your email"
+          style="width:100%;padding:0.5em;border:2px solid #ddd;border-radius:4px;">
+        <div @if="emailError" style="color:#f44336;margin-top:0.3em;font-size:0.9em;">{{emailError}}</div>
+      </div>
+
+      <div style="margin-bottom:1em;">
+        <label style="display:block;margin-bottom:0.5em;font-weight:bold;">🔒 Password:</label>
+        <input @model="password" type="password" placeholder="Enter your password"
+          style="width:100%;padding:0.5em;border:2px solid #ddd;border-radius:4px;">
+        <div @if="password && password.length < 6" style="color:#f44336;margin-top:0.3em;font-size:0.9em;">
+          Password must be at least 6 characters!
+        </div>
+      </div>
+
+      <button type="submit" 
+        style="width:100%;padding:0.8em;background:#4CAF50;color:white;border:none;border-radius:4px;cursor:pointer;font-weight:bold;"
+        @style="{'opacity': (emailError || !email || !password) ? '0.5' : '1', 'cursor': (emailError || !email || !password) ? 'not-allowed' : 'pointer'}">
+        Submit Form
+      </button>
+    </form>
+
+    <div @if="formMessage"
+      style="margin-top:1em;padding:1em;background:#e8f5e8;border:1px solid #4CAF50;border-radius:4px;color:#2e7d32;">
+      {{formMessage}}
+    </div>
+  </div>
+
+  <div class="output-box">
+    <strong>🎯 What you learned:</strong>
+    <ul>
+      <li><code>@input="function()"</code> runs code when typing</li>
+      <li>Combine conditions with <code>&&</code> and <code>||</code></li>
+      <li>Functions can be stored in variables and called</li>
+      <li>Dynamic styling with <code>@style</code> for visual feedback</li>
+    </ul>
+  </div>
+</div>

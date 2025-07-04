@@ -1,0 +1,87 @@
+<div class="step-container">
+  <span class="step-number">Step 9</span>
+  <h2>🎨 Dynamic Styling and Advanced Interactions</h2>
+  <p>Learn to change styles dynamically and create complex interactions with multiple assignments!</p>
+
+  <h4>📝 The Code:</h4>
+  <pre class="code-console">&lt;div @style="{'background': bgColor, 'padding': '20px'}"&gt;
+  Styled dynamically!
+&lt;/div&gt;
+
+&lt;input @model="bgColor" type="color" value="#ff6b6b"&gt;
+&lt;input @model="textSize" type="range" min="12" max="48"&gt;
+
+&lt;p @style="{'font-size': textSize + 'px', 'color': bgColor}"&gt;
+  Dynamic text!
+&lt;/p&gt;
+
+&lt;!-- Multiple assignments in one click --&gt;
+&lt;button @click="bgColor='#9C27B0'; textSize=32; borderRadius=0"&gt;
+  Purple Theme
+&lt;/button&gt;</pre>
+
+  <h4>🎮 Try it:</h4>
+  <div class="demo-box">
+    <init>bgColor = '#ff6b6b'; textSize = 18; borderRadius = 8;</init>
+    
+    <div style="margin-bottom:1em;">
+      <label style="display:block;margin-bottom:0.5em;font-weight:bold;">🎨 Background Color:</label>
+      <input @model="bgColor" type="color" style="width:100px;height:40px;border:none;border-radius:4px;cursor:pointer;">
+      <span style="margin-left:1em;font-family:monospace;">{{bgColor}}</span>
+    </div>
+
+    <div style="margin-bottom:1em;">
+      <label style="display:block;margin-bottom:0.5em;font-weight:bold;">📏 Text Size: {{textSize}}px</label>
+      <input @model="textSize" type="range" min="12" max="48" 
+        style="width:100%;margin-bottom:0.5em;">
+    </div>
+
+    <div style="margin-bottom:1em;">
+      <label style="display:block;margin-bottom:0.5em;font-weight:bold;">🔲 Border Radius: {{borderRadius}}px</label>
+      <input @model="borderRadius" type="range" min="0" max="25" 
+        style="width:100%;margin-bottom:0.5em;">
+    </div>
+
+    <div style="margin-bottom:1em;">
+      <h4>🎭 Quick Theme Buttons (Multiple Assignments):</h4>
+      <button @click="bgColor='#9C27B0'; textSize=32; borderRadius=0"
+        style="padding:0.5em 1em;margin:0.25em;background:#9C27B0;color:white;border:none;border-radius:4px;cursor:pointer;">
+        🟣 Purple Theme
+      </button>
+      <button @click="bgColor='#4CAF50'; textSize=24; borderRadius=15"
+        style="padding:0.5em 1em;margin:0.25em;background:#4CAF50;color:white;border:none;border-radius:4px;cursor:pointer;">
+        🟢 Green Theme
+      </button>
+      <button @click="bgColor='#f44336'; textSize=18; borderRadius=8"
+        style="padding:0.5em 1em;margin:0.25em;background:#f44336;color:white;border:none;border-radius:4px;cursor:pointer;">
+        🔴 Red Theme
+      </button>
+    </div>
+
+    <div @style="{'background': bgColor, 'padding': '20px', 'border-radius': borderRadius + 'px', 'transition': 'all 0.3s ease'}"
+      style="margin:1em 0;border:2px solid #ddd;">
+      <p @style="{'font-size': textSize + 'px', 'color': 'white', 'margin': '0', 'text-shadow': '1px 1px 2px rgba(0,0,0,0.7)'}"
+        style="font-weight:bold;text-align:center;">
+        🎨 Dynamic Styled Content!
+      </p>
+    </div>
+
+    <div style="margin-top:1em;padding:1em;background:#f0f8ff;border-radius:4px;">
+      <strong>📊 Current Values:</strong>
+      <p style="margin:0.3em 0;font-family:monospace;">Background: {{bgColor}}</p>
+      <p style="margin:0.3em 0;font-family:monospace;">Text Size: {{textSize}}px</p>
+      <p style="margin:0.3em 0;font-family:monospace;">Border Radius: {{borderRadius}}px</p>
+    </div>
+  </div>
+
+  <div class="output-box">
+    <strong>🎯 What you learned:</strong>
+    <ul>
+      <li><code>@style="{'property': value}"</code> for dynamic CSS</li>
+      <li>Color and range inputs work great with <code>@model</code></li>
+      <li>Multiple assignments: <code>@click="var1=val1; var2=val2; var3=val3"</code></li>
+      <li>String concatenation with <code>+</code> for units like 'px'</li>
+      <li>CSS transitions make changes smooth and beautiful</li>
+    </ul>
+  </div>
+</div>

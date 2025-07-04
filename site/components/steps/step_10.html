@@ -1,0 +1,68 @@
+<div class="step-container">
+  <span class="step-number">Step 10</span>
+  <h2>🎠 Image Carousel</h2>
+  <p>Build an interactive image carousel with navigation!</p>
+
+  <h4>📝 The Code:</h4>
+  <pre class="code-console">&lt;div class="carousel"&gt;
+  &lt;img @src="images[currentImage]" alt="Slide"&gt;
+  &lt;button @click="currentImage = (currentImage - 1 + images.length) % images.length"&gt;⬅️&lt;/button&gt;
+  &lt;button @click="currentImage = (currentImage + 1) % images.length"&gt;➡️&lt;/button&gt;
+&lt;/div&gt;
+
+&lt;div class="dots"&gt;
+  &lt;span @map="images" @click="currentImage = index" 
+        @class="{'active': index === currentImage}"&gt;●&lt;/span&gt;
+&lt;/div&gt;</pre>
+
+  <h4>🎮 Try it:</h4>
+  {{currentImage}}
+      <div  class="demo-box">
+            <span @watch="images" @filter="images=>images"></span>
+
+    <div style="position:relative;max-width:400px;margin:0 auto;background:#f0f0f0;border-radius:8px;overflow:hidden;">
+      <img src="{{src}}" alt="Carousel slide" @watch="currentImage=>src='https://picsum.photos/200/300'"
+        style="width:100%;height:250px;object-fit:cover;display:block;">
+
+  {{src}}
+
+
+      <button @click="currentImage = (currentImage - 1 + images.length) % images.length"
+        style="position:absolute;left:10px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.5);color:white;border:none;padding:0.5em;border-radius:50%;cursor:pointer;font-size:1.2em;">
+        ⬅️
+      </button>
+
+      <button @click="currentImage++"
+        style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.5);color:white;border:none;padding:0.5em;border-radius:50%;cursor:pointer;font-size:1.2em;">
+        ➡️
+      </button>
+
+      <div style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:0.5em;">
+        <span @map="images" @click="currentImage = index" @class="{'dot-active': index === currentImage}"
+          style="width:12px;height:12px;background:rgba(255,255,255,0.5);border-radius:50%;cursor:pointer;transition:all 0.3s;"></span>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:1em;padding:1em;background:#f8f9fa;border-radius:4px;">
+      <p style="margin:0;"><strong>Image {{currentImage + 1}} of {{images.length}}</strong></p>
+      <p style="margin:0.5em 0 0 0;font-size:0.9em;color:#666;">Click arrows or dots to navigate</p>
+    </div>
+
+    <style>
+      .dot-active {
+        background: rgba(255, 255, 255, 0.9) !important;
+        transform: scale(1.2);
+      }
+    </style>
+  </div>
+
+  <div class="output-box">
+    <strong>🎯 What you learned:</strong>
+    <ul>
+      <li>Modulo operator <code>%</code> for circular navigation</li>
+      <li><code>@src</code> for dynamic image sources</li>
+      <li>Array indexing: <code>images[currentImage]</code></li>
+      <li>CSS positioning for carousel controls</li>
+    </ul>
+  </div>
+</div>

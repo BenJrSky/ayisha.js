@@ -1,0 +1,54 @@
+<div class="step-container">
+  <span class="step-number">Step 5</span>
+  <h2>🔍 Conditional Display - Show and Hide Things</h2>
+  <p>Learn to show/hide elements based on conditions. Very useful for dynamic interfaces!</p>
+
+  <h4>📝 The Code:</h4>
+  <pre class="code-console">&lt;button @click="showSecret = !showSecret"&gt;Toggle Secret&lt;/button&gt;
+&lt;div @if="showSecret"&gt;🔐 This is a secret message!&lt;/div&gt;
+&lt;div @if="!showSecret"&gt;🔒 Secret is hidden&lt;/div&gt;
+
+&lt;!-- Show vs If difference --&gt;
+&lt;div @show="showSecret"&gt;📱 I stay in DOM but invisible&lt;/div&gt;
+&lt;div @if="showSecret"&gt;🗑️ I get removed from DOM completely&lt;/div&gt;</pre>
+
+  <h4>🎮 Try it:</h4>
+  <div class="demo-box">
+    <init>showSecret = false;</init>
+    <button @click="showSecret = !showSecret"
+      style="padding:0.8em 1.5em;background:#9C27B0;color:white;border:none;border-radius:4px;cursor:pointer;margin-bottom:1em;">
+      {{showSecret ? '🙈 Hide Secret' : '👁️ Show Secret'}}
+    </button>
+
+    <div @if="showSecret"
+      style="padding:1em;background:#e8f5e8;border:2px solid #4CAF50;border-radius:4px;margin:0.5em 0;">
+      🔐 <strong>Secret revealed!</strong> This element is created/destroyed with @if
+    </div>
+
+    <div @if="!showSecret"
+      style="padding:1em;background:#ffebee;border:2px solid #f44336;border-radius:4px;margin:0.5em 0;">
+      🔒 <strong>Secret hidden!</strong> Click the button to reveal it
+    </div>
+
+    <div style="margin-top:1em;padding:1em;background:#f3e5f5;border-radius:4px;">
+      <h5>Difference between @show and @if:</h5>
+      <div @show="showSecret"
+        style="padding:0.5em;background:#fff3e0;border-left:4px solid #ff9800;margin:0.3em 0;">
+        📱 <strong>@show:</strong> I'm always in the DOM, just hidden when false
+      </div>
+      <div @if="showSecret" style="padding:0.5em;background:#e3f2fd;border-left:4px solid #2196F3;margin:0.3em 0;">
+        🗑️ <strong>@if:</strong> I'm completely removed from DOM when false
+      </div>
+    </div>
+  </div>
+
+  <div class="output-box">
+    <strong>🎯 What you learned:</strong>
+    <ul>
+      <li><code>@if="condition"</code> completely removes/adds elements</li>
+      <li><code>@show="condition"</code> just hides/shows (stays in DOM)</li>
+      <li>Use <code>!</code> for NOT conditions</li>
+      <li>Ternary operator <code>condition ? 'yes' : 'no'</code> for text</li>
+    </ul>
+  </div>
+</div>

@@ -1,0 +1,50 @@
+<div class="step-container">
+  <span class="step-number">Step 6</span>
+  <h2>📋 Lists and Loops - Working with Arrays</h2>
+  <p>Display lists of items dynamically. Essential for any data-driven app!</p>
+
+  <h4>📝 The Code:</h4>
+  <pre class="code-console">&lt;ul @map="todoList"&gt;
+  &lt;li&gt;&#123;&#123;item&#125;&#125; &lt;button @click="todoList.splice(index, 1)"&gt;❌&lt;/button&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;input @model="newTodo" placeholder="Add new todo..."&gt;
+&lt;button @click="todoList.push(newTodo); newTodo = ''"&gt;➕ Add&lt;/button&gt;</pre>
+
+  <h4>🎮 Try it:</h4>
+  <div class="demo-box">
+    <init>todoList = ['Learn Ayisha.js', 'Build awesome app', 'Share with friends']; newTodo = '';</init>
+
+    <div style="margin-bottom:1em;">
+      <input @model="newTodo" placeholder="Add new todo..."
+        style="padding:0.5em;border:2px solid #ddd;border-radius:4px;width:70%;">
+      <button @click="todoList.push(newTodo); newTodo = ''"
+        style="padding:0.5em 1em;margin-left:0.5em;background:#4CAF50;color:white;border:none;border-radius:4px;cursor:pointer;">➕ Add</button>
+    </div>
+
+    <ul @map="todoList" style="list-style:none;padding:0;">
+      <li
+        style="padding:0.8em;margin:0.5em 0;background:#f8f9fa;border:1px solid #e9ecef;border-radius:4px;display:flex;justify-content:space-between;align-items:center;">
+        <span>✓ {{item}}</span>
+        <button @click="todoList.splice(index, 1)"
+          style="padding:0.3em 0.6em;background:#f44336;color:white;border:none;border-radius:3px;cursor:pointer;">❌</button>
+      </li>
+    </ul>
+
+    <div style="margin-top:1em;padding:1em;background:#e8f5e8;border-radius:4px;">
+      <strong>📊 Todo Stats:</strong>
+      <p style="margin:0.3em 0;">Total items: {{todoList.length}}</p>
+      <p style="margin:0.3em 0;">List content: {{todoList.join(', ') || 'Empty list'}}</p>
+    </div>
+  </div>
+
+  <div class="output-box">
+    <strong>🎯 What you learned:</strong>
+    <ul>
+      <li><code>@map="arrayName"</code> loops through arrays</li>
+      <li>Inside loops: <code>item</code> = current item, <code>index</code> = position</li>
+      <li><code>array.push()</code> adds items, <code>array.splice()</code> removes</li>
+      <li>Multiple actions in one click: <code>@click="action1; action2"</code></li>
+    </ul>
+  </div>
+</div>

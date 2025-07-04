@@ -1,0 +1,42 @@
+<h3>3.3 Sub-directives for Specific Events</h3>
+<pre class="code-console">&lt;!-- Using sub-directives for better control --&gt;
+&lt;div @click="status='Clicked'" @hover="status='Hovered'" @leave="status='Left'"&gt;
+  Multi-event element
+&lt;/div&gt;
+&lt;button @fetch:click="'https://api.github.com/users/octocat'" @result="userData"&gt;
+  Fetch on Click
+&lt;/button&gt;
+&lt;input @class:focus="{'focused': true}" @class:blur="{'focused': false}" placeholder="Dynamic classes on focus/blur"&gt;
+</pre>
+<div style="margin-top:1em;">
+  <init>status = 'Ready';</init>
+  <div @click="status='Clicked'" @hover="status='Hovered'" @leave="status='Left'"
+    style="padding:1em;border:2px solid #ccc;text-align:center;cursor:pointer;margin-bottom:1em;">
+    Multi-event element (Status: {{status}})
+  </div>
+
+  <button @fetch:click="'https://api.github.com/users/octocat'" @result="userData" 
+    style="padding:0.5em 1em;margin-bottom:1em;background:#2196F3;color:white;border:none;border-radius:4px;cursor:pointer;">
+    Fetch GitHub User on Click
+  </button>
+  <div @if="userData" style="background:#f5f5f5;padding:1em;border-radius:4px;margin-bottom:1em;">
+    <p><strong>User:</strong> {{userData.name}} (@{{userData.login}})</p>
+    <p><strong>Bio:</strong> {{userData.bio}}</p>
+    <p><strong>Public Repos:</strong> {{userData.public_repos}}</p>
+  </div>
+
+  <input @class:focus="{'focused': true}" @class:blur="{'focused': false}" @model="focusInput"
+    placeholder="Dynamic classes on focus/blur" 
+    style="width:100%;padding:0.5em;border:2px solid #ddd;border-radius:4px;">
+
+  <style>
+    .focused {
+      border-color: #4CAF50 !important;
+      box-shadow: 0 0 8px rgba(76, 175, 80, 0.3) !important;
+      transform: scale(1.02);
+    }
+  </style>
+
+  <div class="tip"><b>Sub-directive Advantage:</b> More precise control over when actions occur. You can have
+    different behaviors for different events on the same element.</div>
+</div>
