@@ -104,11 +104,8 @@
      * Check if expression contains multiple assignments
      */
     hasMultipleAssignments(expr) {
-      console.log('DEBUG hasMultipleAssignments:', expr);
-      
       // If expression contains arrow functions, it's likely a single complex expression
       if (expr.includes('=>')) {
-        console.log('  -> has arrow function, returning false');
         return false;
       }
       
@@ -116,26 +113,22 @@
       if (expr.includes('(') && expr.includes(')')) {
         // Only consider semicolon separation for complex expressions with functions
         const result = expr.includes(';');
-        console.log('  -> has parentheses, checking semicolon:', result);
         return result;
       }
       
       // Quick checks for obvious separators
       if (expr.includes(';')) {
-        console.log('  -> has semicolon, returning true');
         return true;
       }
       
       // Check comma separation (but be careful with function calls)
       if (expr.includes(',') && !expr.includes('(')) {
-        console.log('  -> has comma (no parens), returning true');
         return true;
       }
       
       // Check space separation - look for pattern: var=value space var=value
       const spacePattern = /\w+\s*=\s*[^=\s]+\s+\w+\s*=\s*/;
       const spaceResult = spacePattern.test(expr);
-      console.log('  -> space pattern test:', spaceResult);
       return spaceResult;
     }
 
@@ -1706,8 +1699,14 @@
           return;
         }
         
-        // Clean the code of potential problematic characters
-        const cleanCode = code.trim().replace(/[\u200B-\u200D\uFEFF]/g, ''); // Remove zero-width characters
+        // Clean and normalize the code while preserving JavaScript syntax
+        let cleanCode = code.trim()
+          .replace(/[\u200B-\u200D\uFEFF]/g, '') // Remove zero-width characters
+          .replace(/\r\n/g, '\n') // Normalize line endings
+          .replace(/\r/g, '\n') // Normalize line endings
+          .replace(/\n\s*\n/g, '\n') // Remove empty lines
+          .replace(/\n\s+/g, '\n') // Remove leading whitespace from lines
+          .trim();
         
         // Trasforma "foo = ..." in "state.foo = ..." solo se non già prefissato
         const transformed = cleanCode.replace(/(^|[;\s])([a-zA-Z_$][\w$]*)\s*=/g, (match, sep, varName, offset) => {
@@ -1720,6 +1719,7 @@
           
           return `${sep}state.${varName}=`;
         });
+        
         try {
           new Function('state', transformed)(this.state);
         } catch (e) {
@@ -2557,7 +2557,7 @@
             if (!this._isRendering) requestAnimationFrame(() => this.render());
           })
           .catch(err => {
-            this.componentManager.cache[srcUrl] = `<div class="component-error">Error: ${err.message}</div>`;
+            this.componentManager.cache[srcUrl] = `<div class="component-error">Errore: ${err.message}</div>`;
             if (!this._isRendering) requestAnimationFrame(() => this.render());
           });
       }
@@ -2597,8 +2597,14 @@
           return;
         }
         
-        // Clean the code of potential problematic characters
-        const cleanCode = code.trim().replace(/[\u200B-\u200D\uFEFF]/g, ''); // Remove zero-width characters
+        // Clean and normalize the code while preserving JavaScript syntax
+        let cleanCode = code.trim()
+          .replace(/[\u200B-\u200D\uFEFF]/g, '') // Remove zero-width characters
+          .replace(/\r\n/g, '\n') // Normalize line endings
+          .replace(/\r/g, '\n') // Normalize line endings
+          .replace(/\n\s*\n/g, '\n') // Remove empty lines
+          .replace(/\n\s+/g, '\n') // Remove leading whitespace from lines
+          .trim();
         
         // Trasforma "foo = ..." in "state.foo = ..." solo se non già prefissato
         const transformed = cleanCode.replace(/(^|[;\s])([a-zA-Z_$][\w$]*)\s*=/g, (match, sep, varName, offset) => {
@@ -3119,7 +3125,6 @@
           
           // Check if this is a multiple assignment expression that should be executed
           const isMultiple = this.evaluator.hasMultipleAssignments(expr);
-          console.log('DEBUG @text:', expr, 'isMultiple:', isMultiple);
           
           if (isMultiple) {
             // For multiple expressions, execute them and don't set text

@@ -1,24 +1,1146 @@
-<!-- Functional Array Operations: Complete Guide -->
+<!-- Project Management System - Sistema di Gestione Progetti -->
 <div class="step-container">
   <span class="step-number">Step 20</span>
-  <h2>6. Functional Array Operations: Complete Guide</h2>
-  <p>Transform, filter, and process arrays declaratively using functional programming patterns.</p>
+  <h2>Sistema di Gestione Progetti</h2>
+  <p>Sviluppo di un sistema completo per la gestione progetti con Kanban board, timeline, team collaboration e reporting.</p>
 
-  <h3>6.1. Transform Array with @map</h3>
-  <pre class="code-console">&lt;!-- Basic transformation --&gt;
-&lt;div @source="numbers" @map="n =&gt; n * 2" @result="doubled"&gt;&lt;/div&gt;
-&lt;!-- Complex object transformation --&gt;
-&lt;div @source="products" @map="p =&gt; ({...p, totalPrice: p.price * p.quantity})" @result="enhancedProducts"&gt;&lt;/div&gt;</pre>
+  <h3>20.1 Architettura Project Management</h3>
+  <pre class="code-console">&lt;!-- Sistema gestione progetti con Kanban --&gt;
+&lt;div class="project-management"&gt;
+  &lt;header class="pm-header"&gt;
+    &lt;h1&gt;Project Manager&lt;/h1&gt;
+    &lt;div class="project-selector"&gt;
+      &lt;select @model="selectedProject" @change="switchProject()"&gt;
+        &lt;option @for="project in projects" @key="project.id" @value="project.id"&gt;
+          &#123;&#123;project.name&#125;&#125;
+        &lt;/option&gt;
+      &lt;/select&gt;
+    &lt;/div&gt;
+  &lt;/header&gt;
+  
+  &lt;div class="pm-layout"&gt;
+    &lt;aside class="pm-sidebar"&gt;
+      &lt;nav class="pm-nav"&gt;
+        &lt;a @click="setActiveView('kanban')" @class="activeView === 'kanban' ? 'active' : ''"&gt;
+          Kanban Board
+        &lt;/a&gt;
+        &lt;a @click="setActiveView('timeline')" @class="activeView === 'timeline' ? 'active' : ''"&gt;
+          Timeline
+        &lt;/a&gt;
+        &lt;a @click="setActiveView('team')" @class="activeView === 'team' ? 'active' : ''"&gt;
+          Team
+        &lt;/a&gt;
+        &lt;a @click="setActiveView('reports')" @class="activeView === 'reports' ? 'active' : ''"&gt;
+          Reports
+        &lt;/a&gt;
+      &lt;/nav&gt;
+    &lt;/aside&gt;
+    
+    &lt;main class="pm-main"&gt;
+      &lt;div @if="activeView === 'kanban'" class="kanban-board"&gt;
+        &lt;div @for="column in kanbanColumns" @key="column.id" class="kanban-column"&gt;
+          &lt;h3&gt;&#123;&#123;column.name&#125;&#125; (&#123;&#123;column.tasks.length&#125;&#125;)&lt;/h3&gt;
+          &lt;div class="task-list"&gt;
+            &lt;div @for="task in column.tasks" @key="task.id" class="task-card"&gt;
+              &lt;h4&gt;&#123;&#123;task.title&#125;&#125;&lt;/h4&gt;
+              &lt;p&gt;&#123;&#123;task.description&#125;&#125;&lt;/p&gt;
+              &lt;div class="task-meta"&gt;
+                &lt;span class="priority"&gt;&#123;&#123;task.priority&#125;&#125;&lt;/span&gt;
+                &lt;span class="assignee"&gt;&#123;&#123;task.assignee&#125;&#125;&lt;/span&gt;
+              &lt;/div&gt;
+            &lt;/div&gt;
+          &lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/main&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre>
 
-  <h4>🎮 Try it:</h4>
+  <h4>📊 Sistema Project Management Interattivo:</h4>
   <div class="demo-box">
     <init>
-      products = [
-        {id: 1, name: 'Laptop', price: 999, quantity: 2, category: 'Electronics'},
-        {id: 2, name: 'Book', price: 25, quantity: 3, category: 'Education'},
-        {id: 3, name: 'Headphones', price: 150, quantity: 1, category: 'Electronics'}
+      activeView = 'kanban';
+      selectedProject = 1;
+      showTaskModal = false;
+      showTeamModal = false;
+      editingTask = null;
+      
+      newTask = {
+        title: '',
+        description: '',
+        priority: 'medium',
+        assignee: '',
+        dueDate: '',
+        status: 'todo'
+      };
+      
+      newTeamMember = {
+        name: '',
+        email: '',
+        role: 'developer'
+      };
+      
+      projects = [
+        {
+          id: 1,
+          name: 'Website Redesign',
+          description: 'Redesign completo del sito web aziendale',
+          status: 'in_progress',
+          startDate: '2024-01-01',
+          endDate: '2024-03-15',
+          progress: 65
+        },
+        {
+          id: 2,
+          name: 'Mobile App Development',
+          description: 'Sviluppo app mobile per iOS e Android',
+          status: 'planning',
+          startDate: '2024-02-01',
+          endDate: '2024-06-30',
+          progress: 25
+        },
+        {
+          id: 3,
+          name: 'E-commerce Platform',
+          description: 'Piattaforma e-commerce con gestione inventory',
+          status: 'completed',
+          startDate: '2023-09-01',
+          endDate: '2023-12-31',
+          progress: 100
+        }
       ];
+      
+      teamMembers = [
+        {
+          id: 1,
+          name: 'Marco Rossi',
+          email: 'marco.rossi@email.com',
+          role: 'Project Manager',
+          avatar: 'https://via.placeholder.com/60x60/667eea/fff?text=MR',
+          tasksAssigned: 8,
+          tasksCompleted: 5
+        },
+        {
+          id: 2,
+          name: 'Anna Bianchi',
+          email: 'anna.bianchi@email.com',
+          role: 'Frontend Developer',
+          avatar: 'https://via.placeholder.com/60x60/28a745/fff?text=AB',
+          tasksAssigned: 12,
+          tasksCompleted: 9
+        },
+        {
+          id: 3,
+          name: 'Luigi Verdi',
+          email: 'luigi.verdi@email.com',
+          role: 'Backend Developer',
+          avatar: 'https://via.placeholder.com/60x60/dc3545/fff?text=LV',
+          tasksAssigned: 10,
+          tasksCompleted: 7
+        },
+        {
+          id: 4,
+          name: 'Sara Neri',
+          email: 'sara.neri@email.com',
+          role: 'UI/UX Designer',
+          avatar: 'https://via.placeholder.com/60x60/ffc107/fff?text=SN',
+          tasksAssigned: 6,
+          tasksCompleted: 6
+        }
+      ];
+      
+      kanbanColumns = [
+        {
+          id: 'todo',
+          name: 'Da Fare',
+          tasks: [
+            {
+              id: 1,
+              title: 'Analisi Requirements',
+              description: 'Analizzare i requisiti del cliente per la nuova homepage',
+              priority: 'high',
+              assignee: 'Marco Rossi',
+              dueDate: '2024-02-15',
+              status: 'todo',
+              tags: ['analysis', 'requirements']
+            },
+            {
+              id: 2,
+              title: 'Design Mockups',
+              description: 'Creare mockups per le pagine principali',
+              priority: 'medium',
+              assignee: 'Sara Neri',
+              dueDate: '2024-02-20',
+              status: 'todo',
+              tags: ['design', 'mockups']
+            }
+          ]
+        },
+        {
+          id: 'in_progress',
+          name: 'In Corso',
+          tasks: [
+            {
+              id: 3,
+              title: 'Sviluppo API',
+              description: 'Implementare API REST per la gestione utenti',
+              priority: 'high',
+              assignee: 'Luigi Verdi',
+              dueDate: '2024-02-25',
+              status: 'in_progress',
+              tags: ['backend', 'api']
+            },
+            {
+              id: 4,
+              title: 'Frontend Components',
+              description: 'Sviluppo componenti React per la dashboard',
+              priority: 'medium',
+              assignee: 'Anna Bianchi',
+              dueDate: '2024-02-28',
+              status: 'in_progress',
+              tags: ['frontend', 'react']
+            }
+          ]
+        },
+        {
+          id: 'review',
+          name: 'Review',
+          tasks: [
+            {
+              id: 5,
+              title: 'Testing Sistema',
+              description: 'Test completo del sistema di autenticazione',
+              priority: 'high',
+              assignee: 'Marco Rossi',
+              dueDate: '2024-02-10',
+              status: 'review',
+              tags: ['testing', 'auth']
+            }
+          ]
+        },
+        {
+          id: 'done',
+          name: 'Completato',
+          tasks: [
+            {
+              id: 6,
+              title: 'Setup Ambiente',
+              description: 'Configurazione ambiente di sviluppo e CI/CD',
+              priority: 'low',
+              assignee: 'Luigi Verdi',
+              dueDate: '2024-01-30',
+              status: 'done',
+              tags: ['setup', 'devops']
+            },
+            {
+              id: 7,
+              title: 'Ricerca UX',
+              description: 'Ricerca user experience per migliorare la usabilità',
+              priority: 'medium',
+              assignee: 'Sara Neri',
+              dueDate: '2024-02-05',
+              status: 'done',
+              tags: ['ux', 'research']
+            }
+          ]
+        }
+      ];
+      
+      timelineEvents = [
+        {
+          id: 1,
+          title: 'Kick-off Meeting',
+          date: '2024-01-15',
+          type: 'meeting',
+          description: 'Riunione di avvio progetto con tutti i stakeholder'
+        },
+        {
+          id: 2,
+          title: 'Design Phase Complete',
+          date: '2024-02-01',
+          type: 'milestone',
+          description: 'Completamento fase di design e approvazione mockups'
+        },
+        {
+          id: 3,
+          title: 'Development Sprint 1',
+          date: '2024-02-15',
+          type: 'sprint',
+          description: 'Primo sprint di sviluppo - implementazione core features'
+        },
+        {
+          id: 4,
+          title: 'Beta Release',
+          date: '2024-03-01',
+          type: 'release',
+          description: 'Rilascio versione beta per testing interno'
+        },
+        {
+          id: 5,
+          title: 'Final Delivery',
+          date: '2024-03-15',
+          type: 'delivery',
+          description: 'Consegna finale e go-live del progetto'
+        }
+      ];
+      
+      projectStats = {
+        totalTasks: 15,
+        completedTasks: 8,
+        inProgressTasks: 4,
+        overdueTasks: 2,
+        teamMembers: 4,
+        daysLeft: 45,
+        completionRate: 53
+      };
+      
+      setActiveView = (view) => {
+        activeView = view;
+      };
+      
+      switchProject = () => {
+        // Simulate project switching
+        const project = projects.find(p => p.id === parseInt(selectedProject));
+        if (project) {
+          // Update project stats based on selected project
+          projectStats.completionRate = project.progress;
+        }
+      };
+      
+      openTaskModal = (task = null) => {
+        editingTask = task;
+        if (task) {
+          newTask = { ...task };
+        } else {
+          newTask = {
+            title: '',
+            description: '',
+            priority: 'medium',
+            assignee: '',
+            dueDate: '',
+            status: 'todo'
+          };
+        }
+        showTaskModal = true;
+      };
+      
+      closeTaskModal = () => {
+        showTaskModal = false;
+        editingTask = null;
+      };
+      
+      saveTask = () => {
+        if (newTask.title.trim()) {
+          if (editingTask) {
+            // Update existing task
+            Object.assign(editingTask, newTask);
+          } else {
+            // Add new task
+            const task = {
+              id: Date.now(),
+              ...newTask,
+              tags: []
+            };
+            
+            const column = kanbanColumns.find(col => col.id === newTask.status);
+            if (column) {
+              column.tasks.push(task);
+            }
+          }
+          
+          closeTaskModal();
+        }
+      };
+      
+      deleteTask = (taskId) => {
+        kanbanColumns.forEach(column => {
+          column.tasks = column.tasks.filter(task => task.id !== taskId);
+        });
+      };
+      
+      moveTask = (taskId, newStatus) => {
+        let task = null;
+        
+        // Find and remove task from current column
+        kanbanColumns.forEach(column => {
+          const taskIndex = column.tasks.findIndex(t => t.id === taskId);
+          if (taskIndex !== -1) {
+            task = column.tasks.splice(taskIndex, 1)[0];
+          }
+        });
+        
+        // Add task to new column
+        if (task) {
+          task.status = newStatus;
+          const newColumn = kanbanColumns.find(col => col.id === newStatus);
+          if (newColumn) {
+            newColumn.tasks.push(task);
+          }
+        }
+      };
+      
+      openTeamModal = () => {
+        showTeamModal = true;
+      };
+      
+      closeTeamModal = () => {
+        showTeamModal = false;
+        newTeamMember = {
+          name: '',
+          email: '',
+          role: 'developer'
+        };
+      };
+      
+      addTeamMember = () => {
+        if (newTeamMember.name.trim() && newTeamMember.email.trim()) {
+          const member = {
+            id: Date.now(),
+            ...newTeamMember,
+            avatar: `https://via.placeholder.com/60x60/667eea/fff?text=${newTeamMember.name.charAt(0)}${newTeamMember.name.split(' ')[1]?.charAt(0) || ''}`,
+            tasksAssigned: 0,
+            tasksCompleted: 0
+          };
+          
+          teamMembers.push(member);
+          closeTeamModal();
+        }
+      };
+      
+      removeTeamMember = (memberId) => {
+        teamMembers = teamMembers.filter(member => member.id !== memberId);
+      };
+      
+      getPriorityColor = (priority) => {
+        switch (priority) {
+          case 'high': return '#dc3545';
+          case 'medium': return '#ffc107';
+          case 'low': return '#28a745';
+          default: return '#6c757d';
+        }
+      };
+      
+      getStatusColor = (status) => {
+        switch (status) {
+          case 'completed': return '#28a745';
+          case 'in_progress': return '#007bff';
+          case 'planning': return '#ffc107';
+          default: return '#6c757d';
+        }
+      };
+      
+      formatDate = (dateString) => {
+        return new Date(dateString).toLocaleDateString('it-IT');
+      };
+      
+      isOverdue = (dueDate) => {
+        return new Date(dueDate) < new Date();
+      };
     </init>
+    
+    <style>
+      .project-management {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      
+      .pm-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 25px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .pm-header h1 {
+        margin: 0;
+        font-size: 2.2em;
+      }
+      
+      .project-selector select {
+        padding: 10px 15px;
+        border: none;
+        border-radius: 8px;
+        font-size: 1em;
+        background: white;
+        color: #333;
+      }
+      
+      .pm-layout {
+        display: grid;
+        grid-template-columns: 250px 1fr;
+        gap: 30px;
+      }
+      
+      .pm-sidebar {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        height: fit-content;
+        position: sticky;
+        top: 20px;
+      }
+      
+      .pm-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      
+      .pm-nav a {
+        padding: 15px 20px;
+        border-radius: 10px;
+        color: #666;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      
+      .pm-nav a:hover, .pm-nav a.active {
+        background: #667eea;
+        color: white;
+        transform: translateX(5px);
+      }
+      
+      .pm-main {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        min-height: 600px;
+      }
+      
+      .kanban-board {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+        height: 100%;
+      }
+      
+      .kanban-column {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        min-height: 500px;
+      }
+      
+      .kanban-column h3 {
+        margin: 0 0 20px 0;
+        color: #333;
+        font-size: 1.1em;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #667eea;
+      }
+      
+      .task-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+      
+      .task-card {
+        background: white;
+        border-radius: 10px;
+        padding: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border-left: 4px solid #667eea;
+      }
+      
+      .task-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      }
+      
+      .task-card h4 {
+        margin: 0 0 10px 0;
+        color: #333;
+        font-size: 1em;
+      }
+      
+      .task-card p {
+        margin: 0 0 15px 0;
+        color: #666;
+        font-size: 0.9em;
+        line-height: 1.4;
+      }
+      
+      .task-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.8em;
+      }
+      
+      .priority {
+        padding: 4px 8px;
+        border-radius: 12px;
+        color: white;
+        font-weight: 500;
+      }
+      
+      .priority.high { background: #dc3545; }
+      .priority.medium { background: #ffc107; }
+      .priority.low { background: #28a745; }
+      
+      .assignee {
+        color: #666;
+        font-weight: 500;
+      }
+      
+      .timeline-view {
+        padding: 20px;
+      }
+      
+      .timeline {
+        position: relative;
+        padding-left: 40px;
+      }
+      
+      .timeline::before {
+        content: '';
+        position: absolute;
+        left: 20px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #667eea;
+      }
+      
+      .timeline-item {
+        position: relative;
+        margin-bottom: 30px;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+      
+      .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -28px;
+        top: 25px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #667eea;
+      }
+      
+      .timeline-date {
+        color: #667eea;
+        font-weight: bold;
+        margin-bottom: 10px;
+      }
+      
+      .timeline-title {
+        margin: 0 0 10px 0;
+        color: #333;
+        font-size: 1.1em;
+      }
+      
+      .timeline-description {
+        color: #666;
+        margin: 0;
+        line-height: 1.5;
+      }
+      
+      .team-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+      }
+      
+      .team-member {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        transition: transform 0.3s ease;
+      }
+      
+      .team-member:hover {
+        transform: translateY(-5px);
+      }
+      
+      .team-member img {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        margin-bottom: 15px;
+      }
+      
+      .team-member h4 {
+        margin: 0 0 5px 0;
+        color: #333;
+      }
+      
+      .team-member .role {
+        color: #667eea;
+        font-weight: 500;
+        margin-bottom: 10px;
+      }
+      
+      .team-member .stats {
+        display: flex;
+        justify-content: space-around;
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #ddd;
+      }
+      
+      .team-member .stat {
+        text-align: center;
+      }
+      
+      .team-member .stat-number {
+        font-size: 1.2em;
+        font-weight: bold;
+        color: #333;
+      }
+      
+      .team-member .stat-label {
+        font-size: 0.8em;
+        color: #666;
+      }
+      
+      .reports-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+      
+      .report-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 25px;
+        border-radius: 15px;
+        text-align: center;
+      }
+      
+      .report-card h3 {
+        margin: 0;
+        font-size: 2.5em;
+        margin-bottom: 10px;
+      }
+      
+      .report-card p {
+        margin: 0;
+        opacity: 0.9;
+      }
+      
+      .progress-chart {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 25px;
+        margin-top: 20px;
+      }
+      
+      .progress-bar {
+        background: #e9ecef;
+        border-radius: 10px;
+        height: 20px;
+        overflow: hidden;
+        margin: 10px 0;
+      }
+      
+      .progress-fill {
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        height: 100%;
+        transition: width 0.3s ease;
+      }
+      
+      .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      }
+      
+      .modal-content {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+      }
+      
+      .form-group {
+        margin-bottom: 20px;
+      }
+      
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #333;
+      }
+      
+      .form-group input, .form-group select, .form-group textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 1em;
+      }
+      
+      .form-group textarea {
+        resize: vertical;
+        min-height: 80px;
+      }
+      
+      .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1em;
+        transition: transform 0.3s ease;
+      }
+      
+      .btn-primary:hover {
+        transform: translateY(-2px);
+      }
+      
+      .btn-secondary {
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        margin-right: 10px;
+      }
+      
+      .btn-danger {
+        background: #dc3545;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 0.9em;
+      }
+      
+      .add-button {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1em;
+        margin-bottom: 20px;
+      }
+      
+      @media (max-width: 1024px) {
+        .pm-layout {
+          grid-template-columns: 1fr;
+        }
+        
+        .kanban-board {
+          grid-template-columns: 1fr;
+        }
+        
+        .reports-grid {
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+      }
+      
+      @media (max-width: 768px) {
+        .team-grid {
+          grid-template-columns: 1fr;
+        }
+        
+        .reports-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+    
+    <div class="project-management">
+      <!-- Header -->
+      <header class="pm-header">
+        <h1>Project Manager</h1>
+        <div class="project-selector">
+          <select @model="selectedProject" @change="switchProject()">
+            <option @for="project in projects" @key="project.id" @value="project.id">
+              {{project.name}}
+            </option>
+          </select>
+        </div>
+      </header>
+      
+      <!-- Layout -->
+      <div class="pm-layout">
+        <!-- Sidebar -->
+        <aside class="pm-sidebar">
+          <nav class="pm-nav">
+            <a @click="setActiveView('kanban')" @class="activeView === 'kanban' ? 'active' : ''">
+              📋 Kanban Board
+            </a>
+            <a @click="setActiveView('timeline')" @class="activeView === 'timeline' ? 'active' : ''">
+              📅 Timeline
+            </a>
+            <a @click="setActiveView('team')" @class="activeView === 'team' ? 'active' : ''">
+              👥 Team
+            </a>
+            <a @click="setActiveView('reports')" @class="activeView === 'reports' ? 'active' : ''">
+              📊 Reports
+            </a>
+          </nav>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="pm-main">
+          <!-- Kanban Board -->
+          <div @if="activeView === 'kanban'">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+              <h2>Kanban Board</h2>
+              <button @click="openTaskModal()" class="add-button">+ Nuova Task</button>
+            </div>
+            
+            <div class="kanban-board">
+              <div @for="column in kanbanColumns" @key="column.id" class="kanban-column">
+                <h3>{{column.name}} ({{column.tasks.length}})</h3>
+                <div class="task-list">
+                  <div @for="task in column.tasks" @key="task.id" class="task-card" @click="openTaskModal(task)">
+                    <h4>{{task.title}}</h4>
+                    <p>{{task.description}}</p>
+                    <div class="task-meta">
+                      <span class="priority" @class="task.priority" @style="'background-color: ' + getPriorityColor(task.priority)">
+                        {{task.priority}}
+                      </span>
+                      <span class="assignee">{{task.assignee}}</span>
+                    </div>
+                    <div style="margin-top: 10px; font-size: 0.8em; color: #666;">
+                      Scadenza: {{formatDate(task.dueDate)}}
+                      <span @if="isOverdue(task.dueDate)" style="color: #dc3545; font-weight: bold;">
+                        (Scaduto)
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Timeline -->
+          <div @if="activeView === 'timeline'">
+            <h2>Timeline Progetto</h2>
+            <div class="timeline">
+              <div @for="event in timelineEvents" @key="event.id" class="timeline-item">
+                <div class="timeline-date">{{formatDate(event.date)}}</div>
+                <h3 class="timeline-title">{{event.title}}</h3>
+                <p class="timeline-description">{{event.description}}</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Team -->
+          <div @if="activeView === 'team'">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+              <h2>Team Members</h2>
+              <button @click="openTeamModal()" class="add-button">+ Aggiungi Membro</button>
+            </div>
+            
+            <div class="team-grid">
+              <div @for="member in teamMembers" @key="member.id" class="team-member">
+                <img @src="member.avatar" @alt="member.name" />
+                <h4>{{member.name}}</h4>
+                <div class="role">{{member.role}}</div>
+                <div>{{member.email}}</div>
+                <div class="stats">
+                  <div class="stat">
+                    <div class="stat-number">{{member.tasksAssigned}}</div>
+                    <div class="stat-label">Assegnate</div>
+                  </div>
+                  <div class="stat">
+                    <div class="stat-number">{{member.tasksCompleted}}</div>
+                    <div class="stat-label">Completate</div>
+                  </div>
+                </div>
+                <button @click="removeTeamMember(member.id)" class="btn-danger" style="margin-top: 10px;">
+                  Rimuovi
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Reports -->
+          <div @if="activeView === 'reports'">
+            <h2>Reports e Statistiche</h2>
+            
+            <div class="reports-grid">
+              <div class="report-card">
+                <h3>{{projectStats.totalTasks}}</h3>
+                <p>Task Totali</p>
+              </div>
+              <div class="report-card">
+                <h3>{{projectStats.completedTasks}}</h3>
+                <p>Task Completate</p>
+              </div>
+              <div class="report-card">
+                <h3>{{projectStats.inProgressTasks}}</h3>
+                <p>Task in Corso</p>
+              </div>
+              <div class="report-card">
+                <h3>{{projectStats.daysLeft}}</h3>
+                <p>Giorni Rimanenti</p>
+              </div>
+            </div>
+            
+            <div class="progress-chart">
+              <h3>Progresso Progetto</h3>
+              <div class="progress-bar">
+                <div class="progress-fill" @style="'width: ' + projectStats.completionRate + '%'"></div>
+              </div>
+              <p>{{projectStats.completionRate}}% Completato</p>
+            </div>
+          </div>
+        </main>
+      </div>
+      
+      <!-- Task Modal -->
+      <div @if="showTaskModal" class="modal" @click="closeTaskModal()">
+        <div class="modal-content" @click.stop>
+          <h3>{{editingTask ? 'Modifica Task' : 'Nuova Task'}}</h3>
+          
+          <div class="form-group">
+            <label>Titolo</label>
+            <input @model="newTask.title" type="text" required />
+          </div>
+          
+          <div class="form-group">
+            <label>Descrizione</label>
+            <textarea @model="newTask.description" rows="3"></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label>Priorità</label>
+            <select @model="newTask.priority">
+              <option value="low">Bassa</option>
+              <option value="medium">Media</option>
+              <option value="high">Alta</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>Assegnatario</label>
+            <select @model="newTask.assignee">
+              <option value="">Seleziona membro</option>
+              <option @for="member in teamMembers" @key="member.id" @value="member.name">
+                {{member.name}}
+              </option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>Data Scadenza</label>
+            <input @model="newTask.dueDate" type="date" />
+          </div>
+          
+          <div class="form-group">
+            <label>Stato</label>
+            <select @model="newTask.status">
+              <option value="todo">Da Fare</option>
+              <option value="in_progress">In Corso</option>
+              <option value="review">Review</option>
+              <option value="done">Completato</option>
+            </select>
+          </div>
+          
+          <div style="text-align: right; margin-top: 20px;">
+            <button @click="closeTaskModal()" class="btn-secondary">Annulla</button>
+            <button @click="saveTask()" class="btn-primary">Salva</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Team Modal -->
+      <div @if="showTeamModal" class="modal" @click="closeTeamModal()">
+        <div class="modal-content" @click.stop>
+          <h3>Aggiungi Membro Team</h3>
+          
+          <div class="form-group">
+            <label>Nome Completo</label>
+            <input @model="newTeamMember.name" type="text" required />
+          </div>
+          
+          <div class="form-group">
+            <label>Email</label>
+            <input @model="newTeamMember.email" type="email" required />
+          </div>
+          
+          <div class="form-group">
+            <label>Ruolo</label>
+            <select @model="newTeamMember.role">
+              <option value="developer">Developer</option>
+              <option value="designer">Designer</option>
+              <option value="project_manager">Project Manager</option>
+              <option value="tester">Tester</option>
+            </select>
+          </div>
+          
+          <div style="text-align: right; margin-top: 20px;">
+            <button @click="closeTeamModal()" class="btn-secondary">Annulla</button>
+            <button @click="addTeamMember()" class="btn-primary">Aggiungi</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>20.2 Funzionalità Project Management</h3>
+  <div class="info-box">
+    <h4>📋 Caratteristiche Implementate:</h4>
+    <ul>
+      <li><strong>Kanban Board:</strong> Gestione task con drag & drop e stati</li>
+      <li><strong>Timeline Progetto:</strong> Visualizzazione cronologica milestone</li>
+      <li><strong>Team Management:</strong> Gestione membri team e assegnazioni</li>
+      <li><strong>Reports & Analytics:</strong> Statistiche progetto e performance</li>
+      <li><strong>Task Management:</strong> Creazione, modifica e tracking task</li>
+      <li><strong>Priority System:</strong> Sistema priorità con codici colore</li>
+      <li><strong>Progress Tracking:</strong> Monitoraggio avanzamento progetti</li>
+    </ul>
+  </div>
+
+  <h3>20.3 Architettura Enterprise</h3>
+  <div class="info-box">
+    <h4>🏗️ Tecniche Avanzate:</h4>
+    <ul>
+      <li><strong>Complex State Management:</strong> Gestione stati multipli e relazioni</li>
+      <li><strong>Modal System:</strong> Sistema modale per editing e form</li>
+      <li><strong>Data Relationships:</strong> Relazioni complesse tra entità</li>
+      <li><strong>Responsive Design:</strong> Layout adattivo per tutti i device</li>
+      <li><strong>Interactive Components:</strong> Componenti altamente interattivi</li>
+      <li><strong>Real-time Updates:</strong> Aggiornamenti in tempo reale</li>
+      <li><strong>Advanced Filtering:</strong> Filtri e ricerche avanzate</li>
+    </ul>
+  </div>
+</div>
 
     <ini>items='cioa'</ini>
 

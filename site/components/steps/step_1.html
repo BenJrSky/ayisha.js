@@ -1,20 +1,77 @@
- <div class="step-container">
-      <span class="step-number">Step 1</span>
-      <h2>🛠️ Setup - Your First Ayisha.js Page</h2>
-      <p>Let's start with the absolute basics. All you need is one script tag!</p>
+ <!-- Step 1: Hello World e Reattività di Base -->
+<div class="step-container">
+  <span class="step-number">Step 1</span>
+  <h2>1. Hello World e Reattività di Base</h2>
+  <p>Inizia con la reattività fondamentale: interpolazione di testo e binding bidirezionale.</p>
 
-      <pre class="code-console">&lt;!DOCTYPE html&gt;
-&lt;html&gt;
-&lt;head&gt;
-  &lt;title&gt;My First Ayisha.js App&lt;/title&gt;
-&lt;/head&gt;
-&lt;body&gt;
-  &lt;script src="ayisha.js"&gt;&lt;/script&gt;
-&lt;/body&gt;
-&lt;/html&gt;</pre>
+  <h3>1.1. Interpolazione di Base</h3>
+  <pre class="code-console">&lt;!-- Mostra una variabile di stato --&gt;
+&lt;p&gt;Ciao, {{nome}}!&lt;/p&gt;
 
-      <div class="tip">
-        <strong>✅ That's it!</strong> No build tools, no complex setup. Ayisha.js automatically scans your page and
-        makes it reactive.
-      </div>
+&lt;!-- Con @text direttiva --&gt;
+&lt;span @text="nome"&gt;&lt;/span&gt;</pre>
+
+  <h4>🎮 Prova tu:</h4>
+  <div class="demo-box">
+    <init>
+      nome = 'Mondo';
+      contatore = 0;
+    </init>
+
+    <p>Ciao, <strong @text="nome"></strong>!</p>
+    <p>Interpolazione: <strong>{{nome}}</strong></p>
+    
+    <input @model="nome" placeholder="Inserisci il tuo nome">
+    
+    <hr>
+    
+    <p>Contatore: <span @text="contatore"></span></p>
+    <button @click="contatore++" style="background:#4CAF50;color:white;padding:8px 16px;border:none;border-radius:4px;margin:2px;">
+      ➕ Incrementa
+    </button>
+    <button @click="contatore--" style="background:#f44336;color:white;padding:8px 16px;border:none;border-radius:4px;margin:2px;">
+      ➖ Decrementa
+    </button>
+    <button @click="contatore=0" style="background:#FF9800;color:white;padding:8px 16px;border:none;border-radius:4px;margin:2px;">
+      🔄 Reset
+    </button>
+  </div>
+
+  <h3>1.2. Binding Bidirezionale</h3>
+  <pre class="code-console">&lt;!-- Input collegato allo stato --&gt;
+&lt;input @model="messaggio" placeholder="Scrivi qualcosa"&gt;
+&lt;p&gt;Hai scritto: {{messaggio}}&lt;/p&gt;</pre>
+
+  <h4>🎮 Prova tu:</h4>
+  <div class="demo-box">
+    <init>
+      messaggio = '';
+      email = '';
+    </init>
+
+    <input @model="messaggio" placeholder="Scrivi un messaggio..." 
+           style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px;">
+    
+    <div style="background:#f0f8ff;padding:1em;border-radius:4px;margin:1em 0;">
+      <strong>Live Preview:</strong> {{messaggio || 'Inizia a scrivere...'}}
     </div>
+
+    <input type="email" @model="email" placeholder="La tua email..." 
+           style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px;">
+    
+    <div style="background:#f8fff8;padding:1em;border-radius:4px;margin:1em 0;">
+      <strong>Email inserita:</strong> {{email || 'Nessuna email'}}
+    </div>
+  </div>
+
+  <div class="output-box">
+    <strong>🎯 Cosa hai imparato:</strong>
+    <ul>
+      <li><code>{{variabile}}</code> - Interpolazione di testo reattiva</li>
+      <li><code>@text="variabile"</code> - Direttiva per contenuto di testo</li>
+      <li><code>@model="variabile"</code> - Binding bidirezionale per input</li>
+      <li><code>@click="espressione"</code> - Gestione eventi click</li>
+      <li><code>&lt;init&gt;</code> - Inizializzazione stato</li>
+    </ul>
+  </div>
+</div>

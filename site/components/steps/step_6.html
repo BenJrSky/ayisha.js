@@ -1,24 +1,363 @@
+<!-- Step 6: Classi CSS e Stili Dinamici -->
 <div class="step-container">
   <span class="step-number">Step 6</span>
-  <h2>📋 Lists and Loops - Working with Arrays</h2>
-  <p>Display lists of items dynamically. Essential for any data-driven app!</p>
+  <h2>6. Classi CSS e Stili Dinamici</h2>
+  <p>Impara a applicare stili CSS dinamicamente usando le direttive @class e @style per creare interfacce reattive.</p>
 
-  <h4>📝 The Code:</h4>
-  <pre class="code-console">&lt;ul @map="todoList"&gt;
-  &lt;li&gt;&#123;&#123;item&#125;&#125; &lt;button @click="todoList.splice(index, 1)"&gt;❌&lt;/button&gt;&lt;/li&gt;
-&lt;/ul&gt;
+  <h3>6.1. Direttiva @class</h3>
+  <pre class="code-console">&lt;!-- Classe dinamica basata su condizione --&gt;
+&lt;div @class="isActive ? 'active' : 'inactive'"&gt;
+  Contenuto
+&lt;/div&gt;
 
-&lt;input @model="newTodo" placeholder="Add new todo..."&gt;
-&lt;button @click="todoList.push(newTodo); newTodo = ''"&gt;➕ Add&lt;/button&gt;</pre>
+&lt;!-- Più classi dinamiche --&gt;
+&lt;button @class="status === 'success' ? 'btn-success' : 'btn-danger'"&gt;
+  {{buttonText}}
+&lt;/button&gt;</pre>
 
-  <h4>🎮 Try it:</h4>
+  <h4>🎮 Prova tu:</h4>
   <div class="demo-box">
-    <init>todoList = ['Learn Ayisha.js', 'Build awesome app', 'Share with friends']; newTodo = '';</init>
+    <init>
+      theme = 'light';
+      isActive = false;
+      status = 'neutral';
+      size = 'medium';
+      
+      function toggleActive() {
+        isActive = !isActive;
+      }
+      
+      function changeStatus() {
+        const statuses = ['success', 'warning', 'danger', 'info'];
+        const currentIndex = statuses.indexOf(status);
+        status = statuses[(currentIndex + 1) % statuses.length];
+      }
+    </init>
 
-    <div style="margin-bottom:1em;">
-      <input @model="newTodo" placeholder="Add new todo..."
-        style="padding:0.5em;border:2px solid #ddd;border-radius:4px;width:70%;">
-      <button @click="todoList.push(newTodo); newTodo = ''"
+    <div style="background:#f8f9fa;padding:1.5em;border-radius:4px;margin:1em 0;">
+      <h4>🎨 Controlli per gli stili:</h4>
+      
+      <div style="margin-bottom:1em;">
+        <label>Tema: </label>
+        <select @model="theme" style="padding:4px;">
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+          <option value="colorful">Colorful</option>
+        </select>
+        
+        <label style="margin-left:1em;">Dimensione: </label>
+        <select @model="size" style="padding:4px;">
+          <option value="small">Small</option>
+          <option value="medium">Medium</option>
+          <option value="large">Large</option>
+        </select>
+        
+        <button @click="toggleActive()" style="margin-left:1em;padding:4px 8px;">
+          {{isActive ? 'Disattiva' : 'Attiva'}}
+        </button>
+        
+        <button @click="changeStatus()" style="margin-left:0.5em;padding:4px 8px;">
+          Cambia Status ({{status}})
+        </button>
+      </div>
+
+      <div @class="theme + ' ' + size + (isActive ? ' active' : ' inactive')"
+           style="padding:1em;border-radius:4px;margin:1em 0;transition:all 0.3s ease;">
+        <h4>🎯 Elemento con classi dinamiche</h4>
+        <p>Tema: <strong>{{theme}}</strong></p>
+        <p>Dimensione: <strong>{{size}}</strong></p>
+        <p>Stato: <strong>{{isActive ? 'Attivo' : 'Inattivo'}}</strong></p>
+        
+        <button @class="'btn-' + status + ' ' + size"
+                style="padding:0.5em 1em;border:none;border-radius:4px;color:white;transition:all 0.3s ease;">
+          Status: {{status}}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <h3>6.2. Direttiva @style</h3>
+  <pre class="code-console">&lt;!-- Stili inline dinamici --&gt;
+&lt;div @style="backgroundColor: themeColor; width: size + 'px'"&gt;
+  Contenuto
+&lt;/div&gt;
+
+&lt;!-- Animazioni e transizioni --&gt;
+&lt;div @style="transform: 'rotate(' + rotation + 'deg)'"&gt;
+  Elemento rotante
+&lt;/div&gt;</pre>
+
+  <h4>🎮 Prova tu:</h4>
+  <div class="demo-box">
+    <init>
+      bgColor = '#3498db';
+      textColor = '#ffffff';
+      borderRadius = 8;
+      padding = 20;
+      rotation = 0;
+      scale = 1;
+      opacity = 1;
+      
+      function randomizeStyles() {
+        bgColor = '#' + Math.floor(Math.random()*16777215).toString(16);
+        textColor = Math.random() > 0.5 ? '#ffffff' : '#000000';
+        borderRadius = Math.floor(Math.random() * 50);
+        padding = Math.floor(Math.random() * 40) + 10;
+        rotation = Math.floor(Math.random() * 360);
+        scale = Math.random() * 1.5 + 0.5;
+        opacity = Math.random() * 0.8 + 0.2;
+      }
+      
+      function resetStyles() {
+        bgColor = '#3498db';
+        textColor = '#ffffff';
+        borderRadius = 8;
+        padding = 20;
+        rotation = 0;
+        scale = 1;
+        opacity = 1;
+      }
+    </init>
+
+    <div style="background:#f8f9fa;padding:1.5em;border-radius:4px;margin:1em 0;">
+      <h4>🎨 Controlli stili dinamici:</h4>
+      
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1em;margin-bottom:1em;">
+        <div>
+          <label style="display:block;margin-bottom:0.5em;">Colore sfondo:</label>
+          <input @model="bgColor" type="color" style="width:100%;padding:4px;">
+        </div>
+        <div>
+          <label style="display:block;margin-bottom:0.5em;">Colore testo:</label>
+          <input @model="textColor" type="color" style="width:100%;padding:4px;">
+        </div>
+        <div>
+          <label style="display:block;margin-bottom:0.5em;">Border radius: {{borderRadius}}px</label>
+          <input @model="borderRadius" type="range" min="0" max="50" style="width:100%;">
+        </div>
+        <div>
+          <label style="display:block;margin-bottom:0.5em;">Padding: {{padding}}px</label>
+          <input @model="padding" type="range" min="5" max="50" style="width:100%;">
+        </div>
+        <div>
+          <label style="display:block;margin-bottom:0.5em;">Rotazione: {{rotation}}°</label>
+          <input @model="rotation" type="range" min="0" max="360" style="width:100%;">
+        </div>
+        <div>
+          <label style="display:block;margin-bottom:0.5em;">Scala: {{scale.toFixed(2)}}</label>
+          <input @model="scale" type="range" min="0.5" max="2" step="0.1" style="width:100%;">
+        </div>
+        <div>
+          <label style="display:block;margin-bottom:0.5em;">Opacità: {{opacity.toFixed(2)}}</label>
+          <input @model="opacity" type="range" min="0.1" max="1" step="0.1" style="width:100%;">
+        </div>
+      </div>
+
+      <div style="text-align:center;margin-bottom:1em;">
+        <button @click="randomizeStyles()" 
+                style="background:#e74c3c;color:white;padding:8px 16px;border:none;border-radius:4px;margin:0.25em;">
+          🎲 Randomizza
+        </button>
+        <button @click="resetStyles()" 
+                style="background:#95a5a6;color:white;padding:8px 16px;border:none;border-radius:4px;margin:0.25em;">
+          🔄 Reset
+        </button>
+      </div>
+
+      <div style="display:flex;justify-content:center;align-items:center;min-height:200px;">
+        <div @style="'background-color:' + bgColor + '; color:' + textColor + '; border-radius:' + borderRadius + 'px; padding:' + padding + 'px; transform: rotate(' + rotation + 'deg) scale(' + scale + '); opacity:' + opacity + '; transition: all 0.3s ease;'"
+             style="max-width:300px;text-align:center;">
+          <h4>🎨 Elemento Stilizzato</h4>
+          <p>Tutti gli stili sono dinamici!</p>
+          <p style="font-size:0.9em;opacity:0.8;">
+            BG: {{bgColor}}<br>
+            Text: {{textColor}}<br>
+            Rotation: {{rotation}}°<br>
+            Scale: {{scale.toFixed(2)}}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>6.3. Animazioni e Transizioni</h3>
+  <pre class="code-console">&lt;!-- Animazioni CSS con Ayisha.js --&gt;
+&lt;div @class="isAnimating ? 'animate-pulse' : ''"
+     @style="'animation-duration:' + duration + 's'"&gt;
+  Elemento animato
+&lt;/div&gt;</pre>
+
+  <h4>🎮 Prova tu:</h4>
+  <div class="demo-box">
+    <init>
+      animationType = 'pulse';
+      animationSpeed = 1;
+      isAnimating = false;
+      
+      animations = ['pulse', 'bounce', 'shake', 'rotate', 'fade'];
+      
+      function startAnimation() {
+        isAnimating = true;
+        setTimeout(() => {
+          isAnimating = false;
+        }, animationSpeed * 1000);
+      }
+      
+      function nextAnimation() {
+        const currentIndex = animations.indexOf(animationType);
+        animationType = animations[(currentIndex + 1) % animations.length];
+      }
+    </init>
+
+    <div style="background:#f8f9fa;padding:1.5em;border-radius:4px;margin:1em 0;">
+      <h4>✨ Controlli animazioni:</h4>
+      
+      <div style="margin-bottom:1em;">
+        <label>Tipo animazione: </label>
+        <select @model="animationType" style="padding:4px;margin-right:1em;">
+          <option value="pulse">Pulse</option>
+          <option value="bounce">Bounce</option>
+          <option value="shake">Shake</option>
+          <option value="rotate">Rotate</option>
+          <option value="fade">Fade</option>
+        </select>
+        
+        <label>Velocità: {{animationSpeed}}s </label>
+        <input @model="animationSpeed" type="range" min="0.5" max="3" step="0.5" style="margin-right:1em;">
+        
+        <button @click="startAnimation()" 
+                style="background:#e67e22;color:white;padding:4px 8px;border:none;border-radius:4px;margin-right:0.5em;">
+          ▶️ Avvia
+        </button>
+        
+        <button @click="nextAnimation()" 
+                style="background:#9b59b6;color:white;padding:4px 8px;border:none;border-radius:4px;">
+          🔄 Cambia tipo
+        </button>
+      </div>
+
+      <div style="display:flex;justify-content:center;align-items:center;min-height:150px;">
+        <div @class="isAnimating ? 'animate-' + animationType : ''"
+             @style="'animation-duration:' + animationSpeed + 's'"
+             style="padding:2em;background:#3498db;color:white;border-radius:12px;text-align:center;font-weight:bold;">
+          🎭 Elemento Animato<br>
+          <small>Tipo: {{animationType}}</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="output-box">
+    <strong>🎯 Cosa hai imparato:</strong>
+    <ul>
+      <li><code>@class="condizione ? 'classe1' : 'classe2'"</code> - Classi CSS dinamiche</li>
+      <li><code>@style="proprietà + valore"</code> - Stili inline dinamici</li>
+      <li>Combinazione di più proprietà CSS dinamiche</li>
+      <li>Animazioni e transizioni con CSS e Ayisha.js</li>
+      <li>Controlli interattivi per manipolare stili in tempo reale</li>
+    </ul>
+  </div>
+</div>
+
+<style>
+/* Temi */
+.light {
+  background-color: #ffffff;
+  color: #333333;
+  border: 1px solid #ddd;
+}
+
+.dark {
+  background-color: #2c3e50;
+  color: #ecf0f1;
+  border: 1px solid #34495e;
+}
+
+.colorful {
+  background: linear-gradient(45deg, #e74c3c, #f39c12, #f1c40f, #27ae60);
+  color: #ffffff;
+  border: 1px solid #e67e22;
+}
+
+/* Dimensioni */
+.small {
+  font-size: 0.8em;
+  padding: 0.5em;
+}
+
+.medium {
+  font-size: 1em;
+  padding: 1em;
+}
+
+.large {
+  font-size: 1.2em;
+  padding: 1.5em;
+}
+
+/* Stati */
+.active {
+  box-shadow: 0 0 15px rgba(52, 152, 219, 0.5);
+  transform: scale(1.02);
+}
+
+.inactive {
+  opacity: 0.7;
+}
+
+/* Pulsanti Status */
+.btn-success {
+  background-color: #27ae60 !important;
+}
+
+.btn-warning {
+  background-color: #f39c12 !important;
+}
+
+.btn-danger {
+  background-color: #e74c3c !important;
+}
+
+.btn-info {
+  background-color: #3498db !important;
+}
+
+/* Animazioni */
+@keyframes animate-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes animate-bounce {
+  0%, 20%, 53%, 80%, 100% { transform: translate3d(0,0,0); }
+  40%, 43% { transform: translate3d(0,-30px,0); }
+  70% { transform: translate3d(0,-15px,0); }
+  90% { transform: translate3d(0,-4px,0); }
+}
+
+@keyframes animate-shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
+@keyframes animate-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes animate-fade {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.animate-pulse { animation: animate-pulse infinite; }
+.animate-bounce { animation: animate-bounce infinite; }
+.animate-shake { animation: animate-shake infinite; }
+.animate-rotate { animation: animate-rotate infinite; }
+.animate-fade { animation: animate-fade infinite; }
+</style>
         style="padding:0.5em 1em;margin-left:0.5em;background:#4CAF50;color:white;border:none;border-radius:4px;cursor:pointer;">➕ Add</button>
     </div>
 

@@ -1,165 +1,562 @@
-<h2>3. Event Handling: Directives vs Sub-directives</h2>
+<!-- Step 13: Drag & Drop -->
+<div class="step-container">
+  <span class="step-number">Step 13</span>
+  <h2>13. Drag & Drop</h2>
+  <p>Implementa funzionalità di trascinamento e rilascio per creare interfacce interattive e riorganizzabili.</p>
 
-<h3>3.1 Standard Event Directives</h3>
-<pre class="code-console">&lt;!-- Direct event directives --&gt;
-&lt;button @click="count++"&gt;Increment&lt;/button&gt;
-&lt;input @input="inputMsg = 'Typed!'" placeholder="Type here..."&gt;
-&lt;p&gt;Input event: &#123;&#123;inputMsg&#125;&#125;&lt;/p&gt;
-&lt;input @focus="focusMsg = 'Focused!'" @blur="focusMsg = 'Blurred!'"&gt;
-&lt;p&gt;Focus/Blur event: &#123;&#123;focusMsg&#125;&#125;&lt;/p&gt;
-&lt;input @change="changeMsg = 'Changed!'" placeholder="Change and blur..."&gt;
-&lt;p&gt;Change event: &#123;&#123;changeMsg&#125;&#125;&lt;/p&gt;
-</pre>
-<div style="margin-top:1em;">
-  <init>inputMsg = 'Ready'; focusMsg = 'Ready'; changeMsg = 'Ready';</init>
-  <button @click="count++">Increment ({{count}})</button>
-  <br>
-  <input @input="inputMsg = 'Typed!'" @model="inputText" placeholder="Type here...">
-  Input event: {{inputMsg}}
-  <br>
-  <input @focus="focusMsg = 'Focused!'" @blur="focusMsg = 'Blurred!'" @model="focusText"
-    placeholder="Focus and blur...">
-  Focus/Blur event: {{focusMsg}}
-  <br>
-  <input @change="changeMsg = 'Changed!'" @model="changeText" placeholder="Change and blur...">
-  Change event: {{changeMsg}}
-  <div class="tip"><b>Tip:</b> Use event directives to react to user actions. You can update any variable in the
-    handler.</div>
-</div>
+  <h4>🎯 Funzionalità che implementeremo:</h4>
+  <ul>
+    <li>🖱️ Trascinamento base di elementi</li>
+    <li>📦 Zone di rilascio personalizzate</li>
+    <li>📋 Lista riordinabile</li>
+    <li>🗂️ Organizzazione per categorie</li>
+    <li>🎮 Gioco di puzzle</li>
+    <li>🎨 Feedback visivo durante il drag</li>
+  </ul>
 
-<h3>3.2 Comparing Standard vs Sub-directives</h3>
-<p>Ayisha.js provides two approaches to event handling: <strong>standard directives</strong> that execute
-  expressions directly, and <strong>sub-directives</strong> that combine specific actions with trigger events.
-  Understanding when to use each approach is crucial for building efficient applications.</p>
+  <h4>🎮 Sistema Drag & Drop Completo:</h4>
+  <div class="demo-box">
+    <init>
+      // Stato per il trascinamento base
+      draggedItem = null;
+      dropZoneActive = false;
+      
+      // Lista riordinabile
+      todoItems = [
+        { id: 1, text: 'Implementare drag & drop', priority: 'high' },
+        { id: 2, text: 'Testare funzionalità', priority: 'medium' },
+        { id: 3, text: 'Scrivere documentazione', priority: 'low' },
+        { id: 4, text: 'Deploy in produzione', priority: 'high' }
+      ];
+      
+      // Categorie per organizzazione
+      categories = {
+        todo: {
+          name: 'Da Fare',
+          items: [
+            { id: 'task1', text: 'Pianificare sprint', category: 'todo' },
+            { id: 'task2', text: 'Rivedere codice', category: 'todo' }
+          ]
+        },
+        doing: {
+          name: 'In Corso',
+          items: [
+            { id: 'task3', text: 'Sviluppare feature', category: 'doing' }
+          ]
+        },
+        done: {
+          name: 'Completato',
+          items: [
+            { id: 'task4', text: 'Setup progetto', category: 'done' }
+          ]
+        }
+      };
+      
+      // Puzzle game
+      puzzlePieces = [
+        { id: 1, text: '🧩 Pezzo 1', position: 1, correctPosition: 1 },
+        { id: 2, text: '🧩 Pezzo 2', position: 3, correctPosition: 2 },
+        { id: 3, text: '🧩 Pezzo 3', position: 2, correctPosition: 3 },
+        { id: 4, text: '🧩 Pezzo 4', position: 4, correctPosition: 4 }
+      ];
+      
+      puzzleComplete = false;
+      
+      // Funzioni drag & drop base
+      handleDragStart = function(event, item) {
+        draggedItem = item;
+        event.dataTransfer.effectAllowed = 'move';
+        event.target.style.opacity = '0.5';
+      };
+      
+      handleDragEnd = function(event) {
+        event.target.style.opacity = '1';
+        draggedItem = null;
+        dropZoneActive = false;
+      };
+      
+      handleDragOver = function(event) {
+        event.preventDefault();
+        dropZoneActive = true;
+      };
+      
+      handleDragLeave = function(event) {
+        dropZoneActive = false;
+      };
+      
+      handleDrop = function(event, targetZone) {
+        event.preventDefault();
+        dropZoneActive = false;
+        
+        if (draggedItem && targetZone) {
+          // Logica di drop personalizzata
+          console.log('Dropped', draggedItem, 'to', targetZone);
+        }
+      };
+      
+      // Funzioni per lista riordinabile
+      reorderList = function(fromIndex, toIndex) {
+        const item = todoItems.splice(fromIndex, 1)[0];
+        todoItems.splice(toIndex, 0, item);
+      };
+      
+      handleListDrop = function(event, targetIndex) {
+        event.preventDefault();
+        const draggedIndex = parseInt(event.dataTransfer.getData('text/plain'));
+        
+        if (draggedIndex !== targetIndex) {
+          reorderList(draggedIndex, targetIndex);
+        }
+      };
+      
+      // Funzioni per categorie
+      moveToCategory = function(item, newCategory) {
+        // Rimuovi da categoria corrente
+        Object.keys(categories).forEach(catKey => {
+          categories[catKey].items = categories[catKey].items.filter(i => i.id !== item.id);
+        });
+        
+        // Aggiungi a nuova categoria
+        item.category = newCategory;
+        categories[newCategory].items.push(item);
+      };
+      
+      handleCategoryDrop = function(event, categoryKey) {
+        event.preventDefault();
+        const itemData = JSON.parse(event.dataTransfer.getData('application/json'));
+        
+        if (itemData && itemData.category !== categoryKey) {
+          moveToCategory(itemData, categoryKey);
+        }
+      };
+      
+      // Funzioni puzzle
+      swapPuzzlePieces = function(piece1, piece2) {
+        const temp = piece1.position;
+        piece1.position = piece2.position;
+        piece2.position = temp;
+        
+        checkPuzzleComplete();
+      };
+      
+      handlePuzzleDrop = function(event, targetPiece) {
+        event.preventDefault();
+        const draggedPieceId = parseInt(event.dataTransfer.getData('text/plain'));
+        const draggedPiece = puzzlePieces.find(p => p.id === draggedPieceId);
+        
+        if (draggedPiece && targetPiece && draggedPiece.id !== targetPiece.id) {
+          swapPuzzlePieces(draggedPiece, targetPiece);
+        }
+      };
+      
+      checkPuzzleComplete = function() {
+        puzzleComplete = puzzlePieces.every(piece => piece.position === piece.correctPosition);
+      };
+      
+      resetPuzzle = function() {
+        puzzlePieces = [
+          { id: 1, text: '🧩 Pezzo 1', position: 1, correctPosition: 1 },
+          { id: 2, text: '🧩 Pezzo 2', position: 3, correctPosition: 2 },
+          { id: 3, text: '🧩 Pezzo 3', position: 2, correctPosition: 3 },
+          { id: 4, text: '🧩 Pezzo 4', position: 4, correctPosition: 4 }
+        ];
+        puzzleComplete = false;
+      };
+    </init>
 
-<pre class="code-console">&lt;!-- Standard directives (direct expression execution) --&gt;
-&lt;input @input="inputMsg = 'You typed: ' + event.target.value" placeholder="Type here for @input"&gt;
-&lt;div @hover="hoverMsg = 'Mouse is hovering!'" @leave="hoverMsg = 'Mouse left!'"&gt;Hover me for @hover&lt;/div&gt;
-&lt;input @focus="focusMsg = 'Input focused with @focus!'" @blur="focusMsg = 'Input lost focus!'"&gt;
-
-&lt;!-- Sub-directives (action + event trigger) --&gt;
-&lt;button @click="clickMsg = 'Set via @click at ' + new Date().toLocaleTimeString()"&gt;Click me&lt;/button&gt;
-&lt;div @text:hover="'Text changed on hover!'" @text:leave="'Hover me'"&gt;Hover for text change&lt;/div&gt;
-&lt;button @focus="focusMsg = 'Focus set via @focus!'"&gt;Focus me&lt;/button&gt;
-
-&lt;!-- Complex example: Form with validation --&gt;
-&lt;input @model="email" @input="validateEmail()" @class:focus="{'focused': true}" placeholder="Email"&gt;
-&lt;div @show="emailError" @class="{'error': emailError}"&gt;&#123;&#123;emailError&#125;&#125;&lt;/div&gt;
-</pre>
-
-<div style="margin-top:1em;">
-  <init>directInputMsg = 'Ready'; directHoverMsg = 'Ready'; directFocusMsg = 'Ready'; clickInputMsg = 'Ready';
-    clickFocusMsg = 'Ready'; formEmail = ''; emailError = ''; formStatus = ''; formSubmitted = false; inputMsg =
-    'Ready'; hoverMsg = 'Ready'; value = '';</init>
-
-  <div style="background:#e3f2fd;padding:1em;border-radius:4px;margin-bottom:1em;">
-    <h4 style="margin:0 0 0.5em 0;">🎯 Standard Directives (Direct Execution)</h4>
-
-    <div style="margin-bottom:1em;">
-      <input @input="inputMsg = 'You typed: ' + value" placeholder="Type here for @input" @model="value"
-        style="width:100%;padding:0.5em;">
-      <p style="margin:0.3em 0;"><strong>@input:</strong> {{inputMsg}}</p>
-      <p style="margin:0.3em 0;"><strong>Current value:</strong> {{value}}</p>
-    </div>
-
-    <div style="margin-bottom:1.5em;">
-      <h5 style="margin:0 0 0.8em 0;color:#1976d2;">📝 Interactive Value Modification:</h5>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:0.8em;">
-
-        <!-- Click event -->
-        <button @click="value = 'Set by CLICK!'"
-          style="padding:0.6em;background:#4CAF50;color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.9em;">
-          🖱️ Click to Set Value
-        </button>
-
-        <!-- Focus events -->
-        <input @focus="value = 'Focused input!'" @blur="value = 'Focus lost!'" placeholder="Focus me to set value"
-          style="padding:0.6em;border:2px solid #9C27B0;border-radius:4px;font-size:0.9em;">
-
-        <!-- Change event -->
-        <select @model="value" @change="value = value + ' (selected)'"
-          style="padding:0.6em;border:2px solid #607D8B;border-radius:4px;font-size:0.9em;">
-          <option value="">Choose option</option>
-          <option value="Option A">Option A</option>
-          <option value="Option B">Option B</option>
-          <option value="Option C">Option C</option>
-        </select>
-
-        <!-- Hover event -->
-        <div @hover="value='Value changed by hover'" @leave="value='Hover ended'"
-          style="padding:0.6em;background:#fff3e0;border:2px solid #ff9800;border-radius:4px;cursor:pointer;text-align:center;font-size:0.9em;">
-          Hover me
+    <!-- Drag & Drop Base -->
+    <div class="section">
+      <h3>🖱️ Drag & Drop Base</h3>
+      <div style="display:flex;gap:2em;align-items:flex-start;">
+        <div class="drag-item" 
+             draggable="true" 
+             @dragstart="handleDragStart(event, 'item1')"
+             @dragend="handleDragEnd(event)">
+          📄 Trascina questo elemento
         </div>
-
-        <!-- Input event -->
-        <input @input="value = 'Live input: ' + value" @model="value" placeholder="Type for live update"
-          style="padding:0.6em;border:2px solid #2196F3;border-radius:4px;font-size:0.9em;">
-      </div>
-
-      <div style="margin-top:1em;padding:1em;background:#f8f9fa;border-radius:4px;border-left:4px solid #2196F3;">
-        <strong>📊 Current Value Monitor:</strong>
-        <span style="font-family:monospace;background:#e9ecef;padding:0.2em 0.5em;border-radius:3px;margin-left:0.5em;">
-          "{{value || 'empty'}}"
-        </span>
-        <br>
-        <small style="color:#666;margin-top:0.5em;display:block;">
-          Try the different buttons and inputs above to see how standard directives can modify the same variable!
-        </small>
+        
+        <div class="drop-zone" 
+             @dragover="handleDragOver(event)"
+             @dragleave="handleDragLeave(event)"
+             @drop="handleDrop(event, 'zone1')"
+             @class="{'drop-zone-active': dropZoneActive}">
+          📦 Zona di rilascio
+          <div @if="dropZoneActive" class="drop-indicator">
+            Rilascia qui!
+          </div>
+        </div>
       </div>
     </div>
 
-    <div style="background:#f0f7ff;padding:0.8em;border-radius:4px;border-left:4px solid #2196F3;">
-      <strong>Use standard directives when:</strong> You need complex logic, multiple operations, or custom validation
-      on events.
+    <!-- Lista Riordinabile -->
+    <div class="section">
+      <h3>📋 Lista Riordinabile</h3>
+      <div class="sortable-list">
+        <div @for="item, index in todoItems" 
+             class="sortable-item"
+             draggable="true"
+             @dragstart="event.dataTransfer.setData('text/plain', index)"
+             @dragover="event.preventDefault()"
+             @drop="handleListDrop(event, index)"
+             @class="{
+               'priority-high': item.priority === 'high',
+               'priority-medium': item.priority === 'medium',
+               'priority-low': item.priority === 'low'
+             }">
+          <span class="drag-handle">⋮⋮</span>
+          <span class="item-text">{{item.text}}</span>
+          <span class="priority-badge">{{item.priority}}</span>
+        </div>
+      </div>
     </div>
+
+    <!-- Kanban Board -->
+    <div class="section">
+      <h3>🗂️ Kanban Board</h3>
+      <div class="kanban-board">
+        <div @for="category, key in categories" class="kanban-column">
+          <h4 class="column-header">{{category.name}} ({{category.items.length}})</h4>
+          <div class="kanban-items"
+               @dragover="event.preventDefault()"
+               @drop="handleCategoryDrop(event, key)">
+            <div @for="item in category.items" 
+                 class="kanban-item"
+                 draggable="true"
+                 @dragstart="event.dataTransfer.setData('application/json', JSON.stringify(item))">
+              <span>{{item.text}}</span>
+              <small>{{item.category}}</small>
+            </div>
+            
+            <div @if="category.items.length === 0" class="empty-column">
+              Trascina gli elementi qui
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Puzzle Game -->
+    <div class="section">
+      <h3>🎮 Puzzle Game</h3>
+      <div @if="puzzleComplete" class="puzzle-complete">
+        🎉 Congratulazioni! Puzzle completato!
+        <button @click="resetPuzzle()" class="reset-btn">🔄 Reset</button>
+      </div>
+      
+      <div class="puzzle-grid">
+        <div @for="position in [1, 2, 3, 4]" class="puzzle-slot">
+          <div @for="piece in puzzlePieces.filter(p => p.position === position)" 
+               class="puzzle-piece"
+               draggable="true"
+               @dragstart="event.dataTransfer.setData('text/plain', piece.id)"
+               @dragover="event.preventDefault()"
+               @drop="handlePuzzleDrop(event, piece)"
+               @class="{
+                 'correct-position': piece.position === piece.correctPosition,
+                 'wrong-position': piece.position !== piece.correctPosition
+               }">
+            {{piece.text}}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      .section {
+        margin-bottom: 2em;
+        padding: 1.5em;
+        border: 1px solid #eee;
+        border-radius: 8px;
+        background: #fafafa;
+      }
+
+      .section h3 {
+        margin-top: 0;
+        color: #333;
+      }
+
+      /* Drag & Drop Base */
+      .drag-item {
+        padding: 1em;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 8px;
+        cursor: grab;
+        user-select: none;
+        transition: transform 0.2s;
+      }
+
+      .drag-item:active {
+        cursor: grabbing;
+      }
+
+      .drop-zone {
+        padding: 2em;
+        border: 2px dashed #ccc;
+        border-radius: 8px;
+        text-align: center;
+        color: #666;
+        transition: all 0.2s;
+        position: relative;
+      }
+
+      .drop-zone-active {
+        border-color: #007bff !important;
+        background: rgba(0, 123, 255, 0.1) !important;
+        color: #007bff !important;
+      }
+
+      .drop-indicator {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: #007bff;
+        color: white;
+        padding: 0.5em 1em;
+        border-radius: 4px;
+        font-weight: bold;
+      }
+
+      /* Lista Riordinabile */
+      .sortable-list {
+        max-width: 400px;
+      }
+
+      .sortable-item {
+        display: flex;
+        align-items: center;
+        gap: 1em;
+        padding: 1em;
+        margin: 0.5em 0;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        cursor: move;
+        transition: all 0.2s;
+      }
+
+      .sortable-item:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+
+      .drag-handle {
+        color: #999;
+        cursor: grab;
+      }
+
+      .drag-handle:active {
+        cursor: grabbing;
+      }
+
+      .item-text {
+        flex: 1;
+      }
+
+      .priority-badge {
+        padding: 0.2em 0.6em;
+        border-radius: 12px;
+        font-size: 0.8em;
+        font-weight: bold;
+        text-transform: uppercase;
+      }
+
+      .priority-high {
+        border-left: 4px solid #dc3545;
+      }
+
+      .priority-high .priority-badge {
+        background: #dc3545;
+        color: white;
+      }
+
+      .priority-medium {
+        border-left: 4px solid #ffc107;
+      }
+
+      .priority-medium .priority-badge {
+        background: #ffc107;
+        color: #333;
+      }
+
+      .priority-low {
+        border-left: 4px solid #28a745;
+      }
+
+      .priority-low .priority-badge {
+        background: #28a745;
+        color: white;
+      }
+
+      /* Kanban Board */
+      .kanban-board {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1em;
+      }
+
+      .kanban-column {
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+
+      .column-header {
+        background: #f8f9fa;
+        padding: 1em;
+        margin: 0;
+        text-align: center;
+        border-bottom: 1px solid #eee;
+      }
+
+      .kanban-items {
+        padding: 1em;
+        min-height: 200px;
+      }
+
+      .kanban-item {
+        background: #e3f2fd;
+        padding: 0.8em;
+        margin: 0.5em 0;
+        border-radius: 6px;
+        cursor: move;
+        border-left: 3px solid #2196f3;
+        transition: transform 0.2s;
+      }
+
+      .kanban-item:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+
+      .kanban-item small {
+        display: block;
+        color: #666;
+        margin-top: 0.3em;
+        font-style: italic;
+      }
+
+      .empty-column {
+        text-align: center;
+        color: #999;
+        padding: 2em;
+        border: 2px dashed #ddd;
+        border-radius: 6px;
+        font-style: italic;
+      }
+
+      /* Puzzle Game */
+      .puzzle-complete {
+        background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+        color: white;
+        padding: 1em;
+        border-radius: 8px;
+        text-align: center;
+        margin-bottom: 1em;
+        font-weight: bold;
+      }
+
+      .reset-btn {
+        background: rgba(255,255,255,0.2);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.3);
+        padding: 0.5em 1em;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-left: 1em;
+      }
+
+      .puzzle-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5em;
+        max-width: 300px;
+        margin: 0 auto;
+      }
+
+      .puzzle-slot {
+        aspect-ratio: 1;
+        border: 2px dashed #ddd;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .puzzle-piece {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        cursor: move;
+        font-weight: bold;
+        transition: all 0.2s;
+      }
+
+      .correct-position {
+        background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+        color: white;
+      }
+
+      .wrong-position {
+        background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+        color: white;
+      }
+
+      .puzzle-piece:hover {
+        transform: scale(1.05);
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        .kanban-board {
+          grid-template-columns: 1fr;
+        }
+        
+        .puzzle-grid {
+          max-width: 250px;
+        }
+        
+        .sortable-item {
+          padding: 0.8em;
+        }
+      }
+    </style>
   </div>
 
-  <div style="background:#e8f5e9;padding:1em;border-radius:4px;margin-bottom:1em;">
-    <h4 style="margin:0 0 0.5em 0;">⚡ Sub-directives (Event-triggered Actions)</h4>
-
-    <div style="margin-bottom:1em;">
-      <button @click="clickInputMsg = 'Message set via @click at ' + new Date().toLocaleTimeString()"
-        style="padding:0.5em 1em;cursor:pointer;">
-        Click to set message (@click)
-      </button>
-      <p style="margin:0.3em 0;"><strong>@click:</strong> {{clickInputMsg}}</p>
-    </div>
-
-    <div style="margin-bottom:1em;">
-      <div @text:hover="'✨ Text changed on hover!'" @text:leave="'Hover me to change text'"
-        style="padding:1em;border:2px solid #4CAF50;border-radius:4px;cursor:pointer;text-align:center;min-height:20px;">
-        Hover me to change text
-      </div>
-      <p style="margin:0.3em 0;"><strong>@text:hover/@text:leave:</strong> Text changes directly in the element above
-      </p>
-    </div>
-
-    <div style="background:#f0fff0;padding:0.8em;border-radius:4px;border-left:4px solid #4CAF50;">
-      <strong>Use sub-directives when:</strong> You need simple, specific actions like setting values, changing text,
-      or toggling classes.
-    </div>
+  <div class="output-box">
+    <strong>🎯 Cosa hai imparato:</strong>
+    <ul>
+      <li><code>draggable="true"</code> - Rendere elementi trascinabili</li>
+      <li><code>@dragstart</code> - Inizio trascinamento</li>
+      <li><code>@dragend</code> - Fine trascinamento</li>
+      <li><code>@dragover</code> - Elemento sopra zona drop</li>
+      <li><code>@drop</code> - Rilascio elemento</li>
+      <li><strong>DataTransfer API:</strong> Passaggio dati durante drag</li>
+      <li><strong>Event.preventDefault():</strong> Abilitare drop</li>
+      <li><strong>Visual Feedback:</strong> Indicatori durante drag</li>
+      <li><strong>Array Manipulation:</strong> Riordino elementi</li>
+      <li><strong>State Management:</strong> Aggiornamento stato complesso</li>
+    </ul>
   </div>
 
-  <div class="tip"><b>Performance Tip:</b> Combine both approaches! Use sub-directives for simple UI changes and 
-    standard directives for business logic. This gives you the best performance and maintainability.</div>
+  <div class="tips-box">
+    <strong>💡 Suggerimenti Avanzati:</strong>
+    <ul>
+      <li>Usa <code>event.dataTransfer.effectAllowed</code> per tipi di drag</li>
+      <li>Implementa <code>ghost image</code> personalizzate</li>
+      <li>Aggiungi touch support per dispositivi mobili</li>
+      <li>Usa <code>requestAnimationFrame</code> per animazioni smooth</li>
+      <li>Implementa auto-scroll durante drag</li>
+      <li>Aggiungi accessibility con ARIA attributes</li>
+    </ul>
+  </div>
+
+  <div class="next-steps">
+    <strong>🚀 Prossimi Passi:</strong>
+    <p>Nel prossimo step esploreremo <strong>Real-time Updates</strong> per sincronizzare dati in tempo reale con WebSockets e polling!</p>
+  </div>
 </div>
-
-<script>
-  function validateEmail() {
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!formEmail) {
-      emailError = '';
-    } else if (!emailPattern.test(formEmail)) {
-      emailError = 'Please enter a valid email address';
-    } else {
-      emailError = '';
-    }
-  }
-
-  function submitForm() {
-    if (formEmail && !emailError) {
-      formSubmitted = true;
-      setTimeout(() => formSubmitted = false, 3000);
-    }
-  }
-</script>

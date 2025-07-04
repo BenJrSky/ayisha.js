@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AyishaVDOM Fixes Test</title>
+    <script src="./ayisha.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .result { background-color: #f0f0f0; padding: 10px; margin: 10px 0; }
+        button { padding: 8px 16px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>AyishaVDOM Fixes Test</h1>
+    
+    <!-- Test 1: Init blocks with multi-line objects -->
+    <init>
+        users = [
+            {
+                id: 1,
+                name: "John",
+                age: 30
+            },
+            {
+                id: 2,
+                name: "Jane",
+                age: 25
+            }
+        ];
+        
+        config = {
+            theme: "dark",
+            settings: {
+                notifications: true,
+                autoSave: false
+            }
+        };
+        
+        counter = 0;
+        message = "Init blocks working!";
+    </init>
+    
+    <div class="test-section">
+        <h2>Test 1: Init Blocks with Multi-line Objects</h2>
+        <div class="result">
+            <p @text="'Users count: ' + users.length"></p>
+            <p @text="'First user: ' + users[0].name"></p>
+            <p @text="'Config theme: ' + config.theme"></p>
+            <p @text="'Notifications enabled: ' + config.settings.notifications"></p>
+            <p @text="message"></p>
+        </div>
+    </div>
+    
+    <!-- Test 2: @set directive one-time execution -->
+    <div class="test-section">
+        <h2>Test 2: @set Directive One-time Execution</h2>
+        <p @set="executionCount = (executionCount || 0) + 1" @text="'@set executed ' + executionCount + ' time(s)'"></p>
+        <button @click="this.render()">Re-render (should not increase count)</button>
+    </div>
+    
+    <!-- Test 3: Counter functionality -->
+    <div class="test-section">
+        <h2>Test 3: Counter Functionality</h2>
+        <div class="result">
+            <p @text="'Counter: ' + counter"></p>
+            <button @click="counter++">Increment</button>
+            <button @click="counter--">Decrement</button>
+            <button @click="counter = 0">Reset</button>
+        </div>
+    </div>
+    
+    <!-- Test 4: Component with init blocks -->
+    <div class="test-section">
+        <h2>Test 4: Component with Init Blocks</h2>
+        <div @component="user-card" data-user-id="1"></div>
+    </div>
+    
+    <!-- Component definition -->
+    <component name="user-card">
+        <init>
+            componentData = {
+                loaded: true,
+                timestamp: new Date().toISOString()
+            };
+            componentCounter = 0;
+        </init>
+        
+        <div style="border: 1px solid #ddd; padding: 10px; margin: 10px 0;">
+            <h3>User Card Component</h3>
+            <p @text="'Component loaded: ' + componentData.loaded"></p>
+            <p @text="'Load time: ' + componentData.timestamp"></p>
+            <p @text="'Component counter: ' + componentCounter"></p>
+            <button @click="componentCounter++">Increment Component Counter</button>
+        </div>
+    </component>
+    
+    <script>
+        // Initialize AyishaVDOM
+        const ayisha = new AyishaVDOM();
+        ayisha.mount();
+        
+        // Log initial state for debugging
+        console.log('Initial state:', ayisha.state);
+        
+        // Test that @set directives are only processed once
+        setTimeout(() => {
+            console.log('State after initial render:', ayisha.state);
+            console.log('ExecutionCount should be 1:', ayisha.state.executionCount);
+        }, 100);
+    </script>
+</body>
+</html>

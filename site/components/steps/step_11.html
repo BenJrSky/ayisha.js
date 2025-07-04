@@ -1,14 +1,850 @@
+<!-- Step 11: Gestione Errori e Validazione Avanzata -->
 <div class="step-container">
   <span class="step-number">Step 11</span>
-  <h2>🌐 API Integration</h2>
-  <p>Fetch data from APIs and display it dynamically!</p>
+  <h2>11. Gestione Errori e Validazione Avanzata</h2>
+  <p>Impara a gestire errori in modo elegante e implementare sistemi di validazione complessi per applicazioni robuste.</p>
 
-  <h4>📝 The Code:</h4>
-  <pre class="code-console">&lt;button @click="fetchData()"&gt;Load Jokes&lt;/button&gt;
-&lt;div @if="loading"&gt;⏳ Loading...&lt;/div&gt;
-&lt;div @if="error"&gt;❌ Error: &#123;&#123;error&#125;&#125;&lt;/div&gt;
-&lt;div @if="jokes"&gt;
-  &lt;div @map="jokes"&gt;
+  <h3>11.1. Try-Catch e Gestione Errori</h3>
+  <pre class="code-console">&lt;!-- Gestione errori con try-catch --&gt;
+&lt;script&gt;
+async function operazioneRischiosa() {
+  try {
+    loading = true;
+    const result = await fetch('/api/data');
+    data = await result.json();
+  } catch (error) {
+    errorMessage = 'Errore: ' + error.message;
+    console.error('Operazione fallita:', error);
+  } finally {
+    loading = false;
+  }
+}
+&lt;/script&gt;
+
+&lt;button @click="operazioneRischiosa()"&gt;Esegui Operazione&lt;/button&gt;
+&lt;div @if="errorMessage" class="error"&gt;{{errorMessage}}&lt;/div&gt;</pre>
+
+  <h4>🎮 Prova tu:</h4>
+  <div class="demo-box">
+    <init>
+      operations = [];
+      currentOperation = null;
+      globalErrors = [];
+      
+      function simulateOperation(name, successRate = 0.7, delay = 1000) {
+        const operationId = Date.now() + Math.random();
+        const operation = {
+          id: operationId,
+          name: name,
+          status: 'running',
+          startTime: new Date(),
+          endTime: null,
+          error: null,
+          result: null
+        };
+        
+        operations.push(operation);
+        currentOperation = operation;
+        
+        return new Promise((resolve, reject) => {
+          setTimeout(() => {
+            const success = Math.random() < successRate;
+            operation.endTime = new Date();
+            
+            if (success) {
+              operation.status = 'success';
+              operation.result = `Operazione ${name} completata con successo!`;
+              resolve(operation.result);
+            } else {
+              operation.status = 'error';
+              operation.error = `Errore durante ${name}: connessione fallita`;
+              globalErrors.push({
+                id: operationId,
+                message: operation.error,
+                timestamp: new Date(),
+                operation: name
+              });
+              reject(new Error(operation.error));
+            }
+            
+            currentOperation = null;
+          }, delay);
+        });
+      }
+      
+      async function executeWithRetry(operationName, maxRetries = 3) {
+        let attempts = 0;
+        
+        while (attempts < maxRetries) {
+          try {
+            attempts++;
+            addLog(`Tentativo ${attempts}/${maxRetries} per ${operationName}`);
+            
+            const result = await simulateOperation(`${operationName} (tentativo ${attempts})`, 0.4, 1500);
+            addLog(`✅ ${result}`, 'success');
+            return result;
+            
+          } catch (error) {
+            addLog(`❌ Tentativo ${attempts} fallito: ${error.message}`, 'error');
+            
+            if (attempts >= maxRetries) {
+              addLog(`🚫 Operazione ${operationName} fallita dopo ${maxRetries} tentativi`, 'error');
+              throw error;
+            }
+            
+            // Backoff exponenziale
+            const delay = Math.pow(2, attempts) * 1000;
+            addLog(`⏳ Riprovo tra ${delay/1000} secondi...`, 'warning');
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+        }
+      }
+      
+      logs = [];
+      
+      function addLog(message, type = 'info') {
+        logs.unshift({
+          id: Date.now() + Math.random(),
+          message,
+          type,
+          timestamp: new Date().toLocaleTimeString()
+        });
+        
+        if (logs.length > 50) {
+          logs.pop();
+        }
+      }
+      
+      function clearLogs() {
+        logs = [];
+      }
+      
+      function clearErrors() {
+        globalErrors = [];
+      }
+      
+      function getOperationDuration(operation) {
+        if (!operation.endTime) return '...';
+        return ((operation.endTime - operation.startTime) / 1000).toFixed(1) + 's';
+      }
+      
+      function getStatusColor(status) {
+        const colors = {
+          'running': '#ffc107',
+          'success': '#28a745',
+          'error': '#dc3545'
+        };
+        return colors[status] || '#6c757d';
+      }
+    </init>
+
+    <div style="background:#f8f9fa;padding:1.5em;border-radius:4px;margin:1em 0;">
+      <h4>🔧 Simulatore Operazioni con Gestione Errori</h4>
+      
+      <!-- Controlli operazioni -->
+      <div style="background:#fff;padding:1em;border-radius:4px;margin-bottom:1em;box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+        <div style="display:flex;gap:1em;flex-wrap:wrap;margin-bottom:1em;">
+          <button @click="simulateOperation('Fetch Utenti', 0.8)" 
+                  style="background:#007bff;color:white;border:none;padding:0.5em 1em;border-radius:4px;">
+            👥 Fetch Utenti (80% successo)
+          </button>
+          
+          <button @click="simulateOperation('Salva Dati', 0.5)" 
+                  style="background:#dc3545;color:white;border:none;padding:0.5em 1em;border-radius:4px;">
+            💾 Salva Dati (50% successo)
+          </button>
+          
+          <button @click="executeWithRetry('Upload File')" 
+                  style="background:#28a745;color:white;border:none;padding:0.5em 1em;border-radius:4px;">
+            📤 Upload con Retry
+          </button>
+          
+          <button @click="simulateOperation('Operazione Critica', 0.2)" 
+                  style="background:#6f42c1;color:white;border:none;padding:0.5em 1em;border-radius:4px;">
+            ⚠️ Operazione Rischiosa (20% successo)
+          </button>
+        </div>
+        
+        <div style="display:flex;gap:1em;">
+          <button @click="clearLogs()" 
+                  style="background:#6c757d;color:white;border:none;padding:0.5em 1em;border-radius:4px;">
+            🗑️ Pulisci Log
+          </button>
+          
+          <button @click="clearErrors()" 
+                  style="background:#fd7e14;color:white;border:none;padding:0.5em 1em;border-radius:4px;">
+            🧹 Pulisci Errori
+          </button>
+        </div>
+      </div>
+
+      <!-- Operazione corrente -->
+      <div @if="currentOperation" style="background:#fff3cd;border:1px solid #ffeaa7;padding:1em;border-radius:4px;margin-bottom:1em;">
+        <div style="display:flex;align-items:center;gap:0.5em;">
+          <div style="width:20px;height:20px;border:3px solid #f3f3f3;border-top:3px solid #007bff;border-radius:50%;animation:spin 1s linear infinite;"></div>
+          <strong>Operazione in corso:</strong> {{currentOperation.name}}
+        </div>
+      </div>
+
+      <!-- Lista errori globali -->
+      <div @if="globalErrors.length > 0" style="background:#f8d7da;border:1px solid #f5c6cb;padding:1em;border-radius:4px;margin-bottom:1em;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5em;">
+          <strong style="color:#721c24;">❌ Errori Attivi ({{globalErrors.length}})</strong>
+          <button @click="clearErrors()" style="background:#dc3545;color:white;border:none;padding:0.25em 0.5em;border-radius:4px;font-size:0.8em;">
+            Pulisci
+          </button>
+        </div>
+        <div @for="error in globalErrors.slice(0, 5)" style="margin:0.25em 0;padding:0.5em;background:rgba(255,255,255,0.7);border-radius:4px;">
+          <div style="font-weight:bold;color:#721c24;">{{error.operation}}</div>
+          <div style="font-size:0.9em;color:#721c24;">{{error.message}}</div>
+          <small style="color:#856404;">{{error.timestamp.toLocaleTimeString()}}</small>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1em;">
+        <!-- Storia operazioni -->
+        <div>
+          <h5>📋 Storia Operazioni</h5>
+          <div style="background:#fff;border-radius:4px;max-height:300px;overflow-y:auto;box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+            <div @if="operations.length === 0" style="padding:2em;text-align:center;color:#666;">
+              Nessuna operazione eseguita
+            </div>
+            
+            <div @for="operation in operations.slice().reverse().slice(0, 10)" 
+                 style="padding:0.75em;border-bottom:1px solid #dee2e6;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div style="flex:1;">
+                  <div style="font-weight:bold;">{{operation.name}}</div>
+                  <small style="color:#666;">
+                    {{operation.startTime.toLocaleTimeString()}} • {{getOperationDuration(operation)}}
+                  </small>
+                </div>
+                <div style="padding:0.25em 0.5em;border-radius:4px;color:white;font-size:0.8em;"
+                     @style="'background-color:' + getStatusColor(operation.status)">
+                  {{operation.status}}
+                </div>
+              </div>
+              
+              <div @if="operation.result" style="margin-top:0.5em;color:#28a745;font-size:0.9em;">
+                ✅ {{operation.result}}
+              </div>
+              
+              <div @if="operation.error" style="margin-top:0.5em;color:#dc3545;font-size:0.9em;">
+                ❌ {{operation.error}}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Log dettagliato -->
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5em;">
+            <h5>📝 Log Sistema</h5>
+            <button @click="clearLogs()" style="background:#6c757d;color:white;border:none;padding:0.25em 0.5em;border-radius:4px;font-size:0.8em;">
+              Pulisci
+            </button>
+          </div>
+          <div style="background:#2d3748;color:#e2e8f0;border-radius:4px;max-height:300px;overflow-y:auto;font-family:monospace;font-size:0.8em;">
+            <div @if="logs.length === 0" style="padding:2em;text-align:center;color:#a0aec0;">
+              Nessun log disponibile
+            </div>
+            
+            <div @for="log in logs.slice(0, 20)" 
+                 style="padding:0.25em 0.75em;border-bottom:1px solid #4a5568;">
+              <span style="color:#a0aec0;">[{{log.timestamp}}]</span>
+              <span @class="'log-' + log.type">{{log.message}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>11.2. Validazione Multi-Step</h3>
+  <pre class="code-console">&lt;!-- Validazione complessa multi-campo --&gt;
+&lt;script&gt;
+function validateStep(stepNumber) {
+  const validators = {
+    1: () => validatePersonalInfo(),
+    2: () => validateAddress(),
+    3: () => validatePayment()
+  };
+  
+  const result = validators[stepNumber]?.() || { valid: false };
+  
+  if (!result.valid) {
+    showErrors(result.errors);
+    return false;
+  }
+  
+  return true;
+}
+&lt;/script&gt;</pre>
+
+  <h4>🎮 Prova tu:</h4>
+  <div class="demo-box">
+    <init>
+      currentStep = 1;
+      maxSteps = 4;
+      
+      formData = {
+        // Step 1: Informazioni personali
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        
+        // Step 2: Indirizzo
+        address: '',
+        city: '',
+        postalCode: '',
+        country: '',
+        
+        // Step 3: Pagamento
+        cardNumber: '',
+        expiryDate: '',
+        cvv: '',
+        cardName: '',
+        
+        // Step 4: Conferma
+        terms: false,
+        newsletter: false
+      };
+      
+      validationErrors = {};
+      
+      function validatePersonalInfo() {
+        const errors = {};
+        
+        if (!formData.firstName.trim()) {
+          errors.firstName = 'Nome richiesto';
+        } else if (formData.firstName.length < 2) {
+          errors.firstName = 'Nome troppo corto';
+        }
+        
+        if (!formData.lastName.trim()) {
+          errors.lastName = 'Cognome richiesto';
+        }
+        
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!formData.email.trim()) {
+          errors.email = 'Email richiesta';
+        } else if (!emailRegex.test(formData.email)) {
+          errors.email = 'Formato email non valido';
+        }
+        
+        const phoneRegex = /^[+]?[\d\s\-\(\)]{8,}$/;
+        if (!formData.phone.trim()) {
+          errors.phone = 'Telefono richiesto';
+        } else if (!phoneRegex.test(formData.phone)) {
+          errors.phone = 'Formato telefono non valido';
+        }
+        
+        return {
+          valid: Object.keys(errors).length === 0,
+          errors
+        };
+      }
+      
+      function validateAddress() {
+        const errors = {};
+        
+        if (!formData.address.trim()) {
+          errors.address = 'Indirizzo richiesto';
+        }
+        
+        if (!formData.city.trim()) {
+          errors.city = 'Città richiesta';
+        }
+        
+        const postalRegex = /^\d{5}$/;
+        if (!formData.postalCode.trim()) {
+          errors.postalCode = 'CAP richiesto';
+        } else if (!postalRegex.test(formData.postalCode)) {
+          errors.postalCode = 'CAP deve essere di 5 cifre';
+        }
+        
+        if (!formData.country.trim()) {
+          errors.country = 'Paese richiesto';
+        }
+        
+        return {
+          valid: Object.keys(errors).length === 0,
+          errors
+        };
+      }
+      
+      function validatePayment() {
+        const errors = {};
+        
+        // Simulazione validazione numero carta
+        const cardRegex = /^\d{16}$/;
+        if (!formData.cardNumber.trim()) {
+          errors.cardNumber = 'Numero carta richiesto';
+        } else if (!cardRegex.test(formData.cardNumber.replace(/\s/g, ''))) {
+          errors.cardNumber = 'Numero carta deve essere di 16 cifre';
+        }
+        
+        const expiryRegex = /^(0[1-9]|1[0-2])\/\d{2}$/;
+        if (!formData.expiryDate.trim()) {
+          errors.expiryDate = 'Data scadenza richiesta';
+        } else if (!expiryRegex.test(formData.expiryDate)) {
+          errors.expiryDate = 'Formato MM/YY richiesto';
+        }
+        
+        const cvvRegex = /^\d{3,4}$/;
+        if (!formData.cvv.trim()) {
+          errors.cvv = 'CVV richiesto';
+        } else if (!cvvRegex.test(formData.cvv)) {
+          errors.cvv = 'CVV deve essere di 3-4 cifre';
+        }
+        
+        if (!formData.cardName.trim()) {
+          errors.cardName = 'Nome sulla carta richiesto';
+        }
+        
+        return {
+          valid: Object.keys(errors).length === 0,
+          errors
+        };
+      }
+      
+      function validateFinal() {
+        const errors = {};
+        
+        if (!formData.terms) {
+          errors.terms = 'Devi accettare i termini e condizioni';
+        }
+        
+        return {
+          valid: Object.keys(errors).length === 0,
+          errors
+        };
+      }
+      
+      function validateCurrentStep() {
+        validationErrors = {};
+        let result;
+        
+        switch(currentStep) {
+          case 1:
+            result = validatePersonalInfo();
+            break;
+          case 2:
+            result = validateAddress();
+            break;
+          case 3:
+            result = validatePayment();
+            break;
+          case 4:
+            result = validateFinal();
+            break;
+          default:
+            result = { valid: true, errors: {} };
+        }
+        
+        validationErrors = result.errors;
+        return result.valid;
+      }
+      
+      function nextStep() {
+        if (validateCurrentStep()) {
+          if (currentStep < maxSteps) {
+            currentStep++;
+          }
+        }
+      }
+      
+      function prevStep() {
+        if (currentStep > 1) {
+          currentStep--;
+        }
+      }
+      
+      function submitForm() {
+        if (validateCurrentStep()) {
+          alert('Form inviato con successo! 🎉');
+          // Reset form
+          currentStep = 1;
+          formData = {
+            firstName: '', lastName: '', email: '', phone: '',
+            address: '', city: '', postalCode: '', country: '',
+            cardNumber: '', expiryDate: '', cvv: '', cardName: '',
+            terms: false, newsletter: false
+          };
+          validationErrors = {};
+        }
+      }
+      
+      function getStepTitle(step) {
+        const titles = {
+          1: '👤 Informazioni Personali',
+          2: '🏠 Indirizzo',
+          3: '💳 Pagamento',
+          4: '✅ Conferma'
+        };
+        return titles[step];
+      }
+      
+      function isStepComplete(step) {
+        // Salva lo step corrente
+        const originalStep = currentStep;
+        currentStep = step;
+        const isValid = validateCurrentStep();
+        // Ripristina lo step corrente
+        currentStep = originalStep;
+        return isValid;
+      }
+    </init>
+
+    <div style="background:#f8f9fa;padding:1.5em;border-radius:4px;margin:1em 0;">
+      <h4>📝 Form Multi-Step con Validazione Avanzata</h4>
+      
+      <!-- Progress indicator -->
+      <div style="background:#fff;padding:1em;border-radius:4px;margin-bottom:1em;box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+        <div style="display:flex;justify-content:space-between;margin-bottom:1em;">
+          <div @for="step in Array.from({length: maxSteps}, (_, i) => i + 1)" 
+               style="display:flex;align-items:center;flex:1;">
+            <div style="display:flex;align-items:center;width:100%;">
+              <div style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;color:white;"
+                   @class="currentStep === step ? 'step-current' : (currentStep > step || isStepComplete(step) ? 'step-complete' : 'step-pending')">
+                {{step}}
+              </div>
+              <div @if="step < maxSteps" style="flex:1;height:2px;margin:0 1em;"
+                   @class="currentStep > step ? 'progress-complete' : 'progress-pending'">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="text-align:center;color:#666;">
+          Step {{currentStep}} di {{maxSteps}}: {{getStepTitle(currentStep)}}
+        </div>
+      </div>
+
+      <!-- Form content -->
+      <div style="background:#fff;padding:2em;border-radius:4px;box-shadow:0 2px 4px rgba(0,0,0,0.1);min-height:400px;">
+        
+        <!-- Step 1: Informazioni Personali -->
+        <div @if="currentStep === 1">
+          <h4>👤 Informazioni Personali</h4>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1em;">
+            <div>
+              <label style="display:block;margin-bottom:0.5em;font-weight:bold;">Nome *</label>
+              <input @model="formData.firstName" placeholder="Nome"
+                     @class="validationErrors.firstName ? 'input-error' : ''"
+                     style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+              <div @if="validationErrors.firstName" style="color:#dc3545;font-size:0.8em;margin-top:0.25em;">
+                {{validationErrors.firstName}}
+              </div>
+            </div>
+            <div>
+              <label style="display:block;margin-bottom:0.5em;font-weight:bold;">Cognome *</label>
+              <input @model="formData.lastName" placeholder="Cognome"
+                     @class="validationErrors.lastName ? 'input-error' : ''"
+                     style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+              <div @if="validationErrors.lastName" style="color:#dc3545;font-size:0.8em;margin-top:0.25em;">
+                {{validationErrors.lastName}}
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:1em;">
+            <label style="display:block;margin-bottom:0.5em;font-weight:bold;">Email *</label>
+            <input @model="formData.email" type="email" placeholder="email@esempio.com"
+                   @class="validationErrors.email ? 'input-error' : ''"
+                   style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+            <div @if="validationErrors.email" style="color:#dc3545;font-size:0.8em;margin-top:0.25em;">
+              {{validationErrors.email}}
+            </div>
+          </div>
+          <div style="margin-top:1em;">
+            <label style="display:block;margin-bottom:0.5em;font-weight:bold;">Telefono *</label>
+            <input @model="formData.phone" type="tel" placeholder="+39 123 456 7890"
+                   @class="validationErrors.phone ? 'input-error' : ''"
+                   style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+            <div @if="validationErrors.phone" style="color:#dc3545;font-size:0.8em;margin-top:0.25em;">
+              {{validationErrors.phone}}
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Indirizzo -->
+        <div @if="currentStep === 2">
+          <h4>🏠 Indirizzo di Spedizione</h4>
+          <div style="margin-bottom:1em;">
+            <label style="display:block;margin-bottom:0.5em;font-weight:bold;">Indirizzo *</label>
+            <input @model="formData.address" placeholder="Via, numero civico"
+                   @class="validationErrors.address ? 'input-error' : ''"
+                   style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+            <div @if="validationErrors.address" style="color:#dc3545;font-size:0.8em;margin-top:0.25em;">
+              {{validationErrors.address}}
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:2fr 1fr;gap:1em;">
+            <div>
+              <label style="display:block;margin-bottom:0.5em;font-weight:bold;">Città *</label>
+              <input @model="formData.city" placeholder="Città"
+                     @class="validationErrors.city ? 'input-error' : ''"
+                     style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+              <div @if="validationErrors.city" style="color:#dc3545;font-size:0.8em;margin-top:0.25em;">
+                {{validationErrors.city}}
+              </div>
+            </div>
+            <div>
+              <label style="display:block;margin-bottom:0.5em;font-weight:bold;">CAP *</label>
+              <input @model="formData.postalCode" placeholder="12345"
+                     @class="validationErrors.postalCode ? 'input-error' : ''"
+                     style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+              <div @if="validationErrors.postalCode" style="color:#dc3545;font-size:0.8em;margin-top:0.25em;">
+                {{validationErrors.postalCode}}
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:1em;">
+            <label style="display:block;margin-bottom:0.5em;font-weight:bold;">Paese *</label>
+            <select @model="formData.country" 
+                    @class="validationErrors.country ? 'input-error' : ''"
+                    style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+              <option value="">Seleziona paese</option>
+              <option value="IT">Italia</option>
+              <option value="FR">Francia</option>
+              <option value="DE">Germania</option>
+              <option value="ES">Spagna</option>
+            </select>
+            <div @if="validationErrors.country" style="color:#dc3545;font-size:0.8em;margin-top:0.25em;">
+              {{validationErrors.country}}
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Pagamento -->
+        <div @if="currentStep === 3">
+          <h4>💳 Informazioni di Pagamento</h4>
+          <div style="margin-bottom:1em;">
+            <label style="display:block;margin-bottom:0.5em;font-weight:bold;">Numero Carta *</label>
+            <input @model="formData.cardNumber" placeholder="1234 5678 9012 3456"
+                   @class="validationErrors.cardNumber ? 'input-error' : ''"
+                   style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+            <div @if="validationErrors.cardNumber" style="color:#dc3545;font-size:0.8em;margin-top:0.25em;">
+              {{validationErrors.cardNumber}}
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1em;">
+            <div>
+              <label style="display:block;margin-bottom:0.5em;font-weight:bold;">Scadenza *</label>
+              <input @model="formData.expiryDate" placeholder="MM/YY"
+                     @class="validationErrors.expiryDate ? 'input-error' : ''"
+                     style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+              <div @if="validationErrors.expiryDate" style="color:#dc3545;font-size:0.8em;margin-top:0.25em;">
+                {{validationErrors.expiryDate}}
+              </div>
+            </div>
+            <div>
+              <label style="display:block;margin-bottom:0.5em;font-weight:bold;">CVV *</label>
+              <input @model="formData.cvv" placeholder="123"
+                     @class="validationErrors.cvv ? 'input-error' : ''"
+                     style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+              <div @if="validationErrors.cvv" style="color:#dc3545;font-size:0.8em;margin-top:0.25em;">
+                {{validationErrors.cvv}}
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:1em;">
+            <label style="display:block;margin-bottom:0.5em;font-weight:bold;">Nome sulla Carta *</label>
+            <input @model="formData.cardName" placeholder="Nome Cognome"
+                   @class="validationErrors.cardName ? 'input-error' : ''"
+                   style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+            <div @if="validationErrors.cardName" style="color:#dc3545;font-size:0.8em;margin-top:0.25em;">
+              {{validationErrors.cardName}}
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4: Conferma -->
+        <div @if="currentStep === 4">
+          <h4>✅ Conferma Ordine</h4>
+          <div style="background:#f8f9fa;padding:1em;border-radius:4px;margin-bottom:1em;">
+            <h5>Riepilogo:</h5>
+            <p><strong>Nome:</strong> {{formData.firstName}} {{formData.lastName}}</p>
+            <p><strong>Email:</strong> {{formData.email}}</p>
+            <p><strong>Indirizzo:</strong> {{formData.address}}, {{formData.city}} {{formData.postalCode}}, {{formData.country}}</p>
+            <p><strong>Carta:</strong> **** **** **** {{formData.cardNumber.slice(-4)}}</p>
+          </div>
+          
+          <div style="margin:1em 0;">
+            <label style="display:flex;align-items:center;gap:0.5em;">
+              <input @model="formData.terms" type="checkbox">
+              <span>Accetto i termini e condizioni *</span>
+            </label>
+            <div @if="validationErrors.terms" style="color:#dc3545;font-size:0.8em;margin-top:0.25em;">
+              {{validationErrors.terms}}
+            </div>
+          </div>
+          
+          <div style="margin:1em 0;">
+            <label style="display:flex;align-items:center;gap:0.5em;">
+              <input @model="formData.newsletter" type="checkbox">
+              <span>Voglio ricevere la newsletter</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation buttons -->
+      <div style="display:flex;justify-content:space-between;margin-top:1em;">
+        <button @click="prevStep()" 
+                @if="currentStep > 1"
+                style="background:#6c757d;color:white;border:none;padding:0.75em 1.5em;border-radius:4px;">
+          ← Indietro
+        </button>
+        <div></div>
+        
+        <button @if="currentStep < maxSteps" 
+                @click="nextStep()"
+                style="background:#007bff;color:white;border:none;padding:0.75em 1.5em;border-radius:4px;">
+          Avanti →
+        </button>
+        
+        <button @if="currentStep === maxSteps" 
+                @click="submitForm()"
+                style="background:#28a745;color:white;border:none;padding:0.75em 1.5em;border-radius:4px;">
+          🚀 Completa Ordine
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="output-box">
+    <strong>🎯 Cosa hai imparato:</strong>
+    <ul>
+      <li>Gestione errori con <code>try-catch</code> e pattern retry</li>
+      <li>Validazione complessa multi-step</li>
+      <li>Gestione stati di loading e errore</li>
+      <li>Logging e debugging di operazioni asincrone</li>
+      <li>Form wizards con validazione progressiva</li>
+      <li>Backoff exponenziale per retry automatici</li>
+    </ul>
+  </div>
+</div>
+
+<style>
+.step-current {
+  background-color: #007bff !important;
+}
+
+.step-complete {
+  background-color: #28a745 !important;
+}
+
+.step-pending {
+  background-color: #dee2e6 !important;
+  color: #6c757d !important;
+}
+
+.progress-complete {
+  background-color: #28a745 !important;
+}
+
+.progress-pending {
+  background-color: #dee2e6 !important;
+}
+
+.input-error {
+  border-color: #dc3545 !important;
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+}
+
+.log-info {
+  color: #e2e8f0;
+}
+
+.log-success {
+  color: #68d391;
+}
+
+.log-error {
+  color: #feb2b2;
+}
+
+.log-warning {
+  color: #fbd38d;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>
+
+  <h4>🎮 Prova tu:</h4>
+  <div class="demo-box">
+    <init>
+      currentImage = 0;
+      autoplay = false;
+      
+      images = [
+        'https://picsum.photos/400/250?random=1',
+        'https://picsum.photos/400/250?random=2',
+        'https://picsum.photos/400/250?random=3',
+        'https://picsum.photos/400/250?random=4'
+      ];
+      
+      function nextImage() {
+        currentImage = (currentImage + 1) % images.length;
+      }
+      
+      function previousImage() {
+        currentImage = (currentImage - 1 + images.length) % images.length;
+      }
+    </init>
+
+    <div style="position:relative;max-width:400px;margin:0 auto;background:#000;border-radius:8px;overflow:hidden;">
+      <img src="{{images[currentImage]}}" alt="Carousel slide"
+           style="width:100%;height:250px;object-fit:cover;display:block;">
+      
+      <button @click="previousImage()" 
+              style="position:absolute;left:10px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.5);color:white;border:none;padding:0.5em;border-radius:50%;cursor:pointer;">
+        ❮
+      </button>
+      
+      <button @click="nextImage()" 
+              style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.5);color:white;border:none;padding:0.5em;border-radius:50%;cursor:pointer;">
+        ❯
+      </button>
+      
+      <div style="position:absolute;bottom:15px;left:50%;transform:translateX(-50%);display:flex;gap:0.5em;">
+        <span @for="i, image in images" @key="i"
+              @click="currentImage = i"
+              style="width:10px;height:10px;border-radius:50%;cursor:pointer;background:rgba(255,255,255,0.5);"
+              @class="i === currentImage ? 'dot-active' : ''">
+        </span>
+      </div>
+    </div>
+    
+    <div style="text-align:center;margin-top:1em;">
+      <p>Immagine {{currentImage + 1}} di {{images.length}}</p>
+      <button @click="previousImage()" style="margin:0.25em;padding:0.5em 1em;background:#007bff;color:white;border:none;border-radius:4px;">⬅️ Precedente</button>
+      <button @click="nextImage()" style="margin:0.25em;padding:0.5em 1em;background:#007bff;color:white;border:none;border-radius:4px;">Successiva ➡️</button>
+    </div>
+  </div>
+
+  <div class="output-box">
+    <strong>🎯 Cosa hai imparato:</strong>
+    <ul>
+      <li>Creazione di carousel interattivi con navigazione</li>
+      <li>Indicatori di posizione visivi</li>
+      <li>Calcoli modulari per navigazione ciclica</li>
+      <li>Posizionamento assoluto per controlli overlay</li>
+      <li>Styling responsive per immagini</li>
+    </ul>
+  </div>
+</div>
+
+<style>
+.dot-active {
+  background-color: #fff !important;
+  opacity: 1 !important;
+}
+</style>
     &lt;p&gt;😄 &#123;&#123;item.setup&#125;&#125;&lt;/p&gt;
     &lt;p&gt;&lt;strong&gt;&#123;&#123;item.punchline&#125;&#125;&lt;/strong&gt;&lt;/p&gt;
   &lt;/div&gt;

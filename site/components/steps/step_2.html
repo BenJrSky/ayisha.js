@@ -1,25 +1,115 @@
- <div class="step-container">
-      <span class="step-number">Step 2</span>
-      <h2>👋 Your First Interactive Element</h2>
-      <p>Let's create your first interactive element. We'll ask for your name and greet you!</p>
+ <!-- Step 2: Event Handling e Interazioni -->
+<div class="step-container">
+  <span class="step-number">Step 2</span>
+  <h2>2. Event Handling e Interazioni</h2>
+  <p>Scopri come gestire eventi e creare interazioni con l'utente usando le direttive di Ayisha.js.</p>
 
-      <h4>📝 The Code:</h4>
-      <pre class="code-console">&lt;input @model="userName" placeholder="What's your name?"&gt;
-&lt;p&gt;Hello &#123;&#123;userName&#125;&#125;! 👋&lt;/p&gt;</pre>
+  <h3>2.1. Eventi Click e Modifica</h3>
+  <pre class="code-console">&lt;!-- Gestione click --&gt;
+&lt;button @click="contatore++"&gt;Incrementa&lt;/button&gt;
+&lt;button @click="reset()"&gt;Reset&lt;/button&gt;
 
-      <h4>🎮 Try it:</h4>
-      <div class="demo-box">
-        <input @model="userName" placeholder="What's your name?"
-          style="padding:0.5em;border:2px solid #ddd;border-radius:4px;">
-        <p style="margin:0.5em 0;font-size:1.2em;">Hello {{userName || 'there'}}! 👋</p>
-      </div>
+&lt;!-- Eventi di input --&gt;
+&lt;input @input="aggiorna()" @model="testo"&gt;</pre>
 
-      <div class="output-box">
-        <strong>🎯 What you learned:</strong>
+  <h4>🎮 Prova tu:</h4>
+  <div class="demo-box">
+    <init>
+      contatore = 0;
+      testo = '';
+      ultimoClick = null;
+      
+      function reset() {
+        contatore = 0;
+        testo = '';
+        ultimoClick = 'Reset eseguito!';
+      }
+      
+      function aggiorna() {
+        ultimoClick = 'Testo modificato: ' + testo;
+      }
+    </init>
+
+    <div style="background:#f9f9f9;padding:1em;border-radius:4px;margin:1em 0;">
+      <h4>Contatore: <span @text="contatore"></span></h4>
+      <button @click="contatore++" style="background:#4CAF50;color:white;padding:8px 16px;border:none;border-radius:4px;margin:2px;">
+        ➕ Incrementa
+      </button>
+      <button @click="contatore--" style="background:#f44336;color:white;padding:8px 16px;border:none;border-radius:4px;margin:2px;">
+        ➖ Decrementa
+      </button>
+      <button @click="reset()" style="background:#2196F3;color:white;padding:8px 16px;border:none;border-radius:4px;margin:2px;">
+        🔄 Reset
+      </button>
+    </div>
+
+    <div style="background:#fff9c4;padding:1em;border-radius:4px;margin:1em 0;">
+      <h4>Testo interattivo:</h4>
+      <input @model="testo" @input="aggiorna()" placeholder="Scrivi qualcosa..."
+             style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;margin:4px 0;">
+      <p><strong>Contenuto:</strong> {{testo || 'Nessun testo'}}
+      <p><strong>Ultimo evento:</strong> {{ultimoClick || 'Nessun evento'}}</p>
+    </div>
+  </div>
+
+  <h3>2.2. Eventi di Tastiera</h3>
+  <pre class="code-console">&lt;!-- Gestione tastiera --&gt;
+&lt;input @keydown="gestisciTastiera($event)" @model="input"&gt;
+&lt;input @keydown.enter="conferma()" @model="messaggio"&gt;</pre>
+
+  <h4>🎮 Prova tu:</h4>
+  <div class="demo-box">
+    <init>
+      input = '';
+      messaggio = '';
+      tastiPremuti = [];
+      messaggiConfermati = [];
+      
+      function gestisciTastiera(event) {
+        const tasto = event.key;
+        tastiPremuti.push(tasto);
+        if (tastiPremuti.length > 10) {
+          tastiPremuti.shift();
+        }
+      }
+      
+      function conferma() {
+        if (messaggio.trim()) {
+          messaggiConfermati.push(messaggio);
+          messaggio = '';
+        }
+      }
+    </init>
+
+    <div style="background:#e8f5e8;padding:1em;border-radius:4px;margin:1em 0;">
+      <h4>Monitor tastiera:</h4>
+      <input @model="input" @keydown="gestisciTastiera($event)" placeholder="Scrivi e guarda i tasti..."
+             style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;margin:4px 0;">
+      <p><strong>Tasti premuti:</strong> {{tastiPremuti.join(', ') || 'Nessuno'}}</p>
+    </div>
+
+    <div style="background:#f0f8ff;padding:1em;border-radius:4px;margin:1em 0;">
+      <h4>Conferma con Enter:</h4>
+      <input @model="messaggio" @keydown.enter="conferma()" placeholder="Scrivi e premi Enter..."
+             style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;margin:4px 0;">
+      <div>
+        <strong>Messaggi confermati:</strong>
         <ul>
-          <li><code>@model="variableName"</code> creates two-way data binding</li>
-          <li><code><no>&#123;&#123;variableName&#125;&#125;</no></code> displays the variable's value</li>
-          <li>When you type, the display updates automatically!</li>
+          <li @for="msg in messaggiConfermati" @text="msg"></li>
         </ul>
       </div>
     </div>
+  </div>
+
+  <div class="output-box">
+    <strong>🎯 Cosa hai imparato:</strong>
+    <ul>
+      <li><code>@click="espressione"</code> - Gestione eventi click</li>
+      <li><code>@input="funzione()"</code> - Evento quando l'input cambia</li>
+      <li><code>@keydown="funzione($event)"</code> - Gestione eventi tastiera</li>
+      <li><code>@keydown.enter="funzione()"</code> - Evento specifico per tasto Enter</li>
+      <li><code>$event</code> - Accesso all'oggetto evento</li>
+      <li>Funzioni personalizzate nel blocco <code>&lt;init&gt;</code></li>
+    </ul>
+  </div>
+</div>

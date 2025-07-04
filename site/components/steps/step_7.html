@@ -1,24 +1,327 @@
+<!-- Step 7: Watchers e Proprietà Computate -->
 <div class="step-container">
   <span class="step-number">Step 7</span>
-  <h2>📝 Forms and Validation</h2>
-  <p>Build proper forms with validation. Essential for user input!</p>
+  <h2>7. Watchers e Proprietà Computate</h2>
+  <p>Impara a reagire ai cambiamenti di dati e creare valori derivati automaticamente con @watch e funzioni computate.</p>
 
-  <h4>📝 The Code:</h4>
-  <pre class="code-console">&lt;form @submit="submitForm()"&gt;
-  &lt;input @model="email" @input="validateEmail()" placeholder="Email"&gt;
-  &lt;div @if="emailError" style="color:red"&gt;&#123;&#123;emailError&#125;&#125;&lt;/div&gt;
-  
-  &lt;input @model="password" type="password" placeholder="Password"&gt;
-  &lt;div @if="password && password.length < 6" style="color:red"&gt;
-    Password too short!
-  &lt;/div&gt;
-  
-  &lt;button type="submit" @disabled="emailError || !email || !password"&gt;
-    Submit
-  &lt;/button&gt;
-&lt;/form&gt;</pre>
+  <h3>7.1. Direttiva @watch</h3>
+  <pre class="code-console">&lt;!-- Reagisce ai cambiamenti di una variabile --&gt;
+&lt;div @watch="nome"&gt;
+  &lt;p&gt;Nome è cambiato: {{nome}}&lt;/p&gt;
+&lt;/div&gt;
 
-  <h4>🎮 Try it:</h4>
+&lt;!-- Watch multipli --&gt;
+&lt;div @watch="nome, cognome"&gt;
+  &lt;p&gt;Nome completo: {{nome}} {{cognome}}&lt;/p&gt;
+&lt;/div&gt;</pre>
+
+  <h4>🎮 Prova tu:</h4>
+  <div class="demo-box">
+    <init>
+      prodotto = {
+        nome: 'Laptop',
+        prezzo: 999,
+        quantita: 1,
+        sconto: 0
+      };
+      
+      logCambiamenti = [];
+      
+      function logChange(campo, nuovoValore) {
+        const timestamp = new Date().toLocaleTimeString();
+        logCambiamenti.unshift({
+          timestamp,
+          campo,
+          valore: nuovoValore
+        });
+        if (logCambiamenti.length > 10) {
+          logCambiamenti.pop();
+        }
+      }
+      
+      function calcolaTotale() {
+        const subtotale = prodotto.prezzo * prodotto.quantita;
+        const scontoAmount = (subtotale * prodotto.sconto) / 100;
+        return subtotale - scontoAmount;
+      }
+      
+      function clearLog() {
+        logCambiamenti = [];
+      }
+    </init>
+
+    <div style="background:#f8f9fa;padding:1.5em;border-radius:4px;margin:1em 0;">
+      <h4>🛒 Configuratore Prodotto</h4>
+      
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:2em;">
+        <div>
+          <h5>📝 Dati Prodotto:</h5>
+          
+          <div style="margin-bottom:1em;">
+            <label style="display:block;margin-bottom:0.5em;font-weight:bold;">Nome Prodotto:</label>
+            <input @model="prodotto.nome" placeholder="Nome prodotto"
+                   style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+          </div>
+
+          <div style="margin-bottom:1em;">
+            <label style="display:block;margin-bottom:0.5em;font-weight:bold;">Prezzo (€{{prodotto.prezzo}}):</label>
+            <input @model="prodotto.prezzo" type="number" min="0" step="0.01"
+                   style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+          </div>
+
+          <div style="margin-bottom:1em;">
+            <label style="display:block;margin-bottom:0.5em;font-weight:bold;">Quantità ({{prodotto.quantita}}):</label>
+            <input @model="prodotto.quantita" type="number" min="1" max="100"
+                   style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+          </div>
+
+          <div style="margin-bottom:1em;">
+            <label style="display:block;margin-bottom:0.5em;font-weight:bold;">Sconto % ({{prodotto.sconto}}%):</label>
+            <input @model="prodotto.sconto" type="range" min="0" max="50"
+                   style="width:100%;">
+          </div>
+        </div>
+
+        <div>
+          <h5>📊 Riepilogo (aggiornato automaticamente):</h5>
+          
+          <div @watch="prodotto.nome" style="background:#fff;border:1px solid #ddd;padding:1em;margin:0.5em 0;border-radius:4px;">
+            <strong>📦 Prodotto:</strong> {{prodotto.nome || 'Nessun nome'}}
+          </div>
+          
+          <div @watch="prodotto.prezzo, prodotto.quantita" style="background:#fff;border:1px solid #ddd;padding:1em;margin:0.5em 0;border-radius:4px;">
+            <strong>💰 Subtotale:</strong> €{{(prodotto.prezzo * prodotto.quantita).toFixed(2)}}
+            <br><small>{{prodotto.prezzo}} × {{prodotto.quantita}}</small>
+          </div>
+          
+          <div @watch="prodotto.sconto" style="background:#fff;border:1px solid #ddd;padding:1em;margin:0.5em 0;border-radius:4px;">
+            <strong>🎯 Sconto:</strong> {{prodotto.sconto}}%
+            <br><small>Risparmio: €{{((prodotto.prezzo * prodotto.quantita * prodotto.sconto) / 100).toFixed(2)}}</small>
+          </div>
+          
+          <div @watch="prodotto.prezzo, prodotto.quantita, prodotto.sconto" style="background:#e8f5e8;border:2px solid #28a745;padding:1em;margin:0.5em 0;border-radius:4px;">
+            <strong>💳 TOTALE: €{{calcolaTotale().toFixed(2)}}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#f8f9fa;padding:1.5em;border-radius:4px;margin:1em 0;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1em;">
+        <h5>📝 Log Cambiamenti (Watch in azione):</h5>
+        <button @click="clearLog()" 
+                style="background:#dc3545;color:white;padding:4px 8px;border:none;border-radius:4px;font-size:0.8em;">
+          🗑️ Pulisci Log
+        </button>
+      </div>
+      
+      <div @watch="prodotto.nome" style="display:none;">
+        {{logChange('Nome', prodotto.nome)}}
+      </div>
+      <div @watch="prodotto.prezzo" style="display:none;">
+        {{logChange('Prezzo', '€' + prodotto.prezzo)}}
+      </div>
+      <div @watch="prodotto.quantita" style="display:none;">
+        {{logChange('Quantità', prodotto.quantita)}}
+      </div>
+      <div @watch="prodotto.sconto" style="display:none;">
+        {{logChange('Sconto', prodotto.sconto + '%')}}
+      </div>
+      
+      <div style="max-height:200px;overflow-y:auto;background:#fff;border:1px solid #ddd;border-radius:4px;padding:1em;">
+        <div @if="logCambiamenti.length === 0" style="text-align:center;color:#666;font-style:italic;">
+          Nessun cambiamento ancora...
+        </div>
+        <div @for="entry in logCambiamenti" style="padding:0.5em;border-bottom:1px solid #eee;font-size:0.9em;">
+          <span style="color:#666;">{{entry.timestamp}}</span> - 
+          <strong>{{entry.campo}}</strong> cambiato in: 
+          <code>{{entry.valore}}</code>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>7.2. Proprietà Computate</h3>
+  <pre class="code-console">&lt;!-- Funzioni che si aggiornano automaticamente --&gt;
+&lt;script&gt;
+function getNomeCompleto() {
+  return nome + ' ' + cognome;
+}
+
+function getStatisticheCarrello() {
+  return {
+    totale: carrello.reduce((sum, item) => sum + item.prezzo, 0),
+    numeroArticoli: carrello.length
+  };
+}
+&lt;/script&gt;
+
+&lt;p&gt;Nome completo: {{getNomeCompleto()}}&lt;/p&gt;
+&lt;p&gt;Totale: €{{getStatisticheCarrello().totale}}&lt;/p&gt;</pre>
+
+  <h4>🎮 Prova tu:</h4>
+  <div class="demo-box">
+    <init>
+      utente = {
+        nome: 'Mario',
+        cognome: 'Rossi',
+        eta: 30,
+        email: 'mario.rossi@email.com'
+      };
+      
+      carrello = [
+        { id: 1, nome: 'Maglietta', prezzo: 25, categoria: 'Abbigliamento' },
+        { id: 2, nome: 'Jeans', prezzo: 60, categoria: 'Abbigliamento' },
+        { id: 3, nome: 'Scarpe', prezzo: 80, categoria: 'Calzature' }
+      ];
+      
+      // Proprietà computate
+      function getNomeCompleto() {
+        return (utente.nome + ' ' + utente.cognome).trim() || 'Nessun nome';
+      }
+      
+      function getIniziali() {
+        const nome = utente.nome?.charAt(0) || '';
+        const cognome = utente.cognome?.charAt(0) || '';
+        return (nome + cognome).toUpperCase();
+      }
+      
+      function getCategoriaEta() {
+        if (utente.eta < 18) return 'Minorenne';
+        if (utente.eta < 30) return 'Giovane Adulto';
+        if (utente.eta < 50) return 'Adulto';
+        if (utente.eta < 65) return 'Adulto Maturo';
+        return 'Senior';
+      }
+      
+      function getStatisticheCarrello() {
+        const totale = carrello.reduce((sum, item) => sum + item.prezzo, 0);
+        const numeroArticoli = carrello.length;
+        const mediaPrezzo = numeroArticoli > 0 ? totale / numeroArticoli : 0;
+        
+        const categorie = {};
+        carrello.forEach(item => {
+          categorie[item.categoria] = (categorie[item.categoria] || 0) + 1;
+        });
+        
+        return {
+          totale,
+          numeroArticoli,
+          mediaPrezzo,
+          categorie,
+          categoriaPreferita: Object.keys(categorie).sort((a, b) => categorie[b] - categorie[a])[0] || 'Nessuna'
+        };
+      }
+      
+      function getSconto() {
+        const stats = getStatisticheCarrello();
+        if (stats.totale > 100) return 10;
+        if (stats.totale > 50) return 5;
+        return 0;
+      }
+      
+      function getTotaleConSconto() {
+        const stats = getStatisticheCarrello();
+        const sconto = getSconto();
+        return stats.totale - (stats.totale * sconto / 100);
+      }
+      
+      function rimuoviDalCarrello(id) {
+        carrello = carrello.filter(item => item.id !== id);
+      }
+      
+      function aggiungiArticolo() {
+        const nuovoId = Math.max(...carrello.map(item => item.id)) + 1;
+        carrello.push({
+          id: nuovoId,
+          nome: 'Nuovo Articolo',
+          prezzo: Math.floor(Math.random() * 100) + 10,
+          categoria: Math.random() > 0.5 ? 'Abbigliamento' : 'Accessori'
+        });
+      }
+    </init>
+
+    <div style="background:#f8f9fa;padding:1.5em;border-radius:4px;margin:1em 0;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:2em;">
+        <div>
+          <h4>👤 Profilo Utente</h4>
+          
+          <div style="margin-bottom:1em;">
+            <label style="display:block;margin-bottom:0.5em;font-weight:bold;">Nome:</label>
+            <input @model="utente.nome" placeholder="Nome"
+                   style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+          </div>
+
+          <div style="margin-bottom:1em;">
+            <label style="display:block;margin-bottom:0.5em;font-weight:bold;">Cognome:</label>
+            <input @model="utente.cognome" placeholder="Cognome"
+                   style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+          </div>
+
+          <div style="margin-bottom:1em;">
+            <label style="display:block;margin-bottom:0.5em;font-weight:bold;">Età ({{utente.eta}} anni):</label>
+            <input @model="utente.eta" type="number" min="0" max="120"
+                   style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+          </div>
+
+          <div style="background:#fff;border:1px solid #ddd;padding:1em;border-radius:4px;">
+            <h5>📊 Dati Computati:</h5>
+            <p><strong>Nome Completo:</strong> {{getNomeCompleto()}}</p>
+            <p><strong>Iniziali:</strong> {{getIniziali()}}</p>
+            <p><strong>Categoria Età:</strong> {{getCategoriaEta()}}</p>
+          </div>
+        </div>
+
+        <div>
+          <h4>🛒 Carrello</h4>
+          
+          <div style="margin-bottom:1em;">
+            <button @click="aggiungiArticolo()" 
+                    style="background:#28a745;color:white;padding:8px 16px;border:none;border-radius:4px;">
+              ➕ Aggiungi Articolo Casuale
+            </button>
+          </div>
+
+          <div style="max-height:200px;overflow-y:auto;margin-bottom:1em;">
+            <div @for="item in carrello" 
+                 style="background:#fff;border:1px solid #ddd;padding:0.75em;margin:0.25em 0;border-radius:4px;display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <strong>{{item.nome}}</strong><br>
+                <small>{{item.categoria}} - €{{item.prezzo}}</small>
+              </div>
+              <button @click="rimuoviDalCarrello(item.id)"
+                      style="background:#dc3545;color:white;padding:4px 8px;border:none;border-radius:4px;font-size:0.8em;">
+                🗑️
+              </button>
+            </div>
+          </div>
+
+          <div style="background:#fff;border:1px solid #ddd;padding:1em;border-radius:4px;">
+            <h5>📈 Statistiche (Computate):</h5>
+            <p><strong>Articoli:</strong> {{getStatisticheCarrello().numeroArticoli}}</p>
+            <p><strong>Subtotale:</strong> €{{getStatisticheCarrello().totale}}</p>
+            <p><strong>Prezzo Medio:</strong> €{{getStatisticheCarrello().mediaPrezzo.toFixed(2)}}</p>
+            <p><strong>Categoria Preferita:</strong> {{getStatisticheCarrello().categoriaPreferita}}</p>
+            <p style="color:#e67e22;"><strong>Sconto:</strong> {{getSconto()}}%</p>
+            <p style="color:#27ae60;font-size:1.1em;"><strong>TOTALE:</strong> €{{getTotaleConSconto().toFixed(2)}}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="output-box">
+    <strong>🎯 Cosa hai imparato:</strong>
+    <ul>
+      <li><code>@watch="variabile"</code> - Reagisce ai cambiamenti di una variabile</li>
+      <li><code>@watch="var1, var2"</code> - Watch multipli su più variabili</li>
+      <li>Funzioni computate che si aggiornano automaticamente</li>
+      <li>Proprietà derivate e calcoli complessi</li>
+      <li>Logging e debugging dei cambiamenti di stato</li>
+      <li>Ottimizzazione delle prestazioni con calcoli reattivi</li>
+    </ul>
+  </div>
+</div>
   <div class="demo-box">
     <init>
       email = '';
