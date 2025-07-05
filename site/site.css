@@ -1,3 +1,1344 @@
+/* --- Enhanced Comparison Table Styles for Wiki/Docs --- */
+.wiki-dictionary table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 16px #ffdb6733, 0 1.5px 0 #ffdb67;
+  margin: 1.2em 0 1.5em 0;
+  font-size: 1.04em;
+  table-layout: fixed;
+}
+.wiki-dictionary th, .wiki-dictionary td {
+  padding: 1em 0.6em;
+  text-align: center;
+  border-bottom: 1.5px solid #ffe6a7;
+  border-right: 1.5px solid #ffe6a7;
+  font-size: 1em;
+  transition: background 0.2s, color 0.2s;
+}
+.wiki-dictionary th:last-child, .wiki-dictionary td:last-child {
+  border-right: none;
+}
+.wiki-dictionary th {
+  background: linear-gradient(90deg, #ffdb67 0%, #fffbe9 100%);
+  color: #7a5a00;
+  font-weight: 900;
+  font-size: 1.08em;
+  letter-spacing: 0.5px;
+  border-top: none;
+  border-bottom: 2.5px solid #ffb300;
+  text-shadow: 0 1px 0 #fffbe9;
+}
+.wiki-dictionary tr:last-child td {
+  border-bottom: none;
+}
+.wiki-dictionary td {
+  background: #fffbe9;
+  color: #22242a;
+  font-weight: 500;
+  position: relative;
+}
+.wiki-dictionary td:first-child {
+  font-weight: 700;
+  color: #ff9800;
+  background: linear-gradient(90deg, #fff3c1 0%, #ffdb67 100%);
+  border-left: none;
+  text-align: left;
+  padding-left: 1.2em;
+  letter-spacing: 0.2px;
+}
+.wiki-dictionary tr:hover td {
+  background: #fff3c1;
+  color: #7a5a00;
+}
+.wiki-dictionary th, .wiki-dictionary td {
+  border-top: none;
+}
+.wiki-dictionary th {
+  border-radius: 0;
+}
+.wiki-dictionary th:first-child {
+  border-top-left-radius: 16px;
+}
+.wiki-dictionary th:last-child {
+  border-top-right-radius: 16px;
+}
+.wiki-dictionary tr:last-child td:first-child {
+  border-bottom-left-radius: 16px;
+}
+.wiki-dictionary tr:last-child td:last-child {
+  border-bottom-right-radius: 16px;
+}
+@media (max-width: 900px) {
+  .wiki-dictionary table, .wiki-dictionary thead, .wiki-dictionary tbody, .wiki-dictionary tr, .wiki-dictionary th, .wiki-dictionary td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .wiki-dictionary thead {
+    display: none;
+  }
+  .wiki-dictionary tr {
+    margin-bottom: 1.2em;
+    box-shadow: 0 2px 8px #ffdb6733;
+    border-radius: 10px;
+    background: #fffbe9;
+    overflow: hidden;
+    border: 1.5px solid #ffe6a7;
+  }
+  .wiki-dictionary td {
+    padding: 0.9em 1em;
+    text-align: left;
+    border: none;
+    border-bottom: 1px solid #ffe6a7;
+    position: relative;
+    background: #fffbe9;
+  }
+  .wiki-dictionary td:first-child {
+    background: #ffdb67;
+    color: #7a5a00;
+    font-weight: 900;
+    border-radius: 10px 10px 0 0;
+    padding-top: 1.1em;
+    padding-bottom: 0.7em;
+    font-size: 1.08em;
+  }
+  .wiki-dictionary tr:last-child td {
+    border-bottom: none;
+  }
+}
+/* --- Enhanced Comparison Table Styles for Landing Page --- */
+.landing .comparison-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: #fff;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 4px 32px #ffdb6733, 0 1.5px 0 #ffdb67;
+  margin-top: 1.2em;
+  margin-bottom: 1.5em;
+  font-size: 0.98em;
+  table-layout: fixed;
+}
+.landing .comparison-table th, .landing .comparison-table td {
+  padding: 0.7em 0.4em;
+  text-align: center;
+  border-bottom: 1px solid #ffe6a7;
+  border-right: 1px solid #ffe6a7;
+  font-size: 0.97em;
+  transition: background 0.18s, color 0.18s;
+  vertical-align: middle;
+  min-width: 90px;
+  max-width: 180px;
+  word-break: keep-all;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.landing .comparison-table th:last-child, .landing .comparison-table td:last-child {
+  border-right: none;
+}
+.landing .comparison-table th {
+  background: linear-gradient(90deg, #ffe082 0%, #fffbe9 100%);
+  color: #b8860b;
+  font-weight: 800;
+  font-size: 1em;
+  letter-spacing: 0.2px;
+  border-top: none;
+  border-bottom: 2px solid #ffd54f;
+  text-shadow: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.landing .comparison-table tr:last-child td {
+  border-bottom: none;
+}
+.landing .comparison-table td {
+  background: #fffde7;
+  color: #444;
+  font-weight: 400;
+  position: relative;
+}
+.landing .comparison-table td:first-child {
+  font-weight: 700;
+  color: #e65100;
+  background: linear-gradient(90deg, #fffbe9 0%, #ffe082 100%);
+  border-left: none;
+  text-align: left;
+  padding-left: 1em;
+  letter-spacing: 0.1px;
+  white-space: normal;
+  max-width: 180px;
+}
+.landing .comparison-table tr:hover td {
+  background: #fff8e1;
+  color: #b8860b;
+}
+.landing .comparison-table th, .landing .comparison-table td {
+  border-top: none;
+  box-shadow: none;
+}
+.landing .comparison-table th {
+  border-radius: 0;
+}
+.landing .comparison-table th:first-child {
+  border-top-left-radius: 18px;
+}
+.landing .comparison-table th:last-child {
+  border-top-right-radius: 18px;
+}
+.landing .comparison-table tr:last-child td:first-child {
+  border-bottom-left-radius: 18px;
+}
+.landing .comparison-table tr:last-child td:last-child {
+  border-bottom-right-radius: 18px;
+}
+@media (max-width: 900px) {
+  .landing .comparison-table, .landing .comparison-table thead, .landing .comparison-table tbody, .landing .comparison-table tr, .landing .comparison-table th, .landing .comparison-table td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .landing .comparison-table thead {
+    display: none;
+  }
+  .landing .comparison-table tr {
+    margin-bottom: 1.2em;
+    box-shadow: 0 2px 8px #ffdb6733;
+    border-radius: 12px;
+    background: #fffbe9;
+    overflow: hidden;
+    border: 1.5px solid #ffe6a7;
+  }
+  .landing .comparison-table td {
+    padding: 0.7em 0.7em;
+    text-align: left;
+    border: none;
+    border-bottom: 1px solid #ffe6a7;
+    position: relative;
+    background: #fffde7;
+    font-size: 0.98em;
+  }
+  .landing .comparison-table td:first-child {
+    background: #ffe082;
+    color: #b8860b;
+    font-weight: 700;
+    border-radius: 10px 10px 0 0;
+    padding-top: 0.9em;
+    padding-bottom: 0.5em;
+    font-size: 1em;
+  }
+  .landing .comparison-table tr:last-child td {
+    border-bottom: none;
+  }
+}
+/* --- Ayisha.js Landing Page Modern Styles --- */
+.landing .hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5em 1em 2em 1em;
+  background: linear-gradient(90deg, #fffbe9 0%, #ffdb67 100%);
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 4px 32px #ffdb6733;
+  margin-bottom: 2.5em;
+}
+.landing .hero .logo {
+  width: 110px;
+  height: 110px;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px #ffdb6733;
+  margin-bottom: 1.2em;
+  background: #fff;
+  border: 2.5px solid #ffe6a7;
+}
+.landing .hero h1 {
+  font-size: 2.7em;
+  font-weight: 900;
+  color: #ff9800;
+  margin: 0.2em 0 0.1em 0;
+  letter-spacing: 1.5px;
+  text-shadow: 0 2px 12px #ffdb6722;
+}
+.landing .hero .slogan {
+  font-size: 1.35em;
+  color: #7a5a00;
+  margin-bottom: 1.2em;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+.landing .hero .cta {
+  display: inline-block;
+  background: linear-gradient(90deg, #ff9800 0%, #ffdb67 100%);
+  color: #fff;
+  font-size: 1.18em;
+  font-weight: 700;
+  padding: 0.85em 2.2em;
+  border-radius: 12px;
+  text-decoration: none;
+  box-shadow: 0 2px 12px #ffdb6733;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  margin-top: 0.5em;
+}
+.landing .hero .cta:hover {
+  background: linear-gradient(90deg, #ffb300 0%, #ff9800 100%);
+  color: #fffbe9;
+  box-shadow: 0 4px 24px #ffdb6733;
+}
+
+.landing .philosophy, .landing .install, .landing .hello-world, .landing .comparison {
+  background: #fffbe9;
+  border-radius: 14px;
+  box-shadow: 0 2px 16px #ffdb6733;
+  padding: 2em 2em 1.5em 2em;
+  margin-bottom: 2em;
+}
+.landing .philosophy h2, .landing .install h2, .landing .hello-world h2, .landing .comparison h2 {
+  color: #ff9800;
+  font-size: 1.4em;
+  margin-top: 0;
+  margin-bottom: 0.7em;
+  font-weight: 700;
+}
+.landing .philosophy ul {
+  margin-left: 1.5em;
+  margin-bottom: 1.2em;
+}
+.landing .philosophy li {
+  margin-bottom: 0.4em;
+  font-size: 1.08em;
+}
+.landing .install pre, .landing .hello-world pre {
+  background: linear-gradient(90deg, #fff3c1 0%, #ffdb67 100%);
+  color: #7a5a00;
+  border-radius: 10px;
+  padding: 1.1em 1.2em;
+  font-size: 1.08em;
+  font-family: 'Fira Mono', 'Consolas', 'Menlo', monospace;
+  box-shadow: 0 2px 14px #ffdb6733;
+  border: 1.5px solid #ffe6a7;
+  margin-bottom: 1.2em;
+  margin-top: 0.5em;
+  overflow-x: auto;
+}
+.landing .comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1.2em;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px #ffdb6733;
+}
+.landing .comparison-table th, .landing .comparison-table td {
+  padding: 0.35em 0.15em;
+  text-align: center;
+  font-size: 0.74em;
+  border-bottom: 1.5px solid #ffe6a7;
+  vertical-align: middle;
+  min-width: 60px;
+  max-width: 110px;
+  word-break: keep-all;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Icon above text in comparison table */
+.landing .comparison-table .icon-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1em;
+}
+.landing .comparison-table .icon-text .icon-label {
+  font-size: 0.78em;
+  margin-top: 0.05em;
+  color: inherit;
+}
+.landing .comparison-table .icon-text .icon-green {
+  color: #43a047;
+  font-size: 1em;
+}
+.landing .comparison-table .icon-text .icon-red {
+  color: #e53935;
+  font-size: 1em;
+}
+.landing .comparison-table .icon-text .icon-orange {
+  color: #fb8c00;
+  font-size: 1em;
+}
+.landing .comparison-table th {
+  background: #ffdb67;
+  color: #7a5a00;
+  font-weight: 800;
+  font-size: 1.08em;
+  letter-spacing: 0.5px;
+  border-top: none;
+  border-bottom: 2px solid #ffb300;
+  text-shadow: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.landing .comparison-table tr:last-child td {
+  border-bottom: none;
+}
+.landing .comparison-table td {
+  background: #fffbe9;
+  color: #22242a;
+}
+.landing .comparison-table td:first-child {
+  font-weight: 700;
+  color: #e65100;
+  background: linear-gradient(90deg, #fffbe9 0%, #ffe082 100%);
+  border-left: none;
+  text-align: left;
+  padding-left: 1em;
+  letter-spacing: 0.1px;
+  white-space: normal;
+  max-width: 180px;
+}
+.landing .comparison-table tr {
+  height: 2.7em;
+}
+.landing .comparison-table tr td {
+  border-right: 1px solid #ffe6a7;
+}
+.landing .comparison-table tr td:last-child {
+  border-right: none;
+}
+.landing .comparison-table tr:hover td {
+  background: #fff8e1;
+  color: #b8860b;
+}
+.landing .comparison-table th, .landing .comparison-table td {
+  border-top: none;
+  box-shadow: none;
+}
+.landing .comparison-table th {
+  border-radius: 0;
+}
+.landing .comparison-table th:first-child {
+  border-top-left-radius: 18px;
+}
+.landing .comparison-table th:last-child {
+  border-top-right-radius: 18px;
+}
+.landing .comparison-table tr:last-child td:first-child {
+  border-bottom-left-radius: 18px;
+}
+.landing .comparison-table tr:last-child td:last-child {
+  border-bottom-right-radius: 18px;
+}
+@media (max-width: 900px) {
+  .landing .comparison-table, .landing .comparison-table thead, .landing .comparison-table tbody, .landing .comparison-table tr, .landing .comparison-table th, .landing .comparison-table td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .landing .comparison-table thead {
+    display: none;
+  }
+  .landing .comparison-table tr {
+    margin-bottom: 1.2em;
+    box-shadow: 0 2px 8px #ffdb6733;
+    border-radius: 12px;
+    background: #fffbe9;
+    overflow: hidden;
+    border: 1.5px solid #ffe6a7;
+  }
+  .landing .comparison-table td {
+    padding: 0.7em 0.7em;
+    text-align: left;
+    border: none;
+    border-bottom: 1px solid #ffe6a7;
+    position: relative;
+    background: #fffde7;
+    font-size: 0.98em;
+  }
+  .landing .comparison-table td:first-child {
+    background: #ffe082;
+    color: #b8860b;
+    font-weight: 700;
+    border-radius: 10px 10px 0 0;
+    padding-top: 0.9em;
+    padding-bottom: 0.5em;
+    font-size: 1em;
+  }
+  .landing .comparison-table tr:last-child td {
+    border-bottom: none;
+  }
+}
+/* --- Ayisha.js Landing Page Modern Styles --- */
+.landing .hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5em 1em 2em 1em;
+  background: linear-gradient(90deg, #fffbe9 0%, #ffdb67 100%);
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 4px 32px #ffdb6733;
+  margin-bottom: 2.5em;
+}
+.landing .hero .logo {
+  width: 110px;
+  height: 110px;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px #ffdb6733;
+  margin-bottom: 1.2em;
+  background: #fff;
+  border: 2.5px solid #ffe6a7;
+}
+.landing .hero h1 {
+  font-size: 2.7em;
+  font-weight: 900;
+  color: #ff9800;
+  margin: 0.2em 0 0.1em 0;
+  letter-spacing: 1.5px;
+  text-shadow: 0 2px 12px #ffdb6722;
+}
+.landing .hero .slogan {
+  font-size: 1.35em;
+  color: #7a5a00;
+  margin-bottom: 1.2em;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+.landing .hero .cta {
+  display: inline-block;
+  background: linear-gradient(90deg, #ff9800 0%, #ffdb67 100%);
+  color: #fff;
+  font-size: 1.18em;
+  font-weight: 700;
+  padding: 0.85em 2.2em;
+  border-radius: 12px;
+  text-decoration: none;
+  box-shadow: 0 2px 12px #ffdb6733;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  margin-top: 0.5em;
+}
+.landing .hero .cta:hover {
+  background: linear-gradient(90deg, #ffb300 0%, #ff9800 100%);
+  color: #fffbe9;
+  box-shadow: 0 4px 24px #ffdb6733;
+}
+
+.landing .philosophy, .landing .install, .landing .hello-world, .landing .comparison {
+  background: #fffbe9;
+  border-radius: 14px;
+  box-shadow: 0 2px 16px #ffdb6733;
+  padding: 2em 2em 1.5em 2em;
+  margin-bottom: 2em;
+}
+.landing .philosophy h2, .landing .install h2, .landing .hello-world h2, .landing .comparison h2 {
+  color: #ff9800;
+  font-size: 1.4em;
+  margin-top: 0;
+  margin-bottom: 0.7em;
+  font-weight: 700;
+}
+.landing .philosophy ul {
+  margin-left: 1.5em;
+  margin-bottom: 1.2em;
+}
+.landing .philosophy li {
+  margin-bottom: 0.4em;
+  font-size: 1.08em;
+}
+.landing .install pre, .landing .hello-world pre {
+  background: linear-gradient(90deg, #fff3c1 0%, #ffdb67 100%);
+  color: #7a5a00;
+  border-radius: 10px;
+  padding: 1.1em 1.2em;
+  font-size: 1.08em;
+  font-family: 'Fira Mono', 'Consolas', 'Menlo', monospace;
+  box-shadow: 0 2px 14px #ffdb6733;
+  border: 1.5px solid #ffe6a7;
+  margin-bottom: 1.2em;
+  margin-top: 0.5em;
+  overflow-x: auto;
+}
+.landing .comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1.2em;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px #ffdb6733;
+}
+.landing .comparison-table th, .landing .comparison-table td {
+  padding: 1em 0.7em;
+  text-align: center;
+  font-size: 0.82em;
+  border-bottom: 1.5px solid #ffe6a7;
+  vertical-align: middle;
+  min-width: 90px;
+  max-width: 180px;
+  word-break: keep-all;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.landing .comparison-table th {
+  background: #ffdb67;
+  color: #7a5a00;
+  font-weight: 800;
+  font-size: 1.08em;
+  letter-spacing: 0.5px;
+  border-top: none;
+  border-bottom: 2px solid #ffb300;
+  text-shadow: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.landing .comparison-table tr:last-child td {
+  border-bottom: none;
+}
+.landing .comparison-table td {
+  background: #fffbe9;
+  color: #22242a;
+}
+.landing .comparison-table td:first-child {
+  font-weight: 700;
+  color: #e65100;
+  background: linear-gradient(90deg, #fffbe9 0%, #ffe082 100%);
+  border-left: none;
+  text-align: left;
+  padding-left: 1em;
+  letter-spacing: 0.1px;
+  white-space: normal;
+  max-width: 180px;
+  font-size: 0.92em;
+}
+.landing .comparison-table tr {
+  height: 2.7em;
+}
+.landing .comparison-table tr td {
+  border-right: 1px solid #ffe6a7;
+}
+.landing .comparison-table tr td:last-child {
+  border-right: none;
+}
+.landing .comparison-table tr:hover td {
+  background: #fff8e1;
+  color: #b8860b;
+}
+.landing .comparison-table th, .landing .comparison-table td {
+  border-top: none;
+  box-shadow: none;
+}
+.landing .comparison-table th {
+  border-radius: 0;
+}
+.landing .comparison-table th:first-child {
+  border-top-left-radius: 18px;
+}
+.landing .comparison-table th:last-child {
+  border-top-right-radius: 18px;
+}
+.landing .comparison-table tr:last-child td:first-child {
+  border-bottom-left-radius: 18px;
+}
+.landing .comparison-table tr:last-child td:last-child {
+  border-bottom-right-radius: 18px;
+}
+@media (max-width: 900px) {
+  .landing .comparison-table, .landing .comparison-table thead, .landing .comparison-table tbody, .landing .comparison-table tr, .landing .comparison-table th, .landing .comparison-table td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .landing .comparison-table thead {
+    display: none;
+  }
+  .landing .comparison-table tr {
+    margin-bottom: 1.2em;
+    box-shadow: 0 2px 8px #ffdb6733;
+    border-radius: 12px;
+    background: #fffbe9;
+    overflow: hidden;
+    border: 1.5px solid #ffe6a7;
+  }
+  .landing .comparison-table td {
+    padding: 0.7em 0.7em;
+    text-align: left;
+    border: none;
+    border-bottom: 1px solid #ffe6a7;
+    position: relative;
+    background: #fffde7;
+    font-size: 0.98em;
+  }
+  .landing .comparison-table td:first-child {
+    background: #ffe082;
+    color: #b8860b;
+    font-weight: 700;
+    border-radius: 10px 10px 0 0;
+    padding-top: 0.9em;
+    padding-bottom: 0.5em;
+    font-size: 1em;
+  }
+  .landing .comparison-table tr:last-child td {
+    border-bottom: none;
+  }
+}
+/* --- Ayisha.js Landing Page Modern Styles --- */
+.landing .hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5em 1em 2em 1em;
+  background: linear-gradient(90deg, #fffbe9 0%, #ffdb67 100%);
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 4px 32px #ffdb6733;
+  margin-bottom: 2.5em;
+}
+.landing .hero .logo {
+  width: 110px;
+  height: 110px;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px #ffdb6733;
+  margin-bottom: 1.2em;
+  background: #fff;
+  border: 2.5px solid #ffe6a7;
+}
+.landing .hero h1 {
+  font-size: 2.7em;
+  font-weight: 900;
+  color: #ff9800;
+  margin: 0.2em 0 0.1em 0;
+  letter-spacing: 1.5px;
+  text-shadow: 0 2px 12px #ffdb6722;
+}
+.landing .hero .slogan {
+  font-size: 1.35em;
+  color: #7a5a00;
+  margin-bottom: 1.2em;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+.landing .hero .cta {
+  display: inline-block;
+  background: linear-gradient(90deg, #ff9800 0%, #ffdb67 100%);
+  color: #fff;
+  font-size: 1.18em;
+  font-weight: 700;
+  padding: 0.85em 2.2em;
+  border-radius: 12px;
+  text-decoration: none;
+  box-shadow: 0 2px 12px #ffdb6733;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  margin-top: 0.5em;
+}
+.landing .hero .cta:hover {
+  background: linear-gradient(90deg, #ffb300 0%, #ff9800 100%);
+  color: #fffbe9;
+  box-shadow: 0 4px 24px #ffdb6733;
+}
+
+.landing .philosophy, .landing .install, .landing .hello-world, .landing .comparison {
+  background: #fffbe9;
+  border-radius: 14px;
+  box-shadow: 0 2px 16px #ffdb6733;
+  padding: 2em 2em 1.5em 2em;
+  margin-bottom: 2em;
+}
+.landing .philosophy h2, .landing .install h2, .landing .hello-world h2, .landing .comparison h2 {
+  color: #ff9800;
+  font-size: 1.4em;
+  margin-top: 0;
+  margin-bottom: 0.7em;
+  font-weight: 700;
+}
+.landing .philosophy ul {
+  margin-left: 1.5em;
+  margin-bottom: 1.2em;
+}
+.landing .philosophy li {
+  margin-bottom: 0.4em;
+  font-size: 1.08em;
+}
+.landing .install pre, .landing .hello-world pre {
+  background: linear-gradient(90deg, #fff3c1 0%, #ffdb67 100%);
+  color: #7a5a00;
+  border-radius: 10px;
+  padding: 1.1em 1.2em;
+  font-size: 1.08em;
+  font-family: 'Fira Mono', 'Consolas', 'Menlo', monospace;
+  box-shadow: 0 2px 14px #ffdb6733;
+  border: 1.5px solid #ffe6a7;
+  margin-bottom: 1.2em;
+  margin-top: 0.5em;
+  overflow-x: auto;
+}
+.landing .comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1.2em;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px #ffdb6733;
+}
+.landing .comparison-table th, .landing .comparison-table td {
+  padding: 1em 0.7em;
+  text-align: center;
+  font-size: 1.05em;
+  border-bottom: 1.5px solid #ffe6a7;
+  vertical-align: middle;
+  min-width: 90px;
+  max-width: 180px;
+  word-break: keep-all;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.landing .comparison-table th {
+  background: #ffdb67;
+  color: #7a5a00;
+  font-weight: 800;
+  font-size: 1.08em;
+  letter-spacing: 0.5px;
+  border-top: none;
+  border-bottom: 2px solid #ffb300;
+  text-shadow: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.landing .comparison-table tr:last-child td {
+  border-bottom: none;
+}
+.landing .comparison-table td {
+  background: #fffbe9;
+  color: #22242a;
+}
+.landing .comparison-table td:first-child {
+  font-weight: 700;
+  color: #e65100;
+  background: linear-gradient(90deg, #fffbe9 0%, #ffe082 100%);
+  border-left: none;
+  text-align: left;
+  padding-left: 1em;
+  letter-spacing: 0.1px;
+  white-space: normal;
+  max-width: 180px;
+}
+.landing .comparison-table tr {
+  height: 2.7em;
+}
+.landing .comparison-table tr td {
+  border-right: 1px solid #ffe6a7;
+}
+.landing .comparison-table tr td:last-child {
+  border-right: none;
+}
+.landing .comparison-table tr:hover td {
+  background: #fff8e1;
+  color: #b8860b;
+}
+.landing .comparison-table th, .landing .comparison-table td {
+  border-top: none;
+  box-shadow: none;
+}
+.landing .comparison-table th {
+  border-radius: 0;
+}
+.landing .comparison-table th:first-child {
+  border-top-left-radius: 18px;
+}
+.landing .comparison-table th:last-child {
+  border-top-right-radius: 18px;
+}
+.landing .comparison-table tr:last-child td:first-child {
+  border-bottom-left-radius: 18px;
+}
+.landing .comparison-table tr:last-child td:last-child {
+  border-bottom-right-radius: 18px;
+}
+@media (max-width: 900px) {
+  .landing .comparison-table, .landing .comparison-table thead, .landing .comparison-table tbody, .landing .comparison-table tr, .landing .comparison-table th, .landing .comparison-table td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .landing .comparison-table thead {
+    display: none;
+  }
+  .landing .comparison-table tr {
+    margin-bottom: 1.2em;
+    box-shadow: 0 2px 8px #ffdb6733;
+    border-radius: 12px;
+    background: #fffbe9;
+    overflow: hidden;
+    border: 1.5px solid #ffe6a7;
+  }
+  .landing .comparison-table td {
+    padding: 0.7em 0.7em;
+    text-align: left;
+    border: none;
+    border-bottom: 1px solid #ffe6a7;
+    position: relative;
+    background: #fffde7;
+    font-size: 0.98em;
+  }
+  .landing .comparison-table td:first-child {
+    background: #ffe082;
+    color: #b8860b;
+    font-weight: 700;
+    border-radius: 10px 10px 0 0;
+    padding-top: 0.9em;
+    padding-bottom: 0.5em;
+    font-size: 1em;
+  }
+  .landing .comparison-table tr:last-child td {
+    border-bottom: none;
+  }
+}
+/* --- Ayisha.js Landing Page Modern Styles --- */
+.landing .hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5em 1em 2em 1em;
+  background: linear-gradient(90deg, #fffbe9 0%, #ffdb67 100%);
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 4px 32px #ffdb6733;
+  margin-bottom: 2.5em;
+}
+.landing .hero .logo {
+  width: 110px;
+  height: 110px;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px #ffdb6733;
+  margin-bottom: 1.2em;
+  background: #fff;
+  border: 2.5px solid #ffe6a7;
+}
+.landing .hero h1 {
+  font-size: 2.7em;
+  font-weight: 900;
+  color: #ff9800;
+  margin: 0.2em 0 0.1em 0;
+  letter-spacing: 1.5px;
+  text-shadow: 0 2px 12px #ffdb6722;
+}
+.landing .hero .slogan {
+  font-size: 1.35em;
+  color: #7a5a00;
+  margin-bottom: 1.2em;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+.landing .hero .cta {
+  display: inline-block;
+  background: linear-gradient(90deg, #ff9800 0%, #ffdb67 100%);
+  color: #fff;
+  font-size: 1.18em;
+  font-weight: 700;
+  padding: 0.85em 2.2em;
+  border-radius: 12px;
+  text-decoration: none;
+  box-shadow: 0 2px 12px #ffdb6733;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  margin-top: 0.5em;
+}
+.landing .hero .cta:hover {
+  background: linear-gradient(90deg, #ffb300 0%, #ff9800 100%);
+  color: #fffbe9;
+  box-shadow: 0 4px 24px #ffdb6733;
+}
+
+.landing .philosophy, .landing .install, .landing .hello-world, .landing .comparison {
+  background: #fffbe9;
+  border-radius: 14px;
+  box-shadow: 0 2px 16px #ffdb6733;
+  padding: 2em 2em 1.5em 2em;
+  margin-bottom: 2em;
+}
+.landing .philosophy h2, .landing .install h2, .landing .hello-world h2, .landing .comparison h2 {
+  color: #ff9800;
+  font-size: 1.4em;
+  margin-top: 0;
+  margin-bottom: 0.7em;
+  font-weight: 700;
+}
+.landing .philosophy ul {
+  margin-left: 1.5em;
+  margin-bottom: 1.2em;
+}
+.landing .philosophy li {
+  margin-bottom: 0.4em;
+  font-size: 1.08em;
+}
+.landing .install pre, .landing .hello-world pre {
+  background: linear-gradient(90deg, #fff3c1 0%, #ffdb67 100%);
+  color: #7a5a00;
+  border-radius: 10px;
+  padding: 1.1em 1.2em;
+  font-size: 1.08em;
+  font-family: 'Fira Mono', 'Consolas', 'Menlo', monospace;
+  box-shadow: 0 2px 14px #ffdb6733;
+  border: 1.5px solid #ffe6a7;
+  margin-bottom: 1.2em;
+  margin-top: 0.5em;
+  overflow-x: auto;
+}
+.landing .comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1.2em;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px #ffdb6733;
+}
+.landing .comparison-table th, .landing .comparison-table td {
+  padding: 1em 0.7em;
+  text-align: center;
+  font-size: 1.05em;
+  border-bottom: 1.5px solid #ffe6a7;
+  vertical-align: middle;
+  min-width: 90px;
+  max-width: 180px;
+  word-break: keep-all;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.landing .comparison-table th {
+  background: #ffdb67;
+  color: #7a5a00;
+  font-weight: 800;
+  font-size: 1.08em;
+  letter-spacing: 0.5px;
+  border-top: none;
+  border-bottom: 2px solid #ffb300;
+  text-shadow: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.landing .comparison-table tr:last-child td {
+  border-bottom: none;
+}
+.landing .comparison-table td {
+  background: #fffbe9;
+  color: #22242a;
+}
+.landing .comparison-table td:first-child {
+  font-weight: 700;
+  color: #e65100;
+  background: linear-gradient(90deg, #fffbe9 0%, #ffe082 100%);
+  border-left: none;
+  text-align: left;
+  padding-left: 1em;
+  letter-spacing: 0.1px;
+  white-space: normal;
+  max-width: 180px;
+}
+.landing .comparison-table tr {
+  height: 2.7em;
+}
+.landing .comparison-table tr td {
+  border-right: 1px solid #ffe6a7;
+}
+.landing .comparison-table tr td:last-child {
+  border-right: none;
+}
+.landing .comparison-table tr:hover td {
+  background: #fff8e1;
+  color: #b8860b;
+}
+.landing .comparison-table th, .landing .comparison-table td {
+  border-top: none;
+  box-shadow: none;
+}
+.landing .comparison-table th {
+  border-radius: 0;
+}
+.landing .comparison-table th:first-child {
+  border-top-left-radius: 18px;
+}
+.landing .comparison-table th:last-child {
+  border-top-right-radius: 18px;
+}
+.landing .comparison-table tr:last-child td:first-child {
+  border-bottom-left-radius: 18px;
+}
+.landing .comparison-table tr:last-child td:last-child {
+  border-bottom-right-radius: 18px;
+}
+@media (max-width: 900px) {
+  .landing .comparison-table, .landing .comparison-table thead, .landing .comparison-table tbody, .landing .comparison-table tr, .landing .comparison-table th, .landing .comparison-table td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .landing .comparison-table thead {
+    display: none;
+  }
+  .landing .comparison-table tr {
+    margin-bottom: 1.2em;
+    box-shadow: 0 2px 8px #ffdb6733;
+    border-radius: 12px;
+    background: #fffbe9;
+    overflow: hidden;
+    border: 1.5px solid #ffe6a7;
+  }
+  .landing .comparison-table td {
+    padding: 0.7em 0.7em;
+    text-align: left;
+    border: none;
+    border-bottom: 1px solid #ffe6a7;
+    position: relative;
+    background: #fffde7;
+    font-size: 0.98em;
+  }
+  .landing .comparison-table td:first-child {
+    background: #ffe082;
+    color: #b8860b;
+    font-weight: 700;
+    border-radius: 10px 10px 0 0;
+    padding-top: 0.9em;
+    padding-bottom: 0.5em;
+    font-size: 1em;
+  }
+  .landing .comparison-table tr:last-child td {
+    border-bottom: none;
+  }
+}
+/* --- Ayisha.js Landing Page Modern Styles --- */
+.landing .hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5em 1em 2em 1em;
+  background: linear-gradient(90deg, #fffbe9 0%, #ffdb67 100%);
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 4px 32px #ffdb6733;
+  margin-bottom: 2.5em;
+}
+.landing .hero .logo {
+  width: 110px;
+  height: 110px;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px #ffdb6733;
+  margin-bottom: 1.2em;
+  background: #fff;
+  border: 2.5px solid #ffe6a7;
+}
+.landing .hero h1 {
+  font-size: 2.7em;
+  font-weight: 900;
+  color: #ff9800;
+  margin: 0.2em 0 0.1em 0;
+  letter-spacing: 1.5px;
+  text-shadow: 0 2px 12px #ffdb6722;
+}
+.landing .hero .slogan {
+  font-size: 1.35em;
+  color: #7a5a00;
+  margin-bottom: 1.2em;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+.landing .hero .cta {
+  display: inline-block;
+  background: linear-gradient(90deg, #ff9800 0%, #ffdb67 100%);
+  color: #fff;
+  font-size: 1.18em;
+  font-weight: 700;
+  padding: 0.85em 2.2em;
+  border-radius: 12px;
+  text-decoration: none;
+  box-shadow: 0 2px 12px #ffdb6733;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  margin-top: 0.5em;
+}
+.landing .hero .cta:hover {
+  background: linear-gradient(90deg, #ffb300 0%, #ff9800 100%);
+  color: #fffbe9;
+  box-shadow: 0 4px 24px #ffdb6733;
+}
+
+.landing .philosophy, .landing .install, .landing .hello-world, .landing .comparison {
+  background: #fffbe9;
+  border-radius: 14px;
+  box-shadow: 0 2px 16px #ffdb6733;
+  padding: 2em 2em 1.5em 2em;
+  margin-bottom: 2em;
+}
+.landing .philosophy h2, .landing .install h2, .landing .hello-world h2, .landing .comparison h2 {
+  color: #ff9800;
+  font-size: 1.4em;
+  margin-top: 0;
+  margin-bottom: 0.7em;
+  font-weight: 700;
+}
+.landing .philosophy ul {
+  margin-left: 1.5em;
+  margin-bottom: 1.2em;
+}
+.landing .philosophy li {
+  margin-bottom: 0.4em;
+  font-size: 1.08em;
+}
+.landing .install pre, .landing .hello-world pre {
+  background: linear-gradient(90deg, #fff3c1 0%, #ffdb67 100%);
+  color: #7a5a00;
+  border-radius: 10px;
+  padding: 1.1em 1.2em;
+  font-size: 1.08em;
+  font-family: 'Fira Mono', 'Consolas', 'Menlo', monospace;
+  box-shadow: 0 2px 14px #ffdb6733;
+  border: 1.5px solid #ffe6a7;
+  margin-bottom: 1.2em;
+  margin-top: 0.5em;
+  overflow-x: auto;
+}
+.landing .comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1.2em;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px #ffdb6733;
+}
+.landing .comparison-table th, .landing .comparison-table td {
+  padding: 1em 0.7em;
+  text-align: center;
+  font-size: 1.05em;
+  border-bottom: 1.5px solid #ffe6a7;
+  vertical-align: middle;
+  min-width: 90px;
+  max-width: 180px;
+  word-break: keep-all;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.landing .comparison-table th {
+  background: #ffdb67;
+  color: #7a5a00;
+  font-weight: 800;
+  font-size: 1.08em;
+  letter-spacing: 0.5px;
+  border-top: none;
+  border-bottom: 2px solid #ffb300;
+  text-shadow: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.landing .comparison-table tr:last-child td {
+  border-bottom: none;
+}
+.landing .comparison-table td {
+  background: #fffbe9;
+  color: #22242a;
+}
+.landing .comparison-table td:first-child {
+  font-weight: 700;
+  color: #e65100;
+  background: linear-gradient(90deg, #fffbe9 0%, #ffe082 100%);
+  border-left: none;
+  text-align: left;
+  padding-left: 1em;
+  letter-spacing: 0.1px;
+  white-space: normal;
+  max-width: 180px;
+}
+.landing .comparison-table tr {
+  height: 2.7em;
+}
+.landing .comparison-table tr td {
+  border-right: 1px solid #ffe6a7;
+}
+.landing .comparison-table tr td:last-child {
+  border-right: none;
+}
+.landing .comparison-table tr:hover td {
+  background: #fff8e1;
+  color: #b8860b;
+}
+.landing .comparison-table th, .landing .comparison-table td {
+  border-top: none;
+  box-shadow: none;
+}
+.landing .comparison-table th {
+  border-radius: 0;
+}
+.landing .comparison-table th:first-child {
+  border-top-left-radius: 18px;
+}
+.landing .comparison-table th:last-child {
+  border-top-right-radius: 18px;
+}
+.landing .comparison-table tr:last-child td:first-child {
+  border-bottom-left-radius: 18px;
+}
+.landing .comparison-table tr:last-child td:last-child {
+  border-bottom-right-radius: 18px;
+}
+@media (max-width: 900px) {
+  .landing .comparison-table, .landing .comparison-table thead, .landing .comparison-table tbody, .landing .comparison-table tr, .landing .comparison-table th, .landing .comparison-table td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .landing .comparison-table thead {
+    display: none;
+  }
+  .landing .comparison-table tr {
+    margin-bottom: 1.2em;
+    box-shadow: 0 2px 8px #ffdb6733;
+    border-radius: 12px;
+    background: #fffbe9;
+    overflow: hidden;
+    border: 1.5px solid #ffe6a7;
+  }
+  .landing .comparison-table td {
+    padding: 0.7em 0.7em;
+    text-align: left;
+    border: none;
+    border-bottom: 1px solid #ffe6a7;
+    position: relative;
+    background: #fffde7;
+    font-size: 0.98em;
+  }
+  .landing .comparison-table td:first-child {
+    background: #ffe082;
+    color: #b8860b;
+    font-weight: 700;
+    border-radius: 10px 10px 0 0;
+    padding-top: 0.9em;
+    padding-bottom: 0.5em;
+    font-size: 1em;
+  }
+  .landing .comparison-table tr:last-child td {
+    border-bottom: none;
+  }
+}
 /* --- Footer Styles --- */
 .site-footer {
   background: linear-gradient(90deg, #ffe6a7 0%, #ffdb67 100%);
