@@ -1,3 +1,8 @@
+/*!
+ * Ayisha.js v1.0.0
+ * (c) 2025 devBen
+ * License: MIT
+ */
 (function () {
   // Prevent redeclaration
   if (window.AyishaVDOM) return;
@@ -1684,6 +1689,7 @@
   // ===== MAIN AYISHA CLASS =====
 
   class AyishaVDOM {
+    static version = "1.0.0";
     constructor(root = document.body) {
       this.root = root;
       this.state = {};
