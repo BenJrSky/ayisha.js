@@ -1,3 +1,76 @@
+/* --- Footer Styles --- */
+.site-footer {
+  background: linear-gradient(90deg, #ffe6a7 0%, #ffdb67 100%);
+  color: #7a5a00;
+  border-top: 2px solid #ffdb67;
+  box-shadow: 0 -2px 12px #ffdb6733;
+  padding: 1.5em 0 1.2em 0;
+  margin-top: 3em;
+  width: 100%;
+  font-size: 1.08em;
+  font-family: 'Inter', 'Segoe UI', 'Roboto', Arial, sans-serif;
+}
+.footer-content {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.2em;
+  padding: 0 2em;
+}
+.footer-logo {
+  height: 2.1em;
+  width: auto;
+  min-width: 2.1em;
+  max-width: 2.5em;
+  vertical-align: middle;
+  display: inline-block;
+  margin-right: 0.7em;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px #ffdb6722;
+  border: 1.5px solid #ffe6a7;
+}
+.footer-text {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  font-size: 1em;
+  flex-wrap: wrap;
+}
+.footer-link {
+  color: #ff9800;
+  text-decoration: none;
+  font-weight: 700;
+  transition: color 0.2s;
+}
+.footer-link:hover {
+  color: #7a5a00;
+  text-decoration: underline;
+}
+.footer-sep {
+  color: #ffb300;
+  font-size: 1.2em;
+  margin: 0 0.5em;
+}
+@media (max-width: 700px) {
+  .footer-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.7em;
+    padding: 0 1em;
+  }
+  .footer-logo {
+    height: 1.5em;
+    max-width: 1.7em;
+    margin-right: 0.3em;
+  }
+  .footer-text {
+    font-size: 0.97em;
+    gap: 0.4em;
+  }
+}
 hr.wiki-divider {
   border: none;
   border-top: 1px solid #ffdb67;
