@@ -11,6 +11,7 @@
   <main class="container">
     <h2 class="section-title">Ayisha.js Directives Dictionary</h2>
     <div class="wiki-dictionary">
+      <!-- wiki-divider removed -->
       <div class="wiki-entry-row">
         <div class="wiki-entry-col-dir"><b class="dir-badge">@model</b></div>
         <div class="wiki-entry-col-desc">
@@ -20,6 +21,7 @@
         </div>
       </div>
       <div class="wiki-entry-code"><no><input @model="name"></no></div>
+      <hr class="wiki-divider">
       <div class="wiki-entry-row">
         <div class="wiki-entry-col-dir"><b class="dir-badge">@click</b></div>
         <div class="wiki-entry-col-desc">
@@ -29,15 +31,20 @@
         </div>
       </div>
       <div class="wiki-entry-code"><no><button @click="state.count++">Increment</button></no></div>
-      <div class="wiki-entry-row">
-        <div class="wiki-entry-col-dir"><b class="dir-badge">@for</b></div>
-        <div class="wiki-entry-col-desc">
-          <span class="wiki-type">(Loop)</span>
-          Renders the element for each item in an array or range. Syntax: <b>item in items</b> or <b>(item, i) in items</b>. Supports <b>@key</b> for unique identification.<br>
-          <span class="wiki-spec">Use for: <i>lists, tables, repeated UI</i>. Always use <b>@key</b> for optimal performance.</span>
+      <hr class="wiki-divider">
+      <div class="wiki-entry">
+        <div class="wiki-entry-row">
+          <div class="wiki-entry-col-dir"><b class="dir-badge">@for</b></div>
+          <div class="wiki-entry-col-desc">
+            <span class="wiki-type">(Loop)</span>
+            Renders the element for each item in an array or range. Syntax: <b>item in items</b> or <b>index, item in items</b>. The first variable is always the index, the second is the value. Supports <b>@key</b> for unique identification.<br>
+            <span class="wiki-spec">Use for: <i>lists, tables, repeated UI</i>. Always use <b>@key</b> for optimal performance. Example: <code>&lt;li @for="index, item in items"&gt;{{index}}: {{item}}&lt;/li&gt;</code></span>
+          </div>
         </div>
+        <div class="wiki-entry-code"><no><li @for="item in items">{{item}}</li></no></div>
+        <div class="wiki-entry-code"><no><li @for="index, item in items">{{index}}</li></no></div>
       </div>
-      <div class="wiki-entry-code"><no><li @for="item in items">{{item}}</li></no></div>
+      <hr class="wiki-divider">
       <div class="wiki-entry-row">
         <div class="wiki-entry-col-dir"><b class="dir-badge">@if</b></div>
         <div class="wiki-entry-col-desc">
@@ -47,6 +54,7 @@
         </div>
       </div>
       <div class="wiki-entry-code"><no><div @if="count > 5">Many items!</div></no></div>
+      <hr class="wiki-divider">
       <div class="wiki-entry-row">
         <div class="wiki-entry-col-dir"><b class="dir-badge">@show</b></div>
         <div class="wiki-entry-col-desc">
@@ -56,6 +64,7 @@
         </div>
       </div>
       <div class="wiki-entry-code"><no><div @show="cond">Visible</div></no></div>
+      <hr class="wiki-divider">
       <div class="wiki-entry-row">
         <div class="wiki-entry-col-dir"><b class="dir-badge">@hide</b></div>
         <div class="wiki-entry-col-desc">
@@ -65,6 +74,7 @@
         </div>
       </div>
       <div class="wiki-entry-code"><no><div @hide="cond">Hidden</div></no></div>
+      <hr class="wiki-divider">
       <div class="wiki-entry-row">
         <div class="wiki-entry-col-dir"><b class="dir-badge">@fetch</b> <b class="dir-badge">@result</b></div>
         <div class="wiki-entry-col-desc">
@@ -74,6 +84,7 @@
         </div>
       </div>
       <div class="wiki-entry-code"><no><button @fetch="'url'" @result="data">Load</button></no></div>
+      <hr class="wiki-divider">
       <div class="wiki-entry-row">
         <div class="wiki-entry-col-dir"><b class="dir-badge">@validate</b></div>
         <div class="wiki-entry-col-desc">
@@ -83,15 +94,21 @@
         </div>
       </div>
       <div class="wiki-entry-code"><no><input @validate="email"></no></div>
+      <hr class="wiki-divider">
       <div class="wiki-entry-row">
         <div class="wiki-entry-col-dir"><b class="dir-badge">@page</b> <b class="dir-badge">@link</b></div>
         <div class="wiki-entry-col-desc">
           <span class="wiki-type">(SPA Routing)</span>
           Enables single-page application navigation. <b>@page</b> marks a section as a route, <b>@link</b> navigates to a page without reloading.<br>
-          <span class="wiki-spec">Use for: <i>multi-page apps</i>. Use <b>_currentPage</b> to track the active route.</span>
+          <span class="wiki-spec">Use for: <i>multi-page apps</i>. Use <b>_currentPage</b> to track the active route.</span><br>
+          <span class="wiki-spec">When you click an element with <b>@link="pageName"</b>, the value of <b>_currentPage</b> is updated and the corresponding <b>@page</b> section is shown without reloading the browser. This enables instant navigation between different views or sections of your app.</span>
         </div>
       </div>
       <div class="wiki-entry-code"><no><div @page="home">Home</div></no></div>
+      <div class="wiki-entry-code"><no><div @page="home">About</div></no></div>
+
+      <div class="wiki-entry-code"><no><a @link="about">About</a></no></div>
+      <hr class="wiki-divider">
       <div class="wiki-entry-row">
         <div class="wiki-entry-col-dir"><b class="dir-badge">@component</b> <b class="dir-badge">@src</b></div>
         <div class="wiki-entry-col-desc">
@@ -101,6 +118,7 @@
         </div>
       </div>
       <div class="wiki-entry-code"><no><component @src="comp.html"></component></no></div>
+      <hr class="wiki-divider">
       <div class="wiki-entry-row">
         <div class="wiki-entry-col-dir"><b class="dir-badge">@state</b></div>
         <div class="wiki-entry-col-desc">
@@ -110,6 +128,7 @@
         </div>
       </div>
       <div class="wiki-entry-code"><no><div @state></div></no></div>
+      <hr class="wiki-divider">
       <div class="wiki-entry-row">
         <div class="wiki-entry-col-dir"><b class="dir-badge">@log</b></div>
         <div class="wiki-entry-col-desc">
@@ -119,6 +138,7 @@
         </div>
       </div>
       <div class="wiki-entry-code"><no><div @log></div></no></div>
+      <hr class="wiki-divider">
       <div class="wiki-entry-row">
         <div class="wiki-entry-col-dir"><b class="dir-badge">@class</b></div>
         <div class="wiki-entry-col-desc">
@@ -128,6 +148,7 @@
         </div>
       </div>
       <div class="wiki-entry-code"><no><div @class="{red: condition}"></div></no></div>
+      <hr class="wiki-divider">
       <div class="wiki-entry-row">
         <div class="wiki-entry-col-dir"><b class="dir-badge">@style</b></div>
         <div class="wiki-entry-col-desc">
@@ -137,15 +158,19 @@
         </div>
       </div>
       <div class="wiki-entry-code"><no><div @style="{color:'red'}"></div></no></div>
+      <hr class="wiki-divider">
       <div class="wiki-entry-row">
         <div class="wiki-entry-col-dir"><b class="dir-badge">@set</b></div>
         <div class="wiki-entry-col-desc">
-          <span class="wiki-type">(Assignment)</span>
-          Assigns a value to a variable or state property when an event occurs. Supports sub-directives for event-specific assignment (e.g., <b>@set:click</b>).<br>
-          <span class="wiki-spec">Use for: <i>event-driven state changes</i>. Prefer for simple assignments over <b>@click</b> when no logic is needed.</span>
+          <span class="wiki-type">(Initial assignment)</span>
+          Sets a value to a variable or state property only on first render (like <init>). Use <b>@set</b> only in the form <code>&lt;div @set="count=0"&gt;</code> to initialize state. Does <b>not</b> update on subsequent renders or events.<br>
+          <span class="wiki-spec">Use for: <i>initialization</i> only. For event-driven changes, use <b>@set:click</b> or similar sub-directives.</span>
         </div>
       </div>
-      <div class="wiki-entry-code"><no><button @set:click="foo=1"></button></no></div>
+      <div class="wiki-entry-code"><no><div @set="count=0"></div></no></div>
+      <hr class="wiki-divider">
+      <div class="wiki-entry-row"></div>
+      <hr class="wiki-divider">
       <div class="wiki-entry-row">
         <div class="wiki-entry-col-dir"><b class="dir-badge">@key</b></div>
         <div class="wiki-entry-col-desc">
@@ -155,6 +180,7 @@
         </div>
       </div>
       <div class="wiki-entry-code"><no><li @for="item in items" @key="item.id"></li></no></div>
+      <hr class="wiki-divider">
       <div class="wiki-entry-row">
         <div class="wiki-entry-col-dir"><b class="dir-badge">@switch</b> <b class="dir-badge">@case</b> <b class="dir-badge">@default</b></div>
         <div class="wiki-entry-col-desc">
@@ -164,15 +190,57 @@
         </div>
       </div>
       <div class="wiki-entry-code"><no><div @switch="val"><div @case="1">One</div><div @default>Other</div></div></no></div>
+      <hr class="wiki-divider">
       <div class="wiki-entry-row">
-        <div class="wiki-entry-col-dir"><b class="dir-badge">@source</b> <b class="dir-badge">@map</b> <b class="dir-badge">@filter</b> <b class="dir-badge">@reduce</b> <b class="dir-badge">@initial</b></div>
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@source</b></div>
         <div class="wiki-entry-col-desc">
-          <span class="wiki-type">(Array ops)</span>
-          Performs array operations directly in the template. <b>@source</b> provides the array, <b>@map</b>, <b>@filter</b>, <b>@reduce</b> transform it, <b>@initial</b> sets the initial value.<br>
-          <span class="wiki-spec">Use for: <i>data transformation, computed lists</i>. Use <b>@result</b> to store the output.</span>
+          <span class="wiki-type">(Array source)</span>
+          Provides the array to operate on. Use together with <b>@map</b>, <b>@filter</b>, <b>@reduce</b>, and <b>@result</b> to process and store the output.<br>
+          <span class="wiki-spec">Use for: <i>data transformation, computed lists</i>. Example: <code>&lt;div @source="items"&gt;&lt;/div&gt;</code></span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><div @source="items"></div></no></div>
+      <hr class="wiki-divider">
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@map</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(Array map)</span>
+          Transforms each item in the array using the provided function. Use with <b>@source</b> and <b>@result</b>.<br>
+          <span class="wiki-spec">Example: <code>&lt;div @source="items" @map="item =&gt; item*2" @result="double"&gt;&lt;/div&gt;</code> — doubles each item in <b>items</b> and stores in <b>double</b>.</span>
         </div>
       </div>
       <div class="wiki-entry-code"><no><div @source="items" @map="item => item*2" @result="double"></div></no></div>
+      <hr class="wiki-divider">
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@filter</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(Array filter)</span>
+          Filters the array using the provided function. Only items where the function returns true are included.<br>
+          <span class="wiki-spec">Example: <code>&lt;div @source="items" @filter="item =&gt; item &gt; 5" @result="filtered"&gt;&lt;/div&gt;</code> — keeps only items greater than 5.</span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><div @source="items" @filter="item => item > 5" @result="filtered"></div></no></div>
+      <hr class="wiki-divider">
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@reduce</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(Array reduce)</span>
+          Reduces the array to a single value using the provided function. Use <b>@initial</b> to set the initial value.<br>
+          <span class="wiki-spec">Example: <code>&lt;div @source="items" @reduce="(sum, item) =&gt; sum + item" @initial="0" @result="total"&gt;&lt;/div&gt;</code> — sums all items in <b>items</b> and stores in <b>total</b>.</span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><div @source="items" @reduce="(sum, item) => sum + item" @initial="0" @result="total"></div></no></div>
+      <hr class="wiki-divider">
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@initial</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(Initial value)</span>
+          Sets the initial value for <b>@reduce</b> operations.<br>
+          <span class="wiki-spec">Example: <code>&lt;div @source="items" @reduce="(sum, item) =&gt; sum + item" @initial="0" @result="total"&gt;&lt;/div&gt;</code> — <b>@initial</b> is <code>0</code> for summing.</span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><div @source="items" @reduce="(sum, item) => sum + item" @initial="0" @result="total"></div></no></div>
+      <hr class="wiki-divider">
       <div class="wiki-entry-row">
         <div class="wiki-entry-col-dir"><b class="dir-badge">@animate</b></div>
         <div class="wiki-entry-col-desc">
@@ -182,6 +250,7 @@
         </div>
       </div>
       <div class="wiki-entry-code"><no><div @animate="fade-in"></div></no></div>
+      <hr class="wiki-divider">
       <div class="wiki-entry-row">
         <div class="wiki-entry-col-dir"><b class="dir-badge">@watch</b></div>
         <div class="wiki-entry-col-desc">
@@ -191,6 +260,7 @@
         </div>
       </div>
       <div class="wiki-entry-code"><no><div @watch="prop=>console.log(prop)"></div></no></div>
+      <hr class="wiki-divider">
       <div class="wiki-entry-row">
         <div class="wiki-entry-col-dir"><b class="dir-badge">@hover</b></div>
         <div class="wiki-entry-col-desc">
@@ -200,6 +270,7 @@
         </div>
       </div>
       <div class="wiki-entry-code"><no><div @hover="doSomething()"></div></no></div>
+      <hr class="wiki-divider">
       <div class="wiki-entry-row">
         <div class="wiki-entry-col-dir"><b class="dir-badge">@text</b></div>
         <div class="wiki-entry-col-desc">
@@ -210,34 +281,57 @@
       </div>
       <div class="wiki-entry-code"><no><span @text="name"></span></no></div>
     </div>
-    <h2 class="section-title">Supported sub-directives/events</h2>
-    <div>
-      <span class="dir-badge">@model:input</span>
-      <span class="dir-badge">@model:change</span>
-      <span class="dir-badge">@model:focus</span>
-      <span class="dir-badge">@model:blur</span>
-      <span class="dir-badge">@fetch:click</span>
-      <span class="dir-badge">@fetch:hover</span>
-      <span class="dir-badge">@fetch:input</span>
-      <span class="dir-badge">@fetch:change</span>
-      <span class="dir-badge">@class:focus</span>
-      <span class="dir-badge">@class:hover</span>
-      <span class="dir-badge">@class:click</span>
-      <span class="dir-badge">@class:input</span>
-      <span class="dir-badge">@class:change</span>
-      <span class="dir-badge">@text:hover</span>
-      <span class="dir-badge">@text:click</span>
-      <span class="dir-badge">@text:input</span>
-      <span class="dir-badge">@text:focus</span>
-      <span class="dir-badge">@set:click</span>
-      <span class="dir-badge">@set:input</span>
-      <span class="dir-badge">@set:focus</span>
-      <span class="dir-badge">@set:blur</span>
-      <span class="dir-badge">@set:change</span>
-      <span class="dir-badge">@focus</span>
-      <span class="dir-badge">@blur</span>
-      <span class="dir-badge">@change</span>
-      <span class="dir-badge">@input</span>
+    <h2 class="section-title">Sub-directives & Events</h2>
+    <div class="wiki-dictionary">
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@fetch:click</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(Fetch on click)</span>
+          Esegue una richiesta fetch solo quando l'elemento viene cliccato.<br>
+          <span class="wiki-spec">Esempio reale:</span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><button @fetch:click="'/api/data'" @result="data">Carica</button></no></div>
+      <hr class="wiki-divider">
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@model:input</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(Model on input)</span>
+          Aggiorna il valore solo sull'evento <b>input</b>.<br>
+          <span class="wiki-spec">Esempio reale:</span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><input @model:input="valore"></no></div>
+      <hr class="wiki-divider">
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@set:change</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(Set on change)</span>
+          Imposta il valore solo sull'evento <b>change</b>.<br>
+          <span class="wiki-spec">Esempio reale:</span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><input @set:change="valore='reset'"></no></div>
+      <hr class="wiki-divider">
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@text:hover</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(Text on hover)</span>
+          Aggiorna il testo dell'elemento solo quando passi il mouse sopra.<br>
+          <span class="wiki-spec">Esempio reale:</span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><div @text:hover="'Testo al passaggio'">Testo</div></no></div>
+      <hr class="wiki-divider">
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@class:focus</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(Class on focus)</span>
+          Applica la classe solo sull'evento <b>focus</b>.<br>
+          <span class="wiki-spec">Esempio reale:</span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><input @class:focus="{ 'red-border': true }"></no></div>
     </div>
     <h2 class="section-title">Special variables</h2>
     <div class="special-var"><b>state</b>: Global reactive state object.</div>
@@ -254,86 +348,9 @@
         <li>For components, prefer reusable HTML and <b>@src</b>.</li>
         <li>For debugging, use <b>@state</b> and <b>@log</b> to inspect state and directives.</li>
         <li>Directives can be freely combined on any element.</li>
-        <li>Sub-directives allow advanced binding/events (e.g. <b>@model:input</b>).</li>
       </ul>
     </div>
-    <!-- Quick examples section removed as per requirements -->
-    <!-- Style moved to site.css for global consistency -->
     <script src="/ayisha.js"></script>
-    <h2 class="section-title">Advanced examples: fetch and sub-directives</h2>
-    <div class="best-practice">
-      <b>Basic fetch:</b><br>
-      <code>&lt;button @fetch="'https://jsonplaceholder.typicode.com/users'" @result="users"&gt;Load users&lt;/button&gt;<br>
-      &lt;ul&gt;
-        &lt;li @for="user in users"&gt;{{user.name}}&lt;/li&gt;
-      &lt;/ul&gt;
-      </code>
-    </div>
-    <div class="best-practice">
-      <b>Fetch on click (sub-directive):</b><br>
-      <code>&lt;button @fetch:click="'https://jsonplaceholder.typicode.com/posts'" @result="posts"&gt;Load posts&lt;/button&gt;<br>
-      &lt;ul&gt;
-        &lt;li @for="post in posts"&gt;{{post.title}}&lt;/li&gt;
-      &lt;/ul&gt;
-      </code>
-    </div>
-    <div class="best-practice">
-      <b>Fetch on hover (sub-directive):</b><br>
-      <code>&lt;div @fetch:hover="'https://jsonplaceholder.typicode.com/todos'" @result="todos" style="display:inline-block;cursor:pointer;"&gt;Hover here to load ToDo&lt;/div&gt;<br>
-      &lt;ul&gt;
-        &lt;li @for="todo in todos"&gt;{{todo.title}}&lt;/li&gt;
-      &lt;/ul&gt;
-      </code>
-    </div>
-    <div class="best-practice">
-      <b>Fetch with dynamic input (sub-directive):</b><br>
-      <code>&lt;input @model="userId" type="number" min="1" max="10" placeholder="User ID"&gt;<br>
-      &lt;button @fetch:click="`https://jsonplaceholder.typicode.com/users/${userId}`" @result="user"&gt;Find user&lt;/button&gt;<br>
-      &lt;div @if="user"&gt;Name: {{user.name}}&lt;/div&gt;
-      </code>
-    </div>
-    <div class="best-practice">
-      <b>Fetch + validation combination:</b><br>
-      <code>&lt;input @model="email" @validate="email" placeholder="Email"&gt;<br>
-      &lt;button @fetch:click="`/api/check?email=${email}`" @result="check" @if="_validate.email"&gt;Check email&lt;/button&gt;<br>
-      &lt;div @if="check"&gt;Response: {{check.status}}&lt;/div&gt;
-      </code>
-    </div>
-    <div class="best-practice">
-      <b>Multiple fetches and different @result:</b><br>
-      <code>&lt;button @fetch:click="'https://jsonplaceholder.typicode.com/users'" @result="users"&gt;Users&lt;/button&gt;
-      &lt;button @fetch:click="'https://jsonplaceholder.typicode.com/posts'" @result="posts"&gt;Posts&lt;/button&gt;<br>
-      &lt;ul&gt;
-        &lt;li @for="user in users"&gt;{{user.name}}&lt;/li&gt;
-      &lt;/ul&gt;
-      &lt;ul&gt;
-        &lt;li @for="post in posts"&gt;{{post.title}}&lt;/li&gt;
-      &lt;/ul&gt;
-      </code>
-    </div>
-    <h2 class="section-title">Live example: Fetch API</h2>
-    <div class="best-practice">
-      <b>Copy-ready code:</b>
-      <pre><code id="fetch-demo-code">&lt;button @fetch="'https://jsonplaceholder.typicode.com/users'" @result="users"&gt;Load users&lt;/button&gt;
-&lt;ul&gt;
-  &lt;li @for="user in users"&gt;{{user.name}}&lt;/li&gt;
-&lt;/ul&gt;</code></pre>
-    </div>
-    <div class="best-practice">
-      <b>Interactive demo:</b>
-      <div id="fetch-demo" style="margin-top:1em;">
-        <button @fetch="'https://jsonplaceholder.typicode.com/users'" @result="users">Load users</button>
-        <ul>
-          <li @for="user in users">{{user.name}}</li>
-        </ul>
-      </div>
-      <script src="/ayisha.js"></script>
-    </div>
-    <h2 class="section-title">See also</h2>
-    <ul>
-      <li><a href="/site/tutorial.html">Step-by-step Tutorial</a></li>
-      <li><a href="/site/examples.html">Practical Examples</a></li>
-    </ul>
   </main>
   <init>
   _currentPage = 'wiki';

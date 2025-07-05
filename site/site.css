@@ -1,3 +1,12 @@
+hr.wiki-divider {
+  border: none;
+  border-top: 1px solid #ffdb67;
+  margin: 2.2em 0 1.2em 0;
+  width: 100%;
+  background: none;
+  height: 0;
+  box-shadow: 0 1px 4px #ffdb6733;
+}
 /* Modern pastel palette for Ayisha.js documentation site, based on #ffdb67 */
 body {
   background: #fffbe9;
