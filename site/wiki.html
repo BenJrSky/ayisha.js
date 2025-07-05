@@ -9,32 +9,207 @@
 <body>
   <component @src="header.html"></component>
   <main class="container">
-    <h2 class="section-title">Main Directives and Sub-directives</h2>
-    <table class="wiki-table">
-      <tr><th>Directive</th><th>Description</th><th>Example</th></tr>
-      <tr><td><span class="dir-badge">@model</span></td><td>Two-way binding input &lt;-&gt; state</td><td><span class="dir-example">&lt;input @model="name"&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@click</span></td><td>Executes JS on click</td><td><span class="dir-example">&lt;button @click="state.count++"&gt;Increment&lt;/button&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@for</span></td><td>Loop over array/range</td><td><span class="dir-example">&lt;li @for="item in items"&gt;{{item}}&lt;/li&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@if</span></td><td>Conditional rendering</td><td><span class="dir-example">&lt;div @if="count &gt; 5"&gt;Many items!&lt;/div&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@show</span></td><td>Show if condition is true</td><td><span class="dir-example">&lt;div @show="cond"&gt;Visible&lt;/div&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@hide</span></td><td>Hide if condition is true</td><td><span class="dir-example">&lt;div @hide="cond"&gt;Hidden&lt;/div&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@fetch</span> <span class="dir-badge">@result</span></td><td>Fetch API and assign result</td><td><span class="dir-example">&lt;button @fetch="'url'" @result="data"&gt;Load&lt;/button&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@validate</span></td><td>Input validation</td><td><span class="dir-example">&lt;input @validate="email"&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@page</span> <span class="dir-badge">@link</span></td><td>SPA Routing</td><td><span class="dir-example">&lt;div @page="home"&gt;Home&lt;/div&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@component</span> <span class="dir-badge">@src</span></td><td>Reusable HTML components</td><td><span class="dir-example">&lt;component @src="comp.html"&gt;&lt;/component&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@state</span></td><td>Show current state</td><td><span class="dir-example">&lt;div @state&gt;&lt;/div&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@log</span></td><td>Show directive log</td><td><span class="dir-example">&lt;div @log&gt;&lt;/div&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@class</span></td><td>Dynamic classes</td><td><span class="dir-example">&lt;div @class="{red: condition}"&gt;&lt;/div&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@style</span></td><td>Dynamic styles</td><td><span class="dir-example">&lt;div @style="{color:'red'}"&gt;&lt;/div&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@set</span></td><td>Variable/event assignment</td><td><span class="dir-example">&lt;button @set:click="foo=1"&gt;&lt;/button&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@key</span></td><td>Unique key in @for</td><td><span class="dir-example">&lt;li @for="item in items" @key="item.id"&gt;&lt;/li&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@switch</span> <span class="dir-badge">@case</span> <span class="dir-badge">@default</span></td><td>Switch-case rendering</td><td><span class="dir-example">&lt;div @switch="val"&gt;&lt;div @case="1"&gt;One&lt;/div&gt;&lt;div @default&gt;Other&lt;/div&gt;&lt;/div&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@source</span> <span class="dir-badge">@map</span> <span class="dir-badge">@filter</span> <span class="dir-badge">@reduce</span> <span class="dir-badge">@initial</span></td><td>Array operations</td><td><span class="dir-example">&lt;div @source="items" @map="item =&gt; item*2" @result="double"&gt;&lt;/div&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@animate</span></td><td>CSS animations</td><td><span class="dir-example">&lt;div @animate="fade-in"&gt;&lt;/div&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@watch</span></td><td>Variable watcher</td><td><span class="dir-example">&lt;div @watch="prop=&gt;console.log(prop)"&gt;&lt;/div&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@hover</span></td><td>Hover event</td><td><span class="dir-example">&lt;div @hover="doSomething()"&gt;&lt;/div&gt;</span></td></tr>
-      <tr><td><span class="dir-badge">@text</span></td><td>Set dynamic text</td><td><span class="dir-example">&lt;span @text="name"&gt;&lt;/span&gt;</span></td></tr>
-    </table>
+    <h2 class="section-title">Ayisha.js Directives Dictionary</h2>
+    <div class="wiki-dictionary">
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@model</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(Two-way binding)</span>
+          Binds an input element's value to a property in <b>state</b> with two-way reactivity. Updates the state on user input and updates the input when the state changes. Supports sub-directives for event-specific binding (e.g., <b>@model:input</b>, <b>@model:change</b>).<br>
+          <span class="wiki-type">Use for: <i>inputs, selects, textareas</i>. Avoid using on non-input elements.</span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><input @model="name"></no></div>
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@click</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(Event handler)</span>
+          Executes JavaScript code or a function when the element is clicked. Has access to <b>state</b> and all reactive variables.<br>
+          <span class="wiki-spec">Use for: <i>buttons, interactive elements</i>. Can be combined with <b>@set</b> or <b>@fetch</b> for advanced actions.</span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><button @click="state.count++">Increment</button></no></div>
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@for</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(Loop)</span>
+          Renders the element for each item in an array or range. Syntax: <b>item in items</b> or <b>(item, i) in items</b>. Supports <b>@key</b> for unique identification.<br>
+          <span class="wiki-spec">Use for: <i>lists, tables, repeated UI</i>. Always use <b>@key</b> for optimal performance.</span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><li @for="item in items">{{item}}</li></no></div>
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@if</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(Conditional)</span>
+          Conditionally renders the element if the given expression evaluates to true. The element is removed from the DOM if false.<br>
+          <span class="wiki-spec">Use for: <i>conditional UI, toggles, error messages</i>. Combine with <b>@else</b> or <b>@show</b> for alternatives.</span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><div @if="count > 5">Many items!</div></no></div>
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@show</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(Visibility)</span>
+          Shows or hides the element by toggling <b>display: none</b> based on the condition. Unlike <b>@if</b>, the element remains in the DOM.<br>
+          <span class="wiki-spec">Use for: <i>transitions, toggling visibility</i> without removing elements from the DOM.</span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><div @show="cond">Visible</div></no></div>
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@hide</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(Visibility)</span>
+          Hides the element by setting <b>display: none</b> if the condition is true. Inverse of <b>@show</b>.<br>
+          <span class="wiki-spec">Use for: <i>conditional hiding</i> while keeping the element in the DOM.</span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><div @hide="cond">Hidden</div></no></div>
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@fetch</b> <b class="dir-badge">@result</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(Async data)</span>
+          Performs a fetch request to the specified URL or expression. The result is assigned to the variable named in <b>@result</b>. Supports sub-directives for event-based fetches (e.g., <b>@fetch:click</b>, <b>@fetch:hover</b>).<br>
+          <span class="wiki-spec">Use for: <i>API calls, dynamic data loading</i>. Always pair with <b>@result</b> to store the response.</span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><button @fetch="'url'" @result="data">Load</button></no></div>
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@validate</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(Validation)</span>
+          Validates the input value using built-in or custom rules (e.g., <b>email</b>, <b>required</b>). Results are available in the <b>_validate</b> object.<br>
+          <span class="wiki-spec">Use for: <i>forms, user input</i>. Check <b>_validate</b> for validation status.</span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><input @validate="email"></no></div>
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@page</b> <b class="dir-badge">@link</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(SPA Routing)</span>
+          Enables single-page application navigation. <b>@page</b> marks a section as a route, <b>@link</b> navigates to a page without reloading.<br>
+          <span class="wiki-spec">Use for: <i>multi-page apps</i>. Use <b>_currentPage</b> to track the active route.</span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><div @page="home">Home</div></no></div>
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@component</b> <b class="dir-badge">@src</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(Reusable HTML)</span>
+          Loads and renders an external HTML file as a component. <b>@src</b> specifies the file path. Can be combined with <b>@page</b> for routed components.<br>
+          <span class="wiki-spec">Use for: <i>modular UI, code reuse</i>. Keep components small and focused.</span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><component @src="comp.html"></component></no></div>
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@state</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(Debug)</span>
+          Displays the current <b>state</b> object for debugging and inspection. Updates live as state changes.<br>
+          <span class="wiki-spec">Use for: <i>development, debugging</i>. Remove in production.</span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><div @state></div></no></div>
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@log</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(Debug)</span>
+          Shows a log of directive actions and state changes for debugging purposes.<br>
+          <span class="wiki-spec">Use for: <i>tracing, debugging</i>. Useful for learning directive flow.</span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><div @log></div></no></div>
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@class</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(Dynamic class)</span>
+          Dynamically applies CSS classes based on an expression or object. Supports sub-directives for event-based class changes (e.g., <b>@class:focus</b>).<br>
+          <span class="wiki-spec">Use for: <i>conditional styling</i>. Combine with <b>@style</b> for advanced effects.</span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><div @class="{red: condition}"></div></no></div>
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@style</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(Dynamic style)</span>
+          Dynamically sets inline styles from an object or expression.<br>
+          <span class="wiki-spec">Use for: <i>dynamic visual changes</i> based on state.</span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><div @style="{color:'red'}"></div></no></div>
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@set</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(Assignment)</span>
+          Assigns a value to a variable or state property when an event occurs. Supports sub-directives for event-specific assignment (e.g., <b>@set:click</b>).<br>
+          <span class="wiki-spec">Use for: <i>event-driven state changes</i>. Prefer for simple assignments over <b>@click</b> when no logic is needed.</span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><button @set:click="foo=1"></button></no></div>
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@key</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(Unique key)</span>
+          Provides a unique identifier for elements in <b>@for</b> loops to optimize DOM updates.<br>
+          <span class="wiki-spec">Use for: <i>lists, tables</i>. Always use with <b>@for</b> for best performance.</span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><li @for="item in items" @key="item.id"></li></no></div>
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@switch</b> <b class="dir-badge">@case</b> <b class="dir-badge">@default</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(Switch-case)</span>
+          Renders elements based on the value of an expression, similar to a switch-case statement. <b>@case</b> matches values, <b>@default</b> is the fallback.<br>
+          <span class="wiki-spec">Use for: <i>multi-state UI</i>. Combine with <b>@for</b> for advanced patterns.</span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><div @switch="val"><div @case="1">One</div><div @default>Other</div></div></no></div>
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@source</b> <b class="dir-badge">@map</b> <b class="dir-badge">@filter</b> <b class="dir-badge">@reduce</b> <b class="dir-badge">@initial</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(Array ops)</span>
+          Performs array operations directly in the template. <b>@source</b> provides the array, <b>@map</b>, <b>@filter</b>, <b>@reduce</b> transform it, <b>@initial</b> sets the initial value.<br>
+          <span class="wiki-spec">Use for: <i>data transformation, computed lists</i>. Use <b>@result</b> to store the output.</span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><div @source="items" @map="item => item*2" @result="double"></div></no></div>
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@animate</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(Animation)</span>
+          Applies a CSS animation or transition to the element when it enters the DOM.<br>
+          <span class="wiki-spec">Use for: <i>visual effects, transitions</i>. Define animations in CSS.</span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><div @animate="fade-in"></div></no></div>
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@watch</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(Watcher)</span>
+          Watches a variable or expression and runs code when it changes. Useful for side effects and debugging.<br>
+          <span class="wiki-spec">Use for: <i>logging, reacting to changes</i>. Avoid heavy logic in watchers.</span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><div @watch="prop=>console.log(prop)"></div></no></div>
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@hover</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(Event handler)</span>
+          Executes code when the element is hovered. Can be used for tooltips, previews, or dynamic UI.<br>
+          <span class="wiki-spec">Use for: <i>interactive UI, tooltips</i>. Combine with <b>@class:hover</b> for styling.</span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><div @hover="doSomething()"></div></no></div>
+      <div class="wiki-entry-row">
+        <div class="wiki-entry-col-dir"><b class="dir-badge">@text</b></div>
+        <div class="wiki-entry-col-desc">
+          <span class="wiki-type">(Dynamic text)</span>
+          Sets the text content of the element to the value of an expression or variable. Supports sub-directives for event-based updates.<br>
+          <span class="wiki-spec">Use for: <i>dynamic labels, counters</i>. Prefer over <b>{{ }}</b> for one-way binding.</span>
+        </div>
+      </div>
+      <div class="wiki-entry-code"><no><span @text="name"></span></no></div>
+    </div>
     <h2 class="section-title">Supported sub-directives/events</h2>
     <div>
       <span class="dir-badge">@model:input</span>
@@ -82,74 +257,8 @@
         <li>Sub-directives allow advanced binding/events (e.g. <b>@model:input</b>).</li>
       </ul>
     </div>
-    <h2 class="section-title">Quick examples</h2>
-    <div class="best-practice">
-      <b>Input and binding:</b>
-      <pre class="code-console" id="ex1-code" style="background:#181c24;color:#fff;padding:1em;border-radius:8px;overflow:auto;font-size:1.05em;">&lt;input @model=&quot;name&quot; placeholder=&quot;Name&quot;&gt;
-Hello {{name}}!</pre>
-      <div style="margin-top:1em;">
-        <input @model="name" placeholder="Name">
-        Hello {{name}}!
-      </div>
-    </div>
-    <div class="best-practice">
-      <b>Counter:</b>
-      <pre class="code-console" id="ex2-code" style="background:#181c24;color:#fff;padding:1em;border-radius:8px;overflow:auto;font-size:1.05em;">&lt;button @click=&quot;state.count++&quot;&gt;Increment&lt;/button&gt;
-Value: {{count}}</pre>
-      <div style="margin-top:1em;">
-        <button @click="state.count++">Increment</button>
-        Value: {{count}}
-      </div>
-    </div>
-    <div class="best-practice">
-      <b>Fetch API:</b>
-      <pre class="code-console" id="ex3-code" style="background:#181c24;color:#fff;padding:1em;border-radius:8px;overflow:auto;font-size:1.05em;">&lt;button @fetch=&quot;'https://jsonplaceholder.typicode.com/users'&quot; @result=&quot;users&quot;&gt;Load users&lt;/button&gt;
-&lt;ul&gt;
-  &lt;li @for=&quot;user in users&quot;&gt;{{user.name}}&lt;/li&gt;
-&lt;/ul&gt;</pre>
-      <div style="margin-top:1em;">
-        <button @fetch="'https://jsonplaceholder.typicode.com/users'" @result="users">Load users</button>
-        <ul>
-          <li @for="user in users">{{user.name}}</li>
-        </ul>
-      </div>
-    </div>
-    <div class="best-practice">
-      <b>Email validation:</b>
-      <pre class="code-console" id="ex4-code" style="background:#181c24;color:#fff;padding:1em;border-radius:8px;overflow:auto;font-size:1.05em;">&lt;input type=&quot;email&quot; @model=&quot;email&quot; @validate=&quot;email&quot;&gt;
-&lt;div @if=&quot;_validate &amp;&amp; !_validate.email &amp;&amp; _validate.email.length&quot;&gt;Invalid email!&lt;/div&gt;</pre>
-      <div style="margin-top:1em;">
-        <input type="email" @model="email" @validate="email">
-        <div @if="_validate && !_validate.email && _validate.email.length">Invalid email!</div>
-      </div>
-    </div>
-    <div class="best-practice">
-      <b>SPA Routing:</b>
-      <pre class="code-console" id="ex5-code" style="background:#181c24;color:#fff;padding:1em;border-radius:8px;overflow:auto;font-size:1.05em;">&lt;button @link=&quot;about&quot;&gt;About&lt;/button&gt;
-&lt;div @page=&quot;about&quot;&gt;About Page&lt;/div&gt;</pre>
-      <div style="margin-top:1em;">
-        <button @link="wiki">Wiki</button>
-        <button @link="about">About</button>
-        <div @page="wiki">Wiki Page</div>
-        <div @page="about">About Page</div>
-      </div>
-    </div>
-    <div class="best-practice">
-      <b>Components:</b>
-      <pre class="code-console" id="ex6-code" style="background:#181c24;color:#fff;padding:1em;border-radius:8px;overflow:auto;font-size:1.05em;">&lt;component @src=&quot;/src/home.html&quot; @page=&quot;home&quot;&gt;&lt;/component&gt;</pre>
-      <div style="margin-top:1em;">
-        <component @src="/src/home.html" @page="home"></component>
-      </div>
-    </div>
-    <div class="best-practice">
-      <b>State and debug:</b>
-      <pre class="code-console" id="ex7-code" style="background:#181c24;color:#fff;padding:1em;border-radius:8px;overflow:auto;font-size:1.05em;">&lt;div @state&gt;&lt;/div&gt;
-&lt;div @log&gt;&lt;/div&gt;</pre>
-      <div style="margin-top:1em;">
-        <div @state></div>
-        <div @log></div>
-      </div>
-    </div>
+    <!-- Quick examples section removed as per requirements -->
+    <!-- Style moved to site.css for global consistency -->
     <script src="/ayisha.js"></script>
     <h2 class="section-title">Advanced examples: fetch and sub-directives</h2>
     <div class="best-practice">

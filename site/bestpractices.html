@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ayisha.js - Best Practices</title>
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+  <component @src="header.html"></component>
+  <main class="container">
+    <h2>Best Practices</h2>
+    <p>This page collects all the best practices for using Ayisha.js effectively, with practical examples and a list of all real available directives.</p>
+
+    <h3>Structure and State</h3>
+    <ul>
+      <li>Organize your code in <code>.example</code> blocks to separate functionalities.</li>
+      <li>Initialize state with <code>&lt;init&gt;</code> for clarity and reusability.</li>
+    </ul>
+    <pre>&lt;div class="example"&gt;
+  &lt;init&gt;
+    state.name = '';
+    state.count = 0;
+  &lt;/init&gt;
+  ...
+&lt;/div&gt;</pre>
+
+    <h3>Main Directives</h3>
+    <ul>
+      <li><b>@model</b>: Two-way binding on inputs/texts</li>
+      <li><b>@text</b>: Inserts reactive text</li>
+      <li><b>@if</b>: Conditional (show/hide)</li>
+      <li><b>@show</b>: Dynamically changes <code>display</code></li>
+      <li><b>@for</b>: Iterates over arrays/objects</li>
+      <li><b>@key</b>: Key for dynamic lists</li>
+      <li><b>@click</b>: Handles click events</li>
+      <li><b>@switch</b>, <b>@case</b>, <b>@default</b>: Declarative switch-case</li>
+      <li><b>@watch</b>: Run code on variable change</li>
+      <li><b>@fetch</b>: Load data from APIs</li>
+      <li><b>@result</b>: Where to save the result of fetch/map/filter/reduce</li>
+      <li><b>@log</b>: Quick debug</li>
+      <li><b>@validate</b>: Input validation</li>
+      <li><b>@class</b>: Dynamic classes</li>
+      <li><b>@style</b>: Dynamic styles</li>
+      <li><b>@component</b>: Use custom components</li>
+      <li><b>@source</b>, <b>@map</b>, <b>@filter</b>, <b>@reduce</b>, <b>@initial</b>: Functional on arrays</li>
+      <li><b>@animate</b>: Animations on elements</li>
+      <li><b>@page</b>, <b>@link</b>: SPA routing</li>
+      <li><b>@set</b>: Set values on events</li>
+      <li><b>@state</b>: Show global state</li>
+    </ul>
+
+    <h3>Sub-directives and Events</h3>
+    <ul>
+      <li><b>@click.once</b>: Click only the first time</li>
+      <li><b>@input.debounce.500</b>: Debounce on input</li>
+      <li><b>@model:input</b>, <b>@model:change</b>: Model only on input/change</li>
+      <li><b>@fetch:click</b>: Fetch only on event</li>
+      <li><b>@set:click</b>, <b>@set:change</b>: Set on event</li>
+      <li><b>@class:focus</b>, <b>@class:input</b>, <b>@class:hover</b>, <b>@class:click</b>: Dynamic classes on event</li>
+      <li><b>@text:hover</b>, <b>@text:click</b>: Change text on event</li>
+    </ul>
+
+    <h3>Practical Examples</h3>
+    <ul>
+      <li>Reactivity: <code>&lt;input @model="name"&gt; &lt;span @text="name"&gt;&lt;/span&gt;</code></li>
+      <li>Conditional: <code>&lt;div @if="count &gt; 0"&gt;Positive!&lt;/div&gt;</code></li>
+      <li>List: <code>&lt;li @for="item in items" @key="item.id"&gt;...&lt;/li&gt;</code></li>
+      <li>Fetch: <code>&lt;div @fetch="url" @result="data"&gt;&lt;/div&gt;</code></li>
+      <li>Validation: <code>&lt;input @validate="required|email"&gt;</code></li>
+      <li>Components: <code>&lt;div @component="user-card" ...&gt;&lt;/div&gt;</code></li>
+      <li>Animation: <code>&lt;div @animate="fadeIn"&gt;&lt;/div&gt;</code></li>
+      <li>SPA: <code>&lt;div @page=""&gt;&lt;/div&gt;</code>, <code>&lt;a @link="/home"&gt;Home&lt;/a&gt;</code></li>
+      <li>Sub-directives: <code>&lt;button @fetch:click="url"&gt;Load&lt;/button&gt;</code></li>
+    </ul>
+
+
+    <h3>General Tips</h3>
+    <ul>
+      <li>Comment and document complex examples.</li>
+      <li>Use simple and accessible CSS classes (<code>.primary</code>, <code>.red-border</code>).</li>
+      <li>Progressive enhancement: add directives even to legacy HTML.</li>
+      <li>Use <code>@state</code> and <code>@log</code> for debugging.</li>
+      <li>See <a href="../examples.html">examples.html</a> for all real use cases.</li>
+      <li><b>Variable initialization:</b> you can write either <code>&lt;init&gt;state.var = true;&lt;/init&gt;</code> (to modify the global state) or <code>&lt;init&gt;var = true;&lt;/init&gt;</code> (for variables local to the context). Prefer <code>state.</code> for variables shared between multiple components or examples.</li>
+      <li><b>Fetch without @result:</b> if you omit <code>@result</code> in a fetch, the result is automatically placed in <code>state.result</code> (e.g. <code>&lt;div @fetch="url"&gt;&lt;/div&gt;</code> → <code>state.result</code>).</li>
+      <li><b>Consistency:</b> always use the same naming conventions for variables and state keys to avoid confusion.</li>
+      <li><b>Accessibility:</b> add <code>aria-label</code> and descriptive placeholders to inputs for better UX.</li>
+    </ul>
+
+    <init>
+      _currentPage = 'bestpractices';
+    </init>
+    <script src="/ayisha.js"></script>
+  </main>
+</body>
+</html>
