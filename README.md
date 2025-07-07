@@ -34,9 +34,6 @@ Download the file `Ayisha-1.0.0.js` and include it in your project:
     <li @for="item in items">{{ item }}</li>
   </ul>
 </div>
-<script>
-  new AyishaVDOM(document.getElementById('app'));
-</script>
 ```
 
 
