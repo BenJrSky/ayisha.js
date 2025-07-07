@@ -1,33 +1,35 @@
+
 # Ayisha.js v1.0.0
 
-Ayisha.js è un micro-framework JavaScript per la creazione di interfacce utente reattive e component-based, ispirato a Vue.js, Alpine.js e React, ma con una sintassi minimalista e un bundle estremamente leggero. 
+Ayisha.js is a micro JavaScript framework for building reactive, component-based user interfaces. Inspired by Vue.js, Alpine.js, and React, it features a minimalist syntax and an extremely lightweight bundle.
 
-## Caratteristiche principali
+## Main Features
 
-- **Virtual DOM** e rendering reattivo
-- **Direttive** simili a Vue/Alpine (`@if`, `@for`, `@model`, `@click`, ecc.)
-- **Componenti** nativi e caricamento asincrono di componenti esterni
-- **Sistema di routing** integrato (SPA)
-- **Gestione fetch e stato asincrono**
-- **Validazione form e binding bidirezionale**
-- **Logger intelligente** per debug delle direttive
-- **Sistema di help inline** per tutte le direttive
+- **Virtual DOM** and reactive rendering
+- **Vue/Alpine-like directives** (`@if`, `@for`, `@model`, `@click`, etc.)
+- **Native components** and async loading of external components
+- **Built-in routing system** (SPA)
+- **Async fetch and state management**
+- **Form validation and two-way binding**
+- **Smart logger** for directive debugging
+- **Inline help system** for all directives
 
-## Installazione
+## Installation
 
-Scarica il file `Ayisha-1.0.0.js` e includilo nel tuo progetto:
+Download the file `Ayisha-1.0.0.js` and include it in your project:
 
 ```html
 <script src="Ayisha-1.0.0.js"></script>
 ```
 
-## Esempio base
+
+## Basic Example
 
 ```html
 <div id="app">
   <h1>{{ title }}</h1>
   <input @model="title">
-  <button @click="count++">Incrementa: {{ count }}</button>
+  <button @click="count++">Increment: {{ count }}</button>
   <ul>
     <li @for="item in items">{{ item }}</li>
   </ul>
@@ -37,58 +39,63 @@ Scarica il file `Ayisha-1.0.0.js` e includilo nel tuo progetto:
 </script>
 ```
 
-## Sintassi delle direttive principali
 
-- `@if="condizione"` — Mostra l'elemento se la condizione è vera
-- `@for="item in items"` — Cicla su array/oggetti
-- `@model="variabile"` — Binding bidirezionale input <-> stato
-- `@click="espressione"` — Gestione eventi click
-- `@fetch="'url'" @result="data"` — Fetch asincrono e assegnazione risultato
-- `@component @src="comp.html"` — Componenti esterni
-- `@validate="regole"` — Validazione input
-- `@log` — Debug intelligente delle direttive
+## Main Directive Syntax
 
-## Componenti
+- `@if="condition"` — Show the element if the condition is true
+- `@for="item in items"` — Loop over arrays/objects
+- `@model="variable"` — Two-way input <-> state binding
+- `@click="expression"` — Handle click events
+- `@fetch="'url'" @result="data"` — Async fetch and assign result
+- `@component @src="comp.html"` — External components
+- `@validate="rules"` — Input validation
+- `@log` — Smart directive debugging
 
-Definisci un componente:
+
+## Components
+
+Define a component:
 
 ```js
 ayisha.component('my-card', `<div class="card">{{ title }}</div>`);
 ```
 
-Usa un componente:
+Use a component:
 
 ```html
 <component @src="my-card"></component>
 ```
 
-Oppure carica da file esterno:
+Or load from an external file:
 
 ```html
 <component @src="/components/card.html"></component>
 ```
 
+
 ## Routing (SPA)
 
 ```html
 <a @link="about">About</a>
-<div @page="about">Contenuto About</div>
+<div @page="about">About content</div>
 ```
 
-## Validazione
+
+## Validation
 
 ```html
 <input @model="email" @validate="required,email">
 ```
 
-## Logger e debug
 
-Aggiungi `@log` a qualsiasi elemento per vedere lo stato delle direttive:
+## Logger & Debug
+
+Add `@log` to any element to see the state of its directives:
 
 ```html
-<button @click="count++" @log>Incrementa</button>
+<button @click="count++" @log>Increment</button>
 ```
 
-## Licenza
+## License
 
 Benito Massidda © 2025 devBen
