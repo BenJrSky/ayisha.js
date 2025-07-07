@@ -19,7 +19,7 @@ Ayisha.js is a micro JavaScript framework for building reactive, component-based
 Download the file `Ayisha-1.0.0.js` and include it in your project:
 
 ```html
-<script src="Ayisha-1.0.0.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.0.0-min.js"></script>
 ```
 
 
