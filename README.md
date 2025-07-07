@@ -1,7 +1,7 @@
 
 # Ayisha.js v1.0.0
 
-Ayisha.js is a micro JavaScript framework for building reactive, component-based user interfaces. Inspired by Vue.js, Alpine.js, and React, it features a minimalist syntax and an extremely lightweight bundle.
+Ayisha.js is a micro JavaScript framework for building reactive, component-based user interfaces. It offers a minimalist syntax, a powerful directive system, and an extremely lightweight bundle for fast and modern web development.
 
 ## Main Features
 
