@@ -1,5 +1,5 @@
 /*!
- * Ayisha.js v1.0.0
+ * Ayisha.js
  * (c) 2025 devBen - Benito Massidda
  * License: MIT
  */
@@ -1769,7 +1769,7 @@
   // ===== MAIN AYISHA CLASS =====
 
   class AyishaVDOM {
-    static version = "1.0.0";
+    static version = "1.0.1";
     constructor(root = document.body) {
       this.root = root;
       this.state = {};
@@ -1833,8 +1833,46 @@
           .trim();
 
         // Trasforma "foo = ..." in "state.foo = ..." solo se non già prefissato
-        // TEMPORANEAMENTE DISABILITATO per evitare errori di sintassi con parametri di funzioni
-        const transformed = cleanCode; // Disabilita trasformazione automatica
+        let transformed = cleanCode;
+        
+        // Applica la trasformazione solo alle righe che non contengono parole chiave JS
+        const lines = transformed.split('\n');
+        const transformedLines = lines.map(line => {
+          const trimmedLine = line.trim();
+          
+          // Skip empty lines, comments, and control structures
+          if (!trimmedLine || 
+              trimmedLine.startsWith('//') || 
+              trimmedLine.startsWith('/*') ||
+              trimmedLine.startsWith('function') ||
+              trimmedLine.includes('function(') ||
+              trimmedLine.includes('=>') ||
+              /^(if|else|for|while|switch|case|default|try|catch|finally|return|var|let|const)\b/.test(trimmedLine)) {
+            return line;
+          }
+          
+          // Transform assignment statements: "foo = ..." to "state.foo = ..."
+          // But only if not already prefixed with state, this, window, etc.
+          const assignmentMatch = trimmedLine.match(/^([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*(.+)$/);
+          if (assignmentMatch && 
+              !trimmedLine.includes('state.') && 
+              !trimmedLine.includes('this.') &&
+              !trimmedLine.includes('window.') &&
+              !trimmedLine.includes('console.') &&
+              !trimmedLine.includes('localStorage.') &&
+              !trimmedLine.includes('sessionStorage.')) {
+            const [, varName, value] = assignmentMatch;
+            // Don't transform JavaScript globals
+            const jsGlobals = ['JSON', 'Object', 'Array', 'String', 'Number', 'Boolean', 'Date', 'Math', 'RegExp'];
+            if (!jsGlobals.includes(varName)) {
+              return line.replace(assignmentMatch[0], `state.${varName} = ${value}`);
+            }
+          }
+          
+          return line;
+        });
+        
+        transformed = transformedLines.join('\n');
 
         try {
           new Function('state', transformed)(this.state);
@@ -1904,10 +1942,6 @@
       return null;
     }
 
-    /**
-     * Precarica tutti i componenti presenti nella pagina
-     * per evitare problemi con il caricamento concorrente
-     */
     async preloadComponents() {
       const componentPromises = [];
       const processedUrls = new Set();
@@ -2792,8 +2826,46 @@ _handleComponentDirective(vNode, ctx) {
           .trim();
 
         // Trasforma "foo = ..." in "state.foo = ..." solo se non già prefissato
-        // TEMPORANEAMENTE DISABILITATO per evitare errori di sintassi con parametri di funzioni
-        const transformed = cleanCode; // Disabilita trasformazione automatica
+        let transformed = cleanCode;
+        
+        // Applica la trasformazione solo alle righe che non contengono parole chiave JS
+        const lines = transformed.split('\n');
+        const transformedLines = lines.map(line => {
+          const trimmedLine = line.trim();
+          
+          // Skip empty lines, comments, and control structures
+          if (!trimmedLine || 
+              trimmedLine.startsWith('//') || 
+              trimmedLine.startsWith('/*') ||
+              trimmedLine.startsWith('function') ||
+              trimmedLine.includes('function(') ||
+              trimmedLine.includes('=>') ||
+              /^(if|else|for|while|switch|case|default|try|catch|finally|return|var|let|const)\b/.test(trimmedLine)) {
+            return line;
+          }
+          
+          // Transform assignment statements: "foo = ..." to "state.foo = ..."
+          // But only if not already prefixed with state, this, window, etc.
+          const assignmentMatch = trimmedLine.match(/^([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*(.+)$/);
+          if (assignmentMatch && 
+              !trimmedLine.includes('state.') && 
+              !trimmedLine.includes('this.') &&
+              !trimmedLine.includes('window.') &&
+              !trimmedLine.includes('console.') &&
+              !trimmedLine.includes('localStorage.') &&
+              !trimmedLine.includes('sessionStorage.')) {
+            const [, varName, value] = assignmentMatch;
+            // Don't transform JavaScript globals
+            const jsGlobals = ['JSON', 'Object', 'Array', 'String', 'Number', 'Boolean', 'Date', 'Math', 'RegExp'];
+            if (!jsGlobals.includes(varName)) {
+              return line.replace(assignmentMatch[0], `state.${varName} = ${value}`);
+            }
+          }
+          
+          return line;
+        });
+        
+        transformed = transformedLines.join('\n');
 
         try {
           new Function('state', transformed)(this.state);
