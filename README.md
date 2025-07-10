@@ -16,6 +16,14 @@ Ayisha.js is a micro JavaScript framework for building reactive, component-based
 
 ## Installation
 
+### Via CDN (recommended)
+
+```html
+<script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.0.1-min.js"></script>
+```
+
+### Local Download
+
 Download the file and include it in your project:
 
 ```html
@@ -46,7 +54,7 @@ Or use the minified version:
   </ul>
 </div>
 
-<script src="Ayisha-1.0.1-min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.0.0-min.js"></script>
 ```
 
 ## Complete Directive Reference
@@ -360,12 +368,6 @@ Show current state:
 ```
 
 ## API Reference
-
-### Main Class
-- `new AyishaVDOM(rootElement)` — Initialize app
-- `ayisha.component(name, html)` — Register component  
-- `ayisha.addWatcher(prop, fn)` — Add reactive watcher
-- `ayisha.directiveHelp(name)` — Get directive help
 
 ### State Access
 - Access: `{{variableName}}` or `{{object.property}}`
