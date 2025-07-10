@@ -1,5 +1,5 @@
 
-# Ayisha.js v1.0.0
+# Ayisha.js v1.0.1
 
 Ayisha.js is a micro JavaScript framework for building reactive, component-based user interfaces. It offers a minimalist syntax, a powerful directive system, and an extremely lightweight bundle for fast and modern web development.
 
