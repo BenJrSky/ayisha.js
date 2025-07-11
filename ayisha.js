@@ -1979,27 +1979,30 @@
       const checkAndTrigger = () => {
         const nowValue = evaluateWhen();
         let lastValue = this._whenDirectiveLastValues.get(vNode);
-        if (nowValue && !lastValue && !waiting) {
-          if (waitExpr) {
-            let ms = parseInt(this.evaluator.evalExpr(waitExpr, ctx), 10);
-            if (isNaN(ms)) ms = 0;
-            if (timer) clearTimeout(timer);
-            waiting = true;
-            timer = setTimeout(() => {
+        // Only trigger if value changed
+        if (nowValue !== lastValue && !waiting) {
+          if (nowValue) {
+            if (waitExpr) {
+              let ms = parseInt(this.evaluator.evalExpr(waitExpr, ctx), 10);
+              if (isNaN(ms)) ms = 0;
+              if (timer) clearTimeout(timer);
+              waiting = true;
+              timer = setTimeout(() => {
+                triggerActions();
+                timer = null;
+                waiting = false;
+                this._whenDirectiveTimers.delete(vNode);
+              }, ms);
+              this._whenDirectiveTimers.set(vNode, timer);
+            } else {
               triggerActions();
-              timer = null;
-              waiting = false;
-              this._whenDirectiveTimers.delete(vNode);
-            }, ms);
-            this._whenDirectiveTimers.set(vNode, timer);
-          } else {
-            triggerActions();
+            }
+          } else if (timer) {
+            clearTimeout(timer);
+            timer = null;
+            waiting = false;
+            this._whenDirectiveTimers.delete(vNode);
           }
-        } else if (!nowValue && timer) {
-          clearTimeout(timer);
-          timer = null;
-          waiting = false;
-          this._whenDirectiveTimers.delete(vNode);
         }
         this._whenDirectiveLastValues.set(vNode, nowValue);
       };
@@ -2725,21 +2728,14 @@
         }
         setExprs.forEach(expr => {
           try {
-            // Find all variable names being assigned in the expression
-            // Handles multiple assignments: foo=1, bar=2, baz='hi'
-            const assignmentRegex = /([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=/g;
+            // Only assign if variable does not exist or is undefined
+            const assignmentRegex = /([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=([^=].*)/g;
             let match;
             while ((match = assignmentRegex.exec(expr)) !== null) {
               const varName = match[1];
-              if (!(varName in this.state)) {
-                // Make the variable reactive (undefined by default)
-                this.state[varName] = undefined;
+              if (!(varName in this.state) || this.state[varName] === undefined) {
+                this.state[varName] = this.evaluator.evalExpr(match[2], ctx);
               }
-            }
-            // Now execute the assignment(s)
-            if (!this.evaluator.executeDirectiveExpression(expr, ctx, null, false)) {
-              const cleanExpr = String(expr).replace(/\bstate\./g, '');
-              new Function('state', 'ctx', `with(state){with(ctx||{}){${cleanExpr}}}`)(this.state, ctx);
             }
           } catch (e) {
             console.error('Error in @set directive:', e, 'Expression:', expr);
@@ -3295,26 +3291,36 @@
     }
 
     _handleSpecialDirectives(el, vNode, ctx) {
-      if (vNode.directives && vNode.directives['@set']) {
+      // @set: behaves like <init>, creates/sets variable only once at first render, then disappears from DOM and VDOM
+      if (vNode.directives && vNode.directives['@set'] && !vNode._setProcessed) {
         const setExpr = vNode.directives['@set'];
         const setId = `${vNode.tag}-${JSON.stringify(vNode.attrs)}-${setExpr}`;
+        if (!this._processedSetDirectives) this._processedSetDirectives = new Set();
         if (!this._processedSetDirectives.has(setId)) {
           this._processedSetDirectives.add(setId);
-
           try {
-            const expr = vNode.directives['@set'];
-
-            if (!this.evaluator.executeDirectiveExpression(expr, ctx, null, false)) {
-              const cleanExpr = String(expr).replace(/\bstate\./g, '');
-              new Function('state', 'ctx', `with(state){with(ctx||{}){${cleanExpr}}}`)(this.state, ctx);
+            // Only assign if variable does not exist or is undefined
+            const assignmentRegex = /([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=([^=].*)/g;
+            let match;
+            while ((match = assignmentRegex.exec(setExpr)) !== null) {
+              const varName = match[1];
+              if (!(varName in this.state) || this.state[varName] === undefined) {
+                this.state[varName] = this.evaluator.evalExpr(match[2], ctx);
+              }
             }
           } catch (e) {
-            console.error('Error in @set directive:', e, 'Expression:', vNode.directives['@set']);
+            console.error('Error in @set directive:', e, 'Expression:', setExpr);
             el.setAttribute('data-ayisha-set-error', e.message);
           }
         }
-
+        // Remove @set from VDOM so it doesn't interfere with other directives
+        vNode._setProcessed = true;
         delete vNode.directives['@set'];
+        // Remove element from DOM (if possible)
+        if (el.parentNode) {
+          el.parentNode.removeChild(el);
+        }
+        return; // Do not process further directives for this node
       }
 
 
