@@ -1,21 +1,265 @@
 /*!
- * Ayisha.js v1.0.1
- * (c) 2025 devBen - Benito Massidda
+ * Ayisha.js - Complete Modular Directive System
+ * (c) 2023 devBen - Benito Massidda
  * License: MIT
  */
+
 (function () {
   if (window.AyishaVDOM) return;
 
+  class AyishaErrorBus {
+    constructor() {
+      this.errors = [];
+      this.listeners = [];
+    }
+    report(error, context = {}) {
+      const errObj = {
+        error,
+        context,
+        timestamp: Date.now()
+      };
+      this.errors.push(errObj);
+      this.listeners.forEach(fn => {
+        try { fn(errObj); } catch { }
+      });
+    }
+    getAll() {
+      return this.errors;
+    }
+    clear() {
+      this.errors = [];
+    }
+    onError(fn) {
+      this.listeners.push(fn);
+    }
+  }
+
+  class DirectiveCompletionListener {
+    constructor(vNode, ctx, ayishaInstance) {
+      this.vNode = vNode;
+      this.ctx = ctx;
+      this.ayisha = ayishaInstance;
+      this.total = 0;
+      this.completed = 0;
+      this.thenQueue = [];
+      this.finallyQueue = [];
+      this.done = false;
+      this.syncCompleted = false;
+    }
+
+    addTask(promiseOrFn) {
+      this.total++;
+      Promise.resolve(typeof promiseOrFn === 'function' ? promiseOrFn() : promiseOrFn)
+        .then(() => this._onComplete())
+        .catch(() => this._onComplete());
+    }
+
+    addAsyncTask() {
+      this.total++;
+      return () => this._onComplete();
+    }
+
+    addThen(expr) {
+      if (Array.isArray(expr)) {
+        expr.forEach(e => this.thenQueue.push(e));
+      } else if (typeof expr === 'string') {
+        expr.split(/;;|\n/).map(s => s.trim()).filter(Boolean).forEach(e => this.thenQueue.push(e));
+      } else {
+        this.thenQueue.push(expr);
+      }
+
+      // NUOVO: Pre-inizializza le variabili target degli assignment
+      this._preInitializeVariablesFromExpressions(expr);
+    }
+
+    addFinally(expr) {
+      if (Array.isArray(expr)) {
+        expr.forEach(e => this.finallyQueue.push(e));
+      } else if (typeof expr === 'string') {
+        expr.split(/;;|\n/).map(s => s.trim()).filter(Boolean).forEach(e => this.finallyQueue.push(e));
+      } else {
+        this.finallyQueue.push(expr);
+      }
+
+      // NUOVO: Pre-inizializza le variabili target degli assignment
+      this._preInitializeVariablesFromExpressions(expr);
+    }
+
+    // NUOVO METODO: Estrae e pre-inizializza le variabili target degli assignment
+    _preInitializeVariablesFromExpressions(expr) {
+      if (!expr || !this.ayisha?.evaluator) return;
+
+      let expressions = [];
+
+      if (Array.isArray(expr)) {
+        expressions = expr.flat().filter(Boolean);
+      } else if (typeof expr === 'string') {
+        expressions = expr.split(/;;|\n/).map(s => s.trim()).filter(Boolean);
+      } else {
+        expressions = [expr];
+      }
+
+      expressions.forEach(expression => {
+        if (typeof expression !== 'string') return;
+
+        // Estrai tutte le assegnazioni: variabile = valore
+        const assignmentRegex = /([a-zA-Z_$][a-zA-Z0-9_$]*(?:\.[a-zA-Z_$][a-zA-Z0-9_$]*)*)\s*=\s*[^=]/g;
+        let match;
+
+        while ((match = assignmentRegex.exec(expression)) !== null) {
+          const fullVariablePath = match[1].trim();
+
+          // Gestisci sia variabili semplici che nested (es: user.name)
+          if (fullVariablePath.includes('.')) {
+            // Per variabili nested come "user.name", inizializza l'oggetto root
+            const rootVar = fullVariablePath.split('.')[0];
+            this._ensureVariableInState(rootVar, 'object');
+
+            // Crea la struttura nested se necessario
+            this._ensureNestedPath(fullVariablePath);
+          } else {
+            // Per variabili semplici, prova a indovinare il tipo dal contesto
+            this._ensureVariableInState(fullVariablePath, 'auto');
+          }
+        }
+      });
+    }
+
+    // NUOVO: Helper per assicurarsi che una variabile esista nello state
+    _ensureVariableInState(varName, type = 'auto') {
+      if (!varName || !this.ayisha?.evaluator?.state) return;
+
+      // Verifica che sia un nome di variabile valido
+      if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(varName)) return;
+
+      // Non sovrascrivere se esiste già
+      if (varName in this.ayisha.evaluator.state) return;
+
+      // Skip variabili globali JavaScript
+      const jsGlobals = [
+        'JSON', 'Object', 'Array', 'String', 'Number', 'Boolean', 'Date', 'Math', 'RegExp',
+        'console', 'window', 'document', 'setTimeout', 'setInterval', 'fetch', 'localStorage',
+        'sessionStorage', 'history', 'location', 'navigator', 'undefined', 'null', 'true', 'false'
+      ];
+
+      if (jsGlobals.includes(varName)) return;
+
+      let initialValue;
+
+      if (type === 'object') {
+        initialValue = {};
+      } else if (type === 'array') {
+        initialValue = [];
+      } else {
+        if (/items|list|array|data|results|errors|posts|todos|users|cats|dogs|products|content/.test(varName)) {
+          initialValue = [];
+        } else if (/count|total|index|id|size|length|number|num|page|limit|offset/.test(varName)) {
+          initialValue = 0;
+        } else if (/show|hide|is|has|can|should|valid|enable|subscribed|loading|visible/.test(varName)) {
+          initialValue = false;
+        } else if (/user|config|form|settings|profile|metadata|info/.test(varName)) {
+          initialValue = {};
+        } else {
+          initialValue = undefined;
+        }
+      }
+      this.ayisha.evaluator.state[varName] = initialValue;
+    }
+
+    _ensureNestedPath(fullPath) {
+      // Usa la utility centralizzata per la gestione dei path annidati
+      if (!fullPath || !this.ayisha?.evaluator?.state) return;
+      AyishaNestedUtil.setNested(this.ayisha.evaluator.state, fullPath, undefined);
+    }
+
+    _onComplete() {
+      if (this.done) return; // Prevent further completions if already done
+      this.completed++;
+      if (this.completed > this.total) this.completed = this.total;
+      this._checkCompletion();
+    }
+
+    markSyncDone() {
+      this.syncCompleted = true;
+      this._checkCompletion();
+    }
+
+    _checkCompletion() {
+      if (this.done) return;
+      if (this.completed >= this.total && this.syncCompleted) {
+        this.done = true;
+        this._executeThenAndFinally();
+      }
+    }
+
+    _executeThenAndFinally() {
+      if (this.thenQueue.length > 0) {
+        setTimeout(() => {
+          this.thenQueue.forEach(expr => {
+            try {
+              if (typeof expr === 'function') {
+                expr();
+              } else {
+                if (this.ctx && typeof this.ctx._eventResult !== 'undefined') {
+                  this.ayisha.evaluator.executeDirectiveExpression(expr, this.ctx, this.ctx._eventResult, true);
+                } else {
+                  this.ayisha.evaluator.executeDirectiveExpression(expr, this.ctx, null, true);
+                }
+              }
+            } catch (e) {
+              console.error('Error executing @then:', e, 'Expression:', expr);
+            }
+          });
+          setTimeout(() => {
+            if (this.finallyQueue.length > 0) {
+              this.finallyQueue.forEach(expr => {
+                try {
+                  if (typeof expr === 'function') {
+                    expr();
+                  } else {
+                    this.ayisha.evaluator.executeDirectiveExpression(expr, this.ctx, null, true);
+                  }
+                } catch (e) {
+                  console.error('Error executing @finally:', e, 'Expression:', expr);
+                }
+              });
+            }
+          }, 1500);
+        }, 1500);
+      } else {
+        setTimeout(() => {
+          if (this.finallyQueue.length > 0) {
+            this.finallyQueue.forEach(expr => {
+              try {
+                if (typeof expr === 'function') {
+                  expr();
+                } else {
+                  this.ayisha.evaluator.executeDirectiveExpression(expr, this.ctx, null, true);
+                }
+              } catch (e) {
+                console.error('Error executing @finally:', e, 'Expression:', expr);
+              }
+            });
+          }
+        }, 1500);
+      }
+    }
+  }
+
   class ExpressionEvaluator {
-    // Estrae le variabili usate in una semplice espressione JS (solo casi base)
+    autoPageName(expr) {
+      if (typeof expr === 'string' && expr.trim() && !expr.trim().startsWith("'") && !expr.trim().startsWith('"') && /^[a-zA-Z0-9_]+$/.test(expr.trim())) {
+        return `'${expr.trim()}'`;
+      }
+      return expr;
+    }
+
     extractDependencies(expr) {
       if (typeof expr !== 'string') return [];
-      // Cerca variabili tipo foo, foo.bar, foo_bar, foo123
       const matches = expr.match(/\b([a-zA-Z_$][a-zA-Z0-9_$]*)\b/g);
       if (!matches) return [];
-      // Escludi parole chiave JS e globali
       const jsGlobals = [
-        'true','false','null','undefined','if','else','for','while','switch','case','default','try','catch','finally','return','var','let','const','function','new','typeof','instanceof','in','do','break','continue','this','window','document','Math','Date','Array','Object','String','Number','Boolean','RegExp','JSON','console','setTimeout','setInterval','fetch','localStorage','sessionStorage','history','location','navigator'
+        'true', 'false', 'null', 'undefined', 'if', 'else', 'for', 'while', 'switch', 'case', 'default', 'try', 'catch', 'finally', 'return', 'var', 'let', 'const', 'function', 'new', 'typeof', 'instanceof', 'in', 'do', 'break', 'continue', 'this', 'window', 'document', 'Math', 'Date', 'Array', 'Object', 'String', 'Number', 'Boolean', 'RegExp', 'JSON', 'console', 'setTimeout', 'setInterval', 'fetch', 'localStorage', 'sessionStorage', 'history', 'location', 'navigator'
       ];
       return matches.filter((v, i, arr) => arr.indexOf(v) === i && !jsGlobals.includes(v));
     }
@@ -37,7 +281,6 @@
         return undefined;
       }
     }
-
 
     executeMultipleExpressions(expr, ctx = {}, event) {
       const trimmed = expr.trim();
@@ -119,7 +362,6 @@
       const spaceResult = spacePattern.test(expr);
       return spaceResult;
     }
-
 
     parseMultipleExpressions(expr) {
       if (expr.includes(';')) {
@@ -218,6 +460,18 @@
     ensureVarInState(expr, forceString = false, inputType = null) {
       if (typeof expr !== 'string') return;
 
+      // Reject expressions that contain operators or invalid characters
+      if (expr.includes('=') || expr.includes('<') || expr.includes('>') ||
+        expr.includes('!') || expr.includes('&') || expr.includes('|') ||
+        expr.includes("'") || expr.includes('"') || expr.includes('(') ||
+        expr.includes(')') || expr.includes(' ') || expr.includes('+') ||
+        expr.includes('-') || expr.includes('*') || expr.includes('/') ||
+        expr.includes('%') || expr.includes('[') || expr.includes(']') ||
+        expr.includes('{') || expr.includes('}') || expr.includes('?') ||
+        expr.includes(':') || expr.includes(';') || expr.includes(',')) {
+        return; // Don't create variables for complex expressions
+      }
+
       const jsGlobals = [
         'JSON', 'Object', 'Array', 'String', 'Number', 'Boolean', 'Date', 'Math', 'RegExp',
         'console', 'window', 'document', 'setTimeout', 'setInterval', 'fetch', 'localStorage',
@@ -234,6 +488,12 @@
       }
 
       const varName = expr.split('.')[0];
+
+      // Additional check: only allow valid JavaScript identifier names
+      if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(varName)) {
+        return; // Don't create variables with invalid names
+      }
+
       if (!jsGlobals.includes(varName) && !(varName in this.state)) {
         if (inputType === 'number') {
           this.state[varName] = 0;
@@ -263,6 +523,11 @@
 
         if (jsGlobals.includes(rootVar)) return;
 
+        // Additional check for dot notation
+        if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(rootVar)) {
+          return;
+        }
+
         let obj = this.state;
         for (let i = 0; i < path.length; i++) {
           const key = path[i];
@@ -289,7 +554,6 @@
       }
     }
   }
-
 
   class DOMParser {
     constructor(initBlocks) {
@@ -324,7 +588,7 @@
           directives: {},
           subDirectives: {},
           children: [],
-          rawContent: node.innerHTML 
+          rawContent: node.innerHTML
         };
       }
 
@@ -360,7 +624,7 @@
     constructor() {
       this.components = {};
       this.cache = {};
-      this.loadingComponents = new Map(); 
+      this.loadingComponents = new Map();
     }
 
     component(name, html) {
@@ -368,7 +632,6 @@
     }
 
     async loadExternalComponent(url) {
-
       if (this.cache[url]) {
         return this.cache[url];
       }
@@ -393,7 +656,6 @@
     }
 
     async _fetchComponent(url) {
-
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -413,29 +675,106 @@
     isLoading(url) {
       return this.loadingComponents.has(url);
     }
-
   }
 
   class ReactivitySystem {
+
     constructor(state, renderCallback) {
       this.state = state;
       this.watchers = {};
+      this._prevValues = {};
+      this._historyValues = {};
+      this._watcherOneShotFired = {};
+      this._watcherTypes = {};
       this.renderCallback = renderCallback;
       this.watchersReady = false;
       this._isUpdating = false;
       this._renderTimeout = null;
     }
 
+    _safeStringify(obj) {
+      const seen = new WeakSet();
+      try {
+        return JSON.stringify(obj, function (key, value) {
+          if (typeof value === 'object' && value !== null) {
+            if (seen.has(value)) return '[Circular]';
+            seen.add(value);
+          }
+          if (key === '_ayishaInstance') return '[AyishaInstance]';
+          return value;
+        });
+      } catch (e) {
+        return String(obj);
+      }
+    }
+
     makeReactive() {
+      Object.defineProperty(this.state, '_historyValues', {
+        value: this._historyValues,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      });
+      Object.defineProperty(this.state, '_ayishaReactivity', {
+        value: this,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      });
+      Object.defineProperty(this.state, '_prevValues', {
+        value: this._prevValues,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      });
+
+      // Helper to wrap array mutating methods
+      const renderCallback = this.renderCallback;
+      const wrapArray = (arr, prop) => {
+        if (!Array.isArray(arr) || arr._ayishaWrapped) return arr;
+        const mutatingMethods = ['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse'];
+        mutatingMethods.forEach(method => {
+          if (typeof arr[method] === 'function') {
+            const original = arr[method];
+            arr[method] = function(...args) {
+              const result = original.apply(this, args);
+              if (typeof renderCallback === 'function') renderCallback();
+              return result;
+            };
+          }
+        });
+        Object.defineProperty(arr, '_ayishaWrapped', {
+          value: true,
+          enumerable: false,
+          writable: false,
+          configurable: false
+        });
+        return arr;
+      };
+
       this.state = new Proxy(this.state, {
         set: (obj, prop, val) => {
+          if (Array.isArray(val)) {
+            val = wrapArray(val, prop);
+          }
           if (this._isUpdating) {
             obj[prop] = val;
             return true;
           }
 
+          // --- Track previous value in a parallel state ---
+          if (!obj._prevValues) obj._prevValues = {};
+          obj._prevValues[prop] = obj[prop];
+
+          // --- Track history (optional, legacy) ---
+          if (!this._historyValues[prop]) this._historyValues[prop] = [];
+          if (Object.prototype.hasOwnProperty.call(obj, prop)) {
+            this._historyValues[prop].push(obj[prop]);
+            if (this._historyValues[prop].length > 20) this._historyValues[prop].shift();
+          }
+
           const old = obj[prop];
-          if (JSON.stringify(old) === JSON.stringify(val)) {
+          if (this._safeStringify(old) === this._safeStringify(val)) {
             obj[prop] = val;
             return true;
           }
@@ -444,13 +783,32 @@
           obj[prop] = val;
 
           if (this.watchersReady && this.watchers[prop]) {
-            this.watchers[prop].forEach(fn => {
-              try {
-                fn(val);
-              } catch (error) {
-                console.error('Watcher execution error:', error, 'for property:', prop);
+            // Check watcher type: oneShot or reactive
+            if (this._watcherTypes[prop] === 'oneShot') {
+              if (!this._watcherOneShotFired[prop]) {
+                this._watcherOneShotFired[prop] = true;
+                this._prevValues[prop] = val;
+                this.watchers[prop].forEach(fn => {
+                  try {
+                    fn(val);
+                  } catch (error) {
+                    console.error('Watcher execution error:', error, 'for property:', prop);
+                  }
+                });
               }
-            });
+            } else {
+              // reactive: trigger on every change
+              if (this._safeStringify(this._prevValues[prop]) !== this._safeStringify(val)) {
+                this._prevValues[prop] = val;
+                this.watchers[prop].forEach(fn => {
+                  try {
+                    fn(val);
+                  } catch (error) {
+                    console.error('Watcher execution error:', error, 'for property:', prop);
+                  }
+                });
+              }
+            }
           }
 
           if (this._renderTimeout) {
@@ -464,24 +822,48 @@
           }, 10);
 
           return true;
+        },
+        get: (obj, prop) => {
+          const value = obj[prop];
+          if (Array.isArray(value)) {
+            return wrapArray(value, prop);
+          }
+          return value;
         }
       });
       return this.state;
     }
 
-    addWatcher(prop, fn) {
+    /**
+     * Add a watcher for a property.
+     * @param {string} prop - property to watch
+     * @param {function} fn - callback
+     * @param {object} options - { oneShot: true } for one-shot watcher (default for @watch/@do)
+     */
+    addWatcher(prop, fn, options = {}) {
       this.watchers[prop] = this.watchers[prop] || [];
+      if (!(prop in this._prevValues)) {
+        this._prevValues[prop] = this.state[prop];
+      }
+      // NEW: set watcher type
+      if (options.oneShot) {
+        this._watcherTypes[prop] = 'oneShot';
+        this._watcherOneShotFired[prop] = false;
+      } else {
+        this._watcherTypes[prop] = 'reactive';
+      }
       this.watchers[prop].push(fn);
     }
 
     enableWatchers() {
       this.watchersReady = true;
+      // reset all one-shot flags on enable (e.g. on remount)
+      Object.keys(this._watcherOneShotFired).forEach(k => {
+        this._watcherOneShotFired[k] = false;
+      });
     }
   }
 
-  /**
-   * Module: Router
-   */
   class Router {
     constructor(state, renderCallback) {
       this.state = state;
@@ -500,7 +882,8 @@
       }
 
       window.addEventListener('popstate', () => {
-        this.state._currentPage = location.pathname.replace(/^\//, '') || '';
+        const newPath = location.pathname.replace(/^\//, '') || '';
+        this.state._currentPage = newPath;
         this.renderCallback();
       });
     }
@@ -513,27 +896,34 @@
         set(v) {
           if (cp !== v) {
             cp = v;
-            history.pushState({}, '', '/' + v);
+            const url = v ? '/' + v : '/';
+            history.pushState({}, '', url);
             self.renderCallback();
           }
         }
       });
     }
+
+    // Nuovo metodo per navigare programmaticamente
+    navigate(path) {
+      if (path.startsWith('/')) {
+        this.state._currentPage = path.substring(1);
+      } else {
+        this.state._currentPage = path;
+      }
+    }
   }
 
-  /**
-   * Module: Fetch Manager
-   */
   class FetchManager {
     constructor(evaluator) {
       this.evaluator = evaluator;
       this.pendingFetches = {};
       this.lastFetchUrl = {};
       this.fetched = {};
+      this.readyPromise = {};
     }
 
     setupFetch(expr, rk, ctx, event, force) {
-      // Supporta @method e @payload come direttive
       let url = this.evaluator.evalExpr(expr, ctx, event);
       if (url === undefined) {
         url = expr.replace(/\{([^}]+)\}/g, (_, key) => {
@@ -544,10 +934,45 @@
       if (url === undefined || url === null) {
         url = expr;
       }
-      if (!url) return;
+      if (!url) return Promise.resolve(undefined);
+
+      url = url.replace(/\/+$/, ''); // rimuove slash finale
+      url = url.replace(/\?$/, ''); // rimuove ? finale
+      url = url.replace(/\?&/, '?'); // rimuove & subito dopo ?
+      url = url.replace(/\?$/, ''); // rimuove ? finale ancora
+      url = url.replace(/\&+$/, ''); // rimuove & finale
+      url = url.replace(/\?page=(&|$)/, '?').replace(/\?$/, ''); // rimuove page vuoto
+      url = url.replace(/\/\//g, '/'); // rimuove doppio slash
+
       const fid = `${url}::${rk}`;
-      if (!force && this.lastFetchUrl[rk] === url) return;
-      if (this.pendingFetches[fid]) return;
+
+
+      if (!force && !event && this.lastFetchUrl[fid]) {
+        if (!this.readyPromise[fid]) {
+          this.readyPromise[fid] = Promise.resolve(this.evaluator.state[rk]);
+          return this.readyPromise[fid];
+        }
+        return;
+      }
+
+      if (!force && this.lastFetchUrl[fid] && JSON.stringify(this.lastFetchUrl[fid]) === JSON.stringify({ url, value: this.evaluator.state[rk] })) {
+        if (!this.readyPromise[fid]) {
+          this.readyPromise[fid] = Promise.resolve(this.evaluator.state[rk]);
+          return this.readyPromise[fid];
+        }
+        return;
+      }
+
+      if (this.pendingFetches[fid]) return Promise.resolve(this.evaluator.state[rk]);
+
+      if (rk && typeof rk === 'string' && rk in this.evaluator.state) {
+        this.evaluator.state[rk] = null;
+      }
+
+      if (this.readyPromise[fid]) delete this.readyPromise[fid];
+
+      this.pendingFetches[fid] = true;
+      this.lastFetchUrl[fid] = { url, value: this.evaluator.state[rk] };
 
       this.pendingFetches[fid] = true;
       this.lastFetchUrl[rk] = url;
@@ -556,14 +981,27 @@
         this.evaluator.state[rk] = null;
       }
 
-      // Ricava il metodo, il payload e gli headers dal contesto vNode se disponibile
       let method = 'GET';
       let payload = null;
       let customHeaders = null;
       if (ctx && ctx._vNode) {
+        let m = null;
         if (ctx._vNode.directives && ctx._vNode.directives['@method']) {
-          method = this.evaluator.evalExpr(ctx._vNode.directives['@method'], ctx, event) || 'GET';
+          m = ctx._vNode.directives['@method'];
+        } else if (ctx._vNode.subDirectives && ctx._vNode.subDirectives['@method']) {
+          m = ctx._vNode.subDirectives['@method'];
         }
+        if (m) {
+          let evalM = this.evaluator.evalExpr(m, ctx, event);
+          if (typeof evalM === 'string' && evalM.trim() !== '') {
+            method = evalM.toUpperCase();
+          } else if (typeof m === 'string' && m.trim() !== '') {
+            method = m.trim().toUpperCase();
+          } else {
+            method = 'GET';
+          }
+        }
+        // PATCH: payload anche per PUT/PATCH/DELETE oltre che POST
         if (ctx._vNode.directives && ctx._vNode.directives['@payload']) {
           payload = this.evaluator.evalExpr(ctx._vNode.directives['@payload'], ctx, event);
         }
@@ -574,7 +1012,8 @@
 
       const fetchOptions = { method };
       let headers = {};
-      if (payload != null && method && method.toUpperCase() !== 'GET') {
+      // PATCH: payload per tutti i metodi diversi da GET/HEAD
+      if (payload != null && method && !['GET', 'HEAD'].includes(method.toUpperCase())) {
         if (typeof payload === 'object') {
           fetchOptions.body = JSON.stringify(payload);
           headers['Content-Type'] = 'application/json';
@@ -589,12 +1028,35 @@
         fetchOptions.headers = headers;
       }
 
-      fetch(url, fetchOptions)
+      const fetchPromise = fetch(url, fetchOptions)
         .then(res => {
           if (!res.ok) {
             if (!this.fetched[url]) this.fetched[url] = {};
             this.fetched[url].error = `${res.status} ${res.statusText || 'errore di rete'}`;
-            throw new Error(`${res.status} ${res.statusText}`);
+            let errorVar = '_error';
+            if (ctx && ctx._vNode && ctx._vNode.directives && ctx._vNode.directives['@error']) {
+              errorVar = ctx._vNode.directives['@error'] || '_error';
+            }
+            return res.text().then(errorBody => {
+              let parsedError;
+              try {
+                parsedError = JSON.parse(errorBody);
+              } catch (e) {
+                parsedError = errorBody || `${res.status} ${res.statusText || 'errore di rete'}`;
+              }
+              // Always set _error and custom errorVar, and also window._error for debugging
+              const errorObj = {
+                error: parsedError && parsedError.error ? parsedError.error : `${res.status} ${res.statusText}`,
+                details: parsedError && parsedError.details ? parsedError.details : parsedError
+              };
+              this.evaluator.state['_error'] = errorObj;
+              window._error = errorObj;
+              if (errorVar !== '_error') {
+                this.evaluator.state[errorVar] = errorObj;
+                window[errorVar] = errorObj;
+              }
+              throw new Error(`${res.status} ${res.statusText}`);
+            });
           }
           return res.json().catch(() => res.text());
         })
@@ -605,41 +1067,72 @@
             this.evaluator.state[rk] = data;
           }
           if (this.fetched[url]) delete this.fetched[url].error;
+          // Always clear both _error and custom errorVar
+          this.evaluator.state['_error'] = null;
+          let errorVar = '_error';
+          if (ctx && ctx._vNode && ctx._vNode.directives && ctx._vNode.directives['@error']) {
+            errorVar = ctx._vNode.directives['@error'] || '_error';
+          }
+          if (errorVar !== '_error') {
+            this.evaluator.state[errorVar] = null;
+          }
+          return data;
         })
         .catch(err => {
           console.error('🌐 Fetch error:', { url, error: err.message, resultVariable: rk });
           if (!this.fetched[url]) this.fetched[url] = {};
-          if (!this.fetched[url].error) this.fetched[url].error = err.message;
+          this.fetched[url].error = err.message;
+          let errorVar = '_error';
+          if (ctx && ctx._vNode && ctx._vNode.directives && ctx._vNode.directives['@error']) {
+            errorVar = ctx._vNode.directives['@error'] || '_error';
+          }
+          // Always set _error as well as custom errorVar
+          this.evaluator.state['_error'] = {
+            error: err && err.message ? err.message : (err || 'Errore sconosciuto'),
+            details: err && err.stack ? err.stack : undefined
+          };
+          if (errorVar !== '_error') {
+            this.evaluator.state[errorVar] = this.evaluator.state['_error'];
+          }
           console.error('@fetch error:', err);
         })
         .finally(() => {
-          delete this.pendingFetches[fid];
+          this.pendingFetches[fid] = false;
         });
+
+      return fetchPromise;
     }
+
+
   }
 
-  /**
-   * Module: Directive Help System
-   */
   class DirectiveHelpSystem {
     constructor() {
       this.helpTexts = {
-        '@when': `Esempio: <span @when="condizione" @do="azione"></span> oppure <span @when="condizione" @go="pagina"></span>`,
-        '@do': `Esempio: <span @when="condizione" @do="azione"></span>`,
-        '@go': `Esempio: <span @when="condizione" @go="pagina"></span>`,
-        '@wait': `Esempio: <span @when="condizione" @wait="1000" @go="pagina"></span>`,
-        '@if': `Esempio: <div @if="condizione">Mostra se condizione è true</div>`,
-        '@show': `Esempio: <div @show="condizione">Mostra se condizione è true</div>`,
-        '@hide': `Esempio: <div @hide="condizione">Nasconde se condizione è true</div>`,
+        '@error': `Esempio: <div @fetch=\"url\" @error=\"myErrorVar\"></div> (variabile dove viene salvato l'errore della fetch, di default _error)`,
+        '@when': `Esempio: <span @when=\"condizione\" @do=\"azione\"></span> oppure <span @when=\"condizione\" @go=\"pagina\"></span>`,
+        '@do': `Esempio: <span @when=\"condizione\" @do=\"azione\"></span>`,
+        '@go': `Esempio: <span @when=\"condizione\" @go=\"pagina\"></span>`,
+        '@wait': `Esempio: <span @when=\"condizione\" @wait=\"1000\" @go=\"pagina\"></span>`,
+        '@if': `Esempio: <div @if=\"condizione\">Mostra se condizione è true</div>`,
+        '@not': `Esempio: <div @not=\"condizione\">Mostra se condizione è false</div>`,
+        '@show': `Esempio: <div @show=\"condizione\">Mostra se condizione è true</div>`,
+        '@hide': `Esempio: <div @hide=\"condizione\">Nasconde se condizione è true</div>`,
         '@for': `Esempio: <li @for="item in items">{{item}}</li> o <li @for="i, item in items">{{i}}: {{item}}</li>`,
         '@model': `Esempio: <input @model="nome">`,
+        '@file': `Esempio: <input type="file" @file="pic"> (salva il file caricato come base64 nella variabile pic)`,
+        '@files': `Esempio: <input type="file" multiple @files="gallery"> (salva tutti i file caricati come base64 in un array nella variabile gallery, aggiungendo se già presenti)`,
         '@click': `Esempio: <button @click="state.count++">Aumenta</button>`,
         '@fetch': `Esempio: <div @fetch="'url'" @method="'POST'" @payload="{foo:1}" @headers="{ Authorization: 'Bearer ...' }"></div>`,
+        '@method': `Esempio: <div @fetch="'url'" @method="'POST'"></div>`,
         '@payload': `Esempio: <div @fetch="'url'" @method="'POST'" @payload="{foo:1}"></div>`,
         '@headers': `Esempio: <div @fetch="'url'" @headers="{ Authorization: 'Bearer ...' }"></div>`,
         '@result': `Esempio: <div @fetch="'url'" @result="data">Carica</div>`,
-        '@watch': `Esempio: <div @watch="prop=>console.log(prop)"></div>`,
+        '@watch': `Esempio: <div @watch="user"></div>`,
         '@text': `Esempio: <span @text="nome"></span>`,
+        '@date': `Esempio: <li @date="data"></li> (formatta una data ISO come "1 agosto 2025, 08:37")`,
+        '@dateonly': `Esempio: <li @dateonly="data"></li> (mostra solo giorno, mese e anno)`,
+        '@time': `Esempio: <li @time="data"></li> (mostra solo ora e minuti)`,
         '@class': `Esempio: <div @class="{rosso: condizione}"></div>`,
         '@style': `Esempio: <div @style="{color:'red'}"></div>`,
         '@validate': `Esempio: <input @validate="required,minLength:3">`,
@@ -688,6 +1181,7 @@
         '@blur': `Esempio: <input @blur="doSomething()">`,
         '@change': `Esempio: <input @change="doSomething()">`,
         '@input': `Esempio: <input @input="doSomething()">`,
+        '@prev': `Esempio: <div @prev></div> (mostra valore attuale e precedente dello state)\n<div @prev="foo"></div> (solo per foo)`,
         '@then': `Esegui una o più espressioni dopo tutte le altre direttive su questo nodo. Esempio: <div @then=\"foo=1;;bar=2\"></div>`,
         '@finally': `Esegui una o più espressioni dopo tutto, inclusi @then. Esempio: <div @finally=\"foo=1;;bar=2\"></div>`
       };
@@ -702,9 +1196,2552 @@
     }
   }
 
-  /**
-   * Module: Directive-Specific Loggers
-   */
+  class ErrorHandler {
+    constructor(errorBus) {
+      this.errorBus = errorBus;
+    }
+
+    showAyishaError(el, err, expr) {
+      if (!el) return;
+      let banner = el.parentNode && el.parentNode.querySelector('.ayisha-error-banner');
+      if (!banner) {
+        banner = document.createElement('div');
+        banner.className = 'ayisha-error-banner';
+        banner.style.background = '#c00';
+        banner.style.color = '#fff';
+        banner.style.padding = '0.5em 1em';
+        banner.style.margin = '0.5em 0';
+        banner.style.borderRadius = '4px';
+        banner.style.fontWeight = 'bold';
+        banner.style.border = '1px solid #900';
+        banner.style.position = 'relative';
+        banner.style.zIndex = '1000';
+        banner.innerHTML = `<b>Errore JS:</b> ${err.message}<br><code>${expr}</code>`;
+        el.parentNode && el.parentNode.insertBefore(banner, el.nextSibling);
+      } else {
+        banner.innerHTML = `<b>Errore JS:</b> ${err.message}<br><code>${expr}</code>`;
+      }
+      if (this.errorBus) {
+        this.errorBus.report(err, { expr, el });
+      }
+    }
+
+    createErrorElement(message) {
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'ayisha-directive-error';
+      errorDiv.style.background = '#c00';
+      errorDiv.style.color = '#fff';
+      errorDiv.style.padding = '1em';
+      errorDiv.style.margin = '0.5em 0';
+      errorDiv.style.borderRadius = '4px';
+      errorDiv.style.fontWeight = 'bold';
+      errorDiv.style.border = '1px solid #900';
+      errorDiv.innerHTML = message;
+      if (this.errorBus) {
+        this.errorBus.report(new Error(message), { type: 'createErrorElement', message });
+      }
+      return errorDiv;
+    }
+
+    createWarningElement(message) {
+      const warnDiv = document.createElement('div');
+      warnDiv.className = 'ayisha-directive-warning';
+      warnDiv.style.background = '#ffeb3b';
+      warnDiv.style.color = '#333';
+      warnDiv.style.padding = '1em';
+      warnDiv.style.margin = '0.5em 0';
+      warnDiv.style.borderRadius = '4px';
+      warnDiv.style.fontWeight = 'bold';
+      warnDiv.style.border = '1px solid #e0c200';
+      warnDiv.innerHTML = message;
+      return warnDiv;
+    }
+  }
+
+  class BindingManager {
+    constructor(evaluator, renderCallback) {
+      this.evaluator = evaluator;
+      this.renderCallback = renderCallback;
+      this.modelBindings = [];
+    }
+
+    // Utility for setting nested values (used for validation)
+    static setNestedValidate(obj, path, value) {
+      const keys = path.split('.');
+      let current = obj;
+      for (let i = 0; i < keys.length - 1; i++) {
+        if (typeof current[keys[i]] !== 'object' || current[keys[i]] === null) {
+          current[keys[i]] = {};
+        }
+        current = current[keys[i]];
+      }
+      current[keys[keys.length - 1]] = value;
+    }
+
+    bindModel(el, key, ctx) {
+      // ...existing code...
+      let inputTypeForInit = null;
+      if (el.type === 'number') {
+        inputTypeForInit = 'number';
+      } else if (el.type === 'checkbox') {
+        inputTypeForInit = 'checkbox';
+      }
+
+      function getRootAndPath(key, ctx, globalState) {
+        if (key.includes('.')) {
+          const path = key.split('.');
+          const rootName = path[0];
+          if (ctx && typeof ctx[rootName] === 'object' && ctx[rootName] !== null) {
+            return { root: ctx[rootName], path: path.slice(1) };
+          }
+          return { root: globalState, path: path };
+        } else {
+          if (ctx && typeof ctx[key] === 'object' && ctx[key] !== null) {
+            return { root: ctx[key], path: [] };
+          }
+          return { root: globalState, path: [key] };
+        }
+      }
+
+      const { root, path } = getRootAndPath(key, ctx, this.evaluator.state);
+      let ref = root;
+      if (path.length > 0) {
+        for (let i = 0; i < path.length - 1; i++) {
+          if (typeof ref[path[i]] !== 'object' || ref[path[i]] === null) {
+            ref[path[i]] = {};
+          }
+          ref = ref[path[i]];
+        }
+        const last = path[path.length - 1];
+        if (el.type === 'number') {
+          if (typeof ref[last] !== 'number') ref[last] = 0;
+        } else if (el.type === 'checkbox') {
+          if (typeof ref[last] !== 'boolean') ref[last] = false;
+        } else {
+          if (typeof ref[last] !== 'string') ref[last] = '';
+        }
+      } else if (typeof ref === 'object' && ref !== null) {
+      } else {
+        if (el.type === 'number') {
+          if (typeof this.evaluator.state[key] !== 'number') this.evaluator.state[key] = 0;
+        } else if (el.type === 'checkbox') {
+          if (typeof this.evaluator.state[key] !== 'boolean') this.evaluator.state[key] = false;
+        } else {
+          if (typeof this.evaluator.state[key] !== 'string') this.evaluator.state[key] = '';
+        }
+      }
+
+      const update = () => {
+        const val = this.evaluator.evalExpr(key, ctx);
+        if (el.type === 'checkbox') {
+          // Gestione checkbox: true/false
+          el.checked = !!val;
+        } else if (el.type === 'radio') {
+          // Gestione radio: checked se valore === value
+          el.checked = val === el.value || val === true && el.value === 'true' || val === false && el.value === 'false';
+        } else if (el.type === 'color') {
+          if (val && typeof val === 'string' && val.match(/^#[0-9A-Fa-f]{6}$/)) {
+            el.value = val;
+          } else if (val && typeof val === 'string' && val.match(/^[0-9A-Fa-f]{6}$/)) {
+            el.value = '#' + val;
+          } else {
+            el.value = '#000000';
+          }
+        } else {
+          const safeVal = val == null ? '' : String(val);
+          if (el.value !== safeVal) el.value = safeVal;
+        }
+      };
+
+      this.modelBindings.push({ el, update });
+      update();
+
+      const handleInput = () => {
+        let inputTypeForInit = null;
+        if (el.type === 'number') {
+          inputTypeForInit = 'number';
+        } else if (el.type === 'checkbox') {
+          inputTypeForInit = 'checkbox';
+        }
+
+        const { root, path } = getRootAndPath(key, ctx, this.evaluator.state);
+        let ref = root;
+        let value;
+
+        if (el.type === 'checkbox') {
+          // Gestione checkbox: true/false
+          value = el.checked;
+        } else if (el.type === 'radio') {
+          // Gestione radio: "true"/"false"/string
+          if (el.value === 'true') value = true;
+          else if (el.value === 'false') value = false;
+          else value = el.value;
+        } else if (el.type === 'number') {
+          value = el.value === '' ? undefined : Number(el.value);
+        } else {
+          value = el.value;
+        }
+
+        if (path.length > 0) {
+          for (let i = 0; i < path.length - 1; i++) {
+            if (typeof ref[path[i]] !== 'object' || ref[path[i]] === null) {
+              ref[path[i]] = {};
+            }
+            ref = ref[path[i]];
+          }
+          const last = path[path.length - 1];
+          ref[last] = value;
+        } else if (typeof ref === 'object' && ref !== null) {
+        } else {
+          this.evaluator.state[key] = value;
+        }
+        this.renderCallback();
+      };
+
+      if (el.type === 'checkbox' || el.type === 'radio') {
+        el.addEventListener('change', handleInput);
+      } else {
+        el.addEventListener('input', handleInput);
+      }
+    }
+
+    bindValidation(el, rulesStr, modelVar = null) {
+      const rules = [];
+      let currentRule = '';
+      let inRegex = false;
+
+      for (let i = 0; i < rulesStr.length; i++) {
+        const char = rulesStr[i];
+        if (char === '^' && !inRegex) {
+          inRegex = true;
+          currentRule += char;
+        } else if (char === '$' && inRegex) {
+          inRegex = false;
+          currentRule += char;
+          rules.push(currentRule.trim());
+          currentRule = '';
+        } else if (char === ',' && !inRegex) {
+          if (currentRule.trim()) {
+            rules.push(currentRule.trim());
+          }
+          currentRule = '';
+        } else {
+          currentRule += char;
+        }
+      }
+      for (let i = 0; i < rules.length; i++) {
+        if (rules[i].includes('=')) {
+          rules[i] = rules[i].replace('=', ':');
+        }
+      }
+
+      if (currentRule.trim()) {
+        rules.push(currentRule.trim());
+      }
+
+      if (!modelVar) {
+        return;
+      }
+
+      if (!this.evaluator.state._validate) {
+        this.evaluator.state._validate = {};
+      }
+
+      // Inizializza a null invece che false
+      BindingManager.setNestedValidate(this.evaluator.state._validate, modelVar, null);
+      const keys = modelVar.split('.');
+      let current = this.evaluator.state._validate;
+      for (let i = 0; i < keys.length - 1; i++) {
+        if (typeof current[keys[i]] !== 'object' || current[keys[i]] === null) {
+          current[keys[i]] = {};
+        }
+        current = current[keys[i]];
+      }
+      if (this.evaluator.state._validate.hasOwnProperty(modelVar)) {
+        delete this.evaluator.state._validate[modelVar];
+      }
+
+      const validate = () => {
+        // Se il campo è vuoto, la validazione è null
+        if (el.value === '' || el.value == null) {
+          BindingManager.setNestedValidate(this.evaluator.state._validate, modelVar, null);
+          el.classList.remove('invalid');
+          el.classList.remove('valid');
+          return null;
+        }
+
+        let valid = true;
+
+        for (const rule of rules) {
+          if (/^\^.*\$$/.test(rule)) {
+            try {
+              const re = new RegExp(rule);
+              const testResult = re.test(el.value || '');
+              if (!testResult) {
+                valid = false;
+                break;
+              }
+            } catch (e) {
+              valid = false;
+              break;
+            }
+          }
+          else if (rule === 'required') {
+            if (!el.value || !el.value.trim()) {
+              valid = false;
+              break;
+            }
+          }
+          else if (rule.startsWith('minLength:') || rule.startsWith('minLength=')) {
+            const minLen = parseInt(rule.split(/:|=/)[1], 10);
+            if (el.value.length < minLen) {
+              valid = false;
+              break;
+            }
+          }
+          else if (rule.startsWith('maxLength:') || rule.startsWith('maxLength=')) {
+            const maxLen = parseInt(rule.split(/:|=/)[1], 10);
+            if (el.value.length > maxLen) {
+              valid = false;
+              break;
+            }
+          }
+          else if (rule.startsWith('min:')) {
+            const minVal = parseFloat(rule.split(':')[1]);
+            const val = parseFloat(el.value);
+            if (isNaN(val) || val < minVal) {
+              valid = false;
+              break;
+            }
+          }
+          else if (rule.startsWith('max:')) {
+            const maxVal = parseFloat(rule.split(':')[1]);
+            const val = parseFloat(el.value);
+            if (isNaN(val) || val > maxVal) {
+              valid = false;
+              break;
+            }
+          }
+          else if (rule === 'email') {
+            const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            if (!emailRegex.test(el.value || '')) {
+              valid = false;
+              break;
+            }
+          }
+          else if (rule === 'phone') {
+            const phoneRegex = /^\+\d{1,3}\s?\d{3,4}\s?\d{3,4}\s?\d{3,4}$/;
+            if (!phoneRegex.test(el.value || '')) {
+              valid = false;
+              break;
+            }
+          }
+          else if (rule === 'password') {
+            const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+            if (!passwordRegex.test(el.value || '')) {
+              valid = false;
+              break;
+            }
+          }
+          else if (rule.startsWith('regex:')) {
+            let pattern = rule.slice(6);
+            try {
+              const re = new RegExp(pattern);
+              if (!re.test(el.value || '')) {
+                valid = false;
+                break;
+              }
+            } catch (e) {
+              valid = false;
+              break;
+            }
+          }
+        }
+
+        BindingManager.setNestedValidate(this.evaluator.state._validate, modelVar, valid);
+        el.classList.toggle('invalid', !valid);
+        el.classList.toggle('valid', valid && el.value.length > 0);
+
+        return valid;
+      };
+
+      validate();
+      el.addEventListener('input', () => {
+        validate();
+        this.renderCallback();
+      });
+      el.addEventListener('blur', validate);
+    }
+
+    updateBindings() {
+      this.modelBindings.forEach(b => b.update());
+    }
+
+    clearBindings() {
+      this.modelBindings = [];
+    }
+  }
+
+
+  // Base Directive Class
+  class Directive {
+    constructor(evaluator, bindingManager, errorHandler) {
+      this.evaluator = evaluator;
+      this.bindingManager = bindingManager;
+      this.errorHandler = errorHandler;
+    }
+
+    apply(vNode, ctx, state, el, completionListener = null) {
+      // To be implemented by subclasses
+    }
+
+    handleSubDirective(vNode, ctx, state, el, event, expression, completionListener = null) {
+      // Default implementation - può essere sovrascritto
+      return false;
+    }
+
+    executeExpression(expression, ctx, event = null, triggerRender = true) {
+      return this.evaluator.executeDirectiveExpression(expression, ctx, event, triggerRender);
+    }
+
+    evalExpr(expression, ctx) {
+      return this.evaluator.evalExpr(expression, ctx);
+    }
+
+    showError(el, error, expression) {
+      this.errorHandler.showAyishaError(el, error, expression);
+    }
+  }
+
+  // All Directive Classes
+  // @date Directive: formats ISO date strings to human readable
+  class DateDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      let value = this.evaluator.evalExpr(vNode.directives['@date'], ctx);
+      let formatted = this.formatDate(value);
+      el.innerText = formatted;
+      if (completionListener) completionListener.markSyncDone();
+    }
+
+    formatDate(value) {
+      if (!value) return '';
+      let date;
+      if (typeof value === 'string') {
+        date = new Date(value);
+      } else if (value instanceof Date) {
+        date = value;
+      } else {
+        return String(value);
+      }
+      if (isNaN(date.getTime())) return String(value);
+      const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+      return date.toLocaleString(navigator.language || navigator.userLanguage || 'it-IT', options);
+    }
+  }
+
+  // @dateonly Directive: formats ISO date strings to day/month/year
+  class DateOnlyDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      let value = this.evaluator.evalExpr(vNode.directives['@dateonly'], ctx);
+      let formatted = this.formatDateOnly(value);
+      el.innerText = formatted;
+      if (completionListener) completionListener.markSyncDone();
+    }
+
+    formatDateOnly(value) {
+      if (!value) return '';
+      let date;
+      if (typeof value === 'string') {
+        date = new Date(value);
+      } else if (value instanceof Date) {
+        date = value;
+      } else {
+        return String(value);
+      }
+      if (isNaN(date.getTime())) return String(value);
+      return date.toLocaleDateString(navigator.language || navigator.userLanguage || 'it-IT');
+    }
+  }
+
+  class TimeDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      let value = this.evaluator.evalExpr(vNode.directives['@time'], ctx);
+      let formatted = this.formatTime(value);
+      el.innerText = formatted;
+      if (completionListener) completionListener.markSyncDone();
+    }
+
+    formatTime(value) {
+      if (!value) return '';
+      let date;
+      if (typeof value === 'string') {
+        date = new Date(value);
+      } else if (value instanceof Date) {
+        date = value;
+      } else {
+        return String(value);
+      }
+      if (isNaN(date.getTime())) return String(value);
+      return date.toLocaleTimeString(navigator.language || navigator.userLanguage || 'it-IT', { hour: '2-digit', minute: '2-digit' });
+    }
+  }
+  class IfDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      const expr = vNode.directives['@if'];
+      let visible = false;
+      try {
+        visible = this.evaluator.evalExpr(expr, ctx);
+      } catch { }
+      if (el) el.style.display = visible ? '' : 'none';
+
+      if (completionListener) {
+        completionListener.addTask(() => Promise.resolve());
+      }
+    }
+  }
+
+  // NOT Directive: renders node only if expression is falsy
+  class NotDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      const expr = vNode.directives['@not'];
+      let visible = false;
+      try {
+        visible = !this.evaluator.evalExpr(expr, ctx);
+      } catch { }
+      if (el) el.style.display = visible ? '' : 'none';
+
+      if (completionListener) {
+        completionListener.addTask(() => Promise.resolve());
+      }
+    }
+  }
+
+  class ForDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      let match = vNode.directives['@for'].match(/(\w+),\s*(\w+) in (.+)/);
+      if (match) {
+        const [, indexVar, itemVar, expr] = match;
+        let arr = this.evaluator.evalExpr(expr, ctx) || [];
+        if (typeof arr === 'object' && !Array.isArray(arr)) arr = Object.values(arr);
+        const frag = document.createDocumentFragment();
+        arr.forEach((val, index) => {
+          const clone = JSON.parse(JSON.stringify(vNode));
+          delete clone.directives['@for'];
+          const subCtx = {
+            ...ctx,
+            [itemVar]: val,
+            [indexVar]: index,
+            [`${itemVar}_index`]: index,
+            [`${itemVar}_ref`]: `${expr.split('.')[0]}[${index}]`
+          };
+          const node = state._ayishaInstance._renderVNode(clone, subCtx);
+          if (node) {
+            state._ayishaInstance.directiveManager.applyDirectives(clone, subCtx, state, node, completionListener);
+            frag.appendChild(node);
+          }
+        });
+
+        if (completionListener) {
+          completionListener.addTask(() => Promise.resolve());
+        }
+        return frag;
+      }
+
+      match = vNode.directives['@for'].match(/(\w+) in (.+)/);
+      if (match) {
+        const [, it, expr] = match;
+        let arr = this.evaluator.evalExpr(expr, ctx) || [];
+        if (typeof arr === 'object' && !Array.isArray(arr)) arr = Object.values(arr);
+
+        const originalArrayName = expr.split('.')[0];
+        const isFiltered = expr.includes('.filter');
+
+        const frag = document.createDocumentFragment();
+        arr.forEach((val, index) => {
+          const clone = JSON.parse(JSON.stringify(vNode));
+          delete clone.directives['@for'];
+
+          let originalIndex = index;
+          if (isFiltered && state[originalArrayName]) {
+            originalIndex = state[originalArrayName].findIndex(item =>
+              item.id === val.id || JSON.stringify(item) === JSON.stringify(val)
+            );
+          }
+
+          const subCtx = {
+            ...ctx,
+            [it]: val,
+            $index: index,
+            $originalIndex: originalIndex,
+            $arrayName: originalArrayName
+          };
+          const node = state._ayishaInstance._renderVNode(clone, subCtx);
+          if (node) {
+            state._ayishaInstance.directiveManager.applyDirectives(clone, subCtx, state, node, completionListener);
+            frag.appendChild(node);
+          }
+        });
+
+        if (completionListener) {
+          completionListener.addTask(() => Promise.resolve());
+        }
+        return frag;
+      }
+      return null;
+    }
+  }
+
+  class ModelDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      const key = vNode.directives['@model'];
+      if (!key) return;
+      this.bindingManager.bindModel(el, key, ctx);
+
+      if (completionListener) {
+        completionListener.addTask(() => Promise.resolve());
+      }
+    }
+
+    handleSubDirective(vNode, ctx, state, el, event, expression, completionListener = null) {
+      if (['input', 'change', 'focus', 'blur'].includes(event)) {
+        this.bindingManager.bindModel(el, expression, ctx);
+
+        if (completionListener) {
+          const done = completionListener.addAsyncTask();
+          el.addEventListener(event, () => {
+            if (done) done();
+          });
+        }
+        return true;
+      }
+      return false;
+    }
+  }
+  // Utility class for nested object/array path operations
+  class AyishaNestedUtil {
+    static setNested(obj, path, value) {
+      const keys = path.split('.');
+      let ref = obj;
+      for (let i = 0; i < keys.length - 1; i++) {
+        const arrMatch = keys[i].match(/(\w+)\[(\d+)\]/);
+        if (arrMatch) {
+          const arrKey = arrMatch[1];
+          const arrIdx = parseInt(arrMatch[2], 10);
+          if (!Array.isArray(ref[arrKey])) ref[arrKey] = [];
+          if (!ref[arrKey][arrIdx]) ref[arrKey][arrIdx] = {};
+          ref = ref[arrKey][arrIdx];
+        } else {
+          if (typeof ref[keys[i]] !== 'object' || ref[keys[i]] === null) ref[keys[i]] = {};
+          ref = ref[keys[i]];
+        }
+      }
+      const last = keys[keys.length - 1];
+      const arrMatch = last.match(/(\w+)\[(\d+)\]/);
+      if (arrMatch) {
+        const arrKey = arrMatch[1];
+        const arrIdx = parseInt(arrMatch[2], 10);
+        if (!Array.isArray(ref[arrKey])) ref[arrKey] = [];
+        ref[arrKey][arrIdx] = value;
+      } else {
+        ref[last] = value;
+      }
+    }
+    static getNested(obj, path) {
+      const keys = path.split('.');
+      let ref = obj;
+      for (let i = 0; i < keys.length; i++) {
+        const arrMatch = keys[i].match(/(\w+)\[(\d+)\]/);
+        if (arrMatch) {
+          const arrKey = arrMatch[1];
+          const arrIdx = parseInt(arrMatch[2], 10);
+          if (!Array.isArray(ref[arrKey])) return undefined;
+          ref = ref[arrKey][arrIdx];
+        } else {
+          if (typeof ref !== 'object' || ref === null) return undefined;
+          ref = ref[keys[i]];
+        }
+      }
+      return ref;
+    }
+  }
+
+  class FileDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      const key = vNode.directives['@file'];
+      if (!key) return;
+      if (el.tagName === 'INPUT' && el.type === 'file') {
+        el.addEventListener('change', (e) => {
+          const file = el.files && el.files[0];
+          if (!file) {
+            AyishaNestedUtil.setNested(state, key, null);
+            if (completionListener) completionListener.addTask(() => Promise.resolve());
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = function (evt) {
+            AyishaNestedUtil.setNested(state, key, evt.target.result);
+            if (completionListener) completionListener.addTask(() => Promise.resolve());
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+    }
+    handleSubDirective() { return false; }
+  }
+
+  class FilesDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      const key = vNode.directives['@files'];
+      if (!key) return;
+      if (el.tagName === 'INPUT' && el.type === 'file') {
+        el.addEventListener('change', (e) => {
+          const files = el.files;
+          if (!files || files.length === 0) {
+            AyishaNestedUtil.setNested(state, key, []);
+            if (completionListener) completionListener.addTask(() => Promise.resolve());
+            return;
+          }
+          let loaded = 0;
+          const base64Array = [];
+          for (let i = 0; i < files.length; i++) {
+            const reader = new FileReader();
+            reader.onload = function (evt) {
+              base64Array[i] = evt.target.result;
+              loaded++;
+              if (loaded === files.length) {
+                const lastKey = key.split('.').pop();
+                const arrMatch = lastKey.match(/\[(\d+)\]$/);
+                if (arrMatch) {
+                  AyishaNestedUtil.setNested(state, key, base64Array[0] || null);
+                } else {
+                  AyishaNestedUtil.setNested(state, key, base64Array);
+                }
+                if (completionListener) completionListener.addTask(() => Promise.resolve());
+              }
+            };
+            reader.readAsDataURL(files[i]);
+          }
+        });
+      }
+    }
+    handleSubDirective() { return false; }
+  }
+  class ShowDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      const expr = vNode.directives['@show'];
+      let visible = false;
+      try {
+        visible = this.evaluator.evalExpr(expr, ctx);
+      } catch { }
+      if (el) el.style.display = visible ? '' : 'none';
+
+      if (completionListener) {
+        completionListener.addTask(() => Promise.resolve());
+      }
+    }
+  }
+  class HideDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      const expr = vNode.directives['@hide'];
+      let hidden = false;
+      try {
+        hidden = this.evaluator.evalExpr(expr, ctx);
+      } catch { }
+      if (el) el.style.display = hidden ? 'none' : '';
+
+      if (completionListener) {
+        completionListener.addTask(() => Promise.resolve());
+      }
+    }
+  }
+
+  class TextDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      const expr = vNode.directives['@text'];
+      if (!expr || vNode.subDirectives?.['@text']) return;
+
+      try {
+        const isMultiple = this.evaluator.hasMultipleAssignments(expr);
+
+        if (isMultiple) {
+          this.executeExpression(expr, ctx, null, false);
+        } else {
+          const textValue = this.evalExpr(expr, ctx);
+          el.textContent = this.formatTextValue(textValue);
+        }
+
+        if (completionListener) {
+          completionListener.addTask(() => Promise.resolve());
+        }
+      } catch (error) {
+        console.error('Error in @text directive:', error);
+        el.textContent = `[Error: ${error.message}]`;
+      }
+    }
+
+    formatTextValue(value) {
+      if (value === undefined) return '';
+      if (value === null) return 'null';
+      return String(value);
+    }
+
+    handleSubDirective(vNode, ctx, state, el, event, expression, completionListener = null) {
+      // CRITICAL: Save original text BEFORE any modifications
+      if (!el._ayishaOriginalText) {
+        // Get the text content from the original vNode children if available
+        if (vNode.children && vNode.children.length > 0) {
+          el._ayishaOriginalText = vNode.children
+            .filter(child => child.type === 'text')
+            .map(child => child.text)
+            .join('');
+        } else {
+          el._ayishaOriginalText = el.textContent || el.innerText || '';
+        }
+      }
+
+      switch (event) {
+        case 'click':
+          const done = completionListener ? completionListener.addAsyncTask() : null;
+          el.addEventListener('click', (e) => {
+            const newText = this.evalExpr(expression, ctx, e);
+            el.textContent = this.formatTextValue(newText);
+            if (done) done();
+          });
+          return true;
+
+        case 'hover':
+          el.addEventListener('mouseover', (e) => {
+            const newText = this.evalExpr(expression, ctx, e);
+            el.textContent = this.formatTextValue(newText);
+          });
+          el.addEventListener('mouseout', () => {
+            el.textContent = el._ayishaOriginalText;
+          });
+          return true;
+
+        case 'input':
+        case 'focus':
+        case 'blur':
+          const asyncDone = completionListener ? completionListener.addAsyncTask() : null;
+          el.addEventListener(event, (e) => {
+            const newText = this.evalExpr(expression, ctx, e);
+            el.textContent = this.formatTextValue(newText);
+            if (asyncDone) asyncDone();
+          });
+          return true;
+
+        default:
+          return false;
+      }
+    }
+  }
+  class ClassDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      const expr = vNode.directives['@class'];
+      if (!expr || vNode.subDirectives?.['@class']) return;
+
+      let clsMap = {};
+      try {
+        let result = this.evalExpr(expr, ctx);
+        if (typeof result === 'string') {
+          let str = result.trim();
+          // Remove outer quotes if present
+          if ((str.startsWith('"') && str.endsWith('"')) || (str.startsWith("'") && str.endsWith("'"))) {
+            str = str.slice(1, -1);
+          }
+          // If looks like an object: {key:val,...}
+          if (str.startsWith('{') && str.endsWith('}')) {
+            str = str.slice(1, -1);
+            // Split by comma, handle quoted and unquoted keys
+            str.split(',').forEach(pair => {
+              let [key, val] = pair.split(':');
+              if (key && val !== undefined) {
+                key = key.trim().replace(/^['"]|['"]$/g, '');
+                try {
+                  // Try to eval val as JS
+                  val = this.evaluator.evalExpr(val.trim(), ctx);
+                } catch {
+                  val = !!val.trim();
+                }
+                clsMap[key] = !!val;
+              }
+            });
+          } else {
+            // fallback: treat as single class name
+            clsMap = { [str]: true };
+          }
+        } else if (typeof result === 'object' && result !== null) {
+          clsMap = result;
+        }
+      } catch (error) {
+        console.error('Error in @class directive:', error);
+        clsMap = {};
+      }
+
+      Object.keys(clsMap).forEach(cls => {
+        el.classList.remove(cls);
+      });
+      Object.entries(clsMap).forEach(([cls, cond]) => {
+        el.classList.toggle(cls, !!cond);
+      });
+      // Force update of class attribute
+      el.setAttribute('class', el.className);
+
+      if (completionListener) {
+        completionListener.addTask(() => Promise.resolve());
+      }
+    }
+
+    handleSubDirective(vNode, ctx, state, el, event, expression, completionListener = null) {
+      const getClassMap = () => {
+        try {
+          return this.evalExpr(expression, ctx) || {};
+        } catch (error) {
+          console.error('Error evaluating class expression:', error);
+          return {};
+        }
+      };
+
+      switch (event) {
+        case 'hover':
+          el.addEventListener('mouseover', () => {
+            const clsMap = getClassMap();
+            Object.entries(clsMap).forEach(([cls, cond]) => {
+              if (cond) el.classList.add(cls);
+            });
+          });
+          el.addEventListener('mouseout', () => {
+            const clsMap = getClassMap();
+            Object.entries(clsMap).forEach(([cls, cond]) => {
+              if (cond) el.classList.remove(cls);
+            });
+          });
+          return true;
+
+        case 'focus':
+          el.addEventListener('focus', () => {
+            const clsMap = getClassMap();
+            Object.entries(clsMap).forEach(([cls, cond]) => {
+              if (cond) el.classList.add(cls);
+            });
+          });
+          el.addEventListener('blur', () => {
+            const clsMap = getClassMap();
+            Object.entries(clsMap).forEach(([cls, cond]) => {
+              if (cond) el.classList.remove(cls);
+            });
+          });
+          return true;
+
+        case 'click':
+          const done = completionListener ? completionListener.addAsyncTask() : null;
+          el.addEventListener('click', () => {
+            const clsMap = getClassMap();
+            Object.entries(clsMap).forEach(([cls, cond]) => {
+              if (cond) el.classList.toggle(cls);
+            });
+            if (done) done();
+          });
+          return true;
+
+        case 'input':
+          const asyncDone = completionListener ? completionListener.addAsyncTask() : null;
+          el.addEventListener('input', () => {
+            const clsMap = getClassMap();
+            Object.entries(clsMap).forEach(([cls, cond]) => {
+              if (cond) el.classList.add(cls);
+            });
+            if (asyncDone) asyncDone();
+          });
+          el.addEventListener('blur', () => {
+            const clsMap = getClassMap();
+            Object.entries(clsMap).forEach(([cls, cond]) => {
+              if (cond) el.classList.remove(cls);
+            });
+          });
+          return true;
+
+        default:
+          return false;
+      }
+    }
+  }
+
+  class StyleDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      const expr = vNode.directives['@style'];
+      if (!expr) return;
+
+      try {
+        const styles = this.evalExpr(expr, ctx) || {};
+        if (typeof styles === 'object' && styles !== null && !Array.isArray(styles)) {
+          Object.entries(styles).forEach(([prop, val]) => {
+            if (typeof prop === 'string' && prop.trim()) {
+              el.style[prop] = val;
+            }
+          });
+        }
+
+        if (completionListener) {
+          completionListener.addTask(() => Promise.resolve());
+        }
+      } catch (e) {
+        console.warn('Error applying @style directive:', e);
+      }
+    }
+  }
+
+  class ClickDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      const expr = vNode.directives['@click'];
+      if (!expr) return;
+
+      // Only ensure simple variable names, not complex expressions
+      if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(expr.trim()) &&
+        !expr.includes('=') && !expr.includes('<') && !expr.includes('>') &&
+        !expr.includes('!') && !expr.includes('&') && !expr.includes('|') &&
+        !expr.includes("'") && !expr.includes('"') && !expr.includes('(') && !expr.includes(')')) {
+        this.evaluator.ensureVarInState(expr);
+      }
+
+      const done = completionListener ? completionListener.addAsyncTask() : null;
+
+      el.addEventListener('click', (e) => {
+        this.handleClick(e, expr, ctx, state, el);
+        if (done) done();
+      });
+    }
+
+    handleClick(e, expr, ctx, state, el) {
+      if (el.tagName === 'BUTTON') {
+        e.preventDefault();
+      }
+
+      try {
+        let codeToRun = expr;
+        if (this.evaluator.hasInterpolation(expr)) {
+          codeToRun = this.evaluator.evalAttrValue(expr, ctx);
+        }
+
+        const processedCode = codeToRun.replace(/\bstate\./g, '');
+
+        if (this.handleSpecialClickPatterns(processedCode, ctx, state)) {
+          return;
+        }
+
+        this.executeExpression(processedCode, ctx, e);
+
+        // Ensure all assignments update the global state
+        const ayishaAssignmentRegex = /([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*([^;,]+)/g;
+        let ayishaMatch;
+        while ((ayishaMatch = ayishaAssignmentRegex.exec(processedCode)) !== null) {
+          const varName = ayishaMatch[1].trim();
+          let value;
+          // Prefer value from local context if available
+          if (ctx[varName] !== undefined) {
+            value = ctx[varName];
+          } else {
+            try {
+              value = this.evaluator.evalExpr(ayishaMatch[2].trim(), ctx);
+            } catch {
+              value = ayishaMatch[2].trim();
+            }
+          }
+          state[varName] = value;
+        }
+        setTimeout(() => window.ayisha && window.ayisha.render(), 0);
+
+        // Patch: propagate assignments to global state if needed
+        // Find assignments in the expression (e.g. foo=bar, page=index+1)
+        const assignmentRegex = /([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*([^;]+)/g;
+        let match;
+        while ((match = assignmentRegex.exec(processedCode)) !== null) {
+          const varName = match[1].trim();
+          // Only propagate if the variable exists in global state and differs
+          if (varName in state && ctx[varName] !== undefined && ctx[varName] !== state[varName]) {
+            state[varName] = ctx[varName];
+            setTimeout(() => window.ayisha && window.ayisha.render(), 0);
+          }
+        }
+
+      } catch (err) {
+        this.showError(el, err, expr);
+      }
+    }
+
+    handleSpecialClickPatterns(code, ctx, state) {
+      const contextObjMatch = code.match(/^(\w+)\.(\w+)(\+\+|--|=.+)$/);
+      if (contextObjMatch) {
+        return this.handleContextObjectOperation(contextObjMatch, ctx, state);
+      }
+
+      const filterMatch = code.match(/^(\w+)\s*=\s*(\w+)\.filter\((.+)\)$/);
+      if (filterMatch) {
+        return this.handleFilterOperation(filterMatch, ctx, state);
+      }
+
+      const incrementMatch = code.match(/^(\w+)\+\+$/);
+      if (incrementMatch) {
+        return this.handleIncrement(incrementMatch[1], state);
+      }
+
+      const decrementMatch = code.match(/^(\w+)--$/);
+      if (decrementMatch) {
+        return this.handleDecrement(decrementMatch[1], state);
+      }
+
+      const arithMatch = code.match(/^(\w+)\s*([+\-*\/])=\s*(.+)$/);
+      if (arithMatch) {
+        return this.handleArithmetic(arithMatch, ctx, state);
+      }
+
+      return false;
+    }
+
+    handleContextObjectOperation([, objName, propName, operation], ctx, state) {
+      if (!ctx || !ctx[objName]) return false;
+
+      const targetObj = ctx[objName];
+
+      if (targetObj && typeof targetObj === 'object' && targetObj.id) {
+        return this.updateObjectInState(targetObj, propName, operation, ctx, state);
+      }
+
+      if (operation === '++') {
+        targetObj[propName] = (targetObj[propName] || 0) + 1;
+      } else if (operation === '--') {
+        targetObj[propName] = (targetObj[propName] || 0) - 1;
+      } else if (operation.startsWith('=')) {
+        const valueExpr = operation.substring(1).trim();
+        targetObj[propName] = this.evalExpr(valueExpr, ctx);
+      }
+
+      setTimeout(() => window.ayisha?.render(), 0);
+      return true;
+    }
+
+    updateObjectInState(targetObj, propName, operation, ctx, state) {
+      for (const [stateKey, stateValue] of Object.entries(state)) {
+        if (Array.isArray(stateValue)) {
+          const index = stateValue.findIndex(item =>
+            item && typeof item === 'object' && item.id === targetObj.id
+          );
+
+          if (index !== -1) {
+            if (operation === '++') {
+              state[stateKey][index][propName] = (state[stateKey][index][propName] || 0) + 1;
+            } else if (operation === '--') {
+              state[stateKey][index][propName] = (state[stateKey][index][propName] || 0) - 1;
+            } else if (operation.startsWith('=')) {
+              const valueExpr = operation.substring(1).trim();
+              state[stateKey][index][propName] = this.evalExpr(valueExpr, ctx);
+            }
+            setTimeout(() => window.ayisha?.render(), 0);
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    handleFilterOperation([, targetVar, sourceVar, filterExpr], ctx, state) {
+      if (filterExpr.includes('!==') && targetVar === sourceVar) {
+        const varMatch = filterExpr.match(/!==\s*(\w+)\.id/);
+        let objectToDelete = null;
+
+        if (varMatch) {
+          objectToDelete = ctx[varMatch[1]];
+        } else {
+          for (const [ctxKey, ctxValue] of Object.entries(ctx)) {
+            if (ctxValue && typeof ctxValue === 'object' && ctxValue.id && ctxKey !== 'users') {
+              objectToDelete = ctxValue;
+              break;
+            }
+          }
+        }
+
+        if (objectToDelete?.id) {
+          state[targetVar] = state[targetVar].filter(p => p.id !== objectToDelete.id);
+          setTimeout(() => window.ayisha?.render(), 0);
+          return true;
+        }
+      }
+      return false;
+    }
+
+    handleIncrement(varName, state) {
+      if (!(varName in state)) state[varName] = 0;
+      state[varName] = (Number(state[varName]) || 0) + 1;
+      setTimeout(() => window.ayisha?.render(), 0);
+      return true;
+    }
+
+    handleDecrement(varName, state) {
+      state[varName] = (Number(state[varName]) || 0) - 1;
+      setTimeout(() => window.ayisha?.render(), 0);
+      return true;
+    }
+
+    handleArithmetic([, varName, operator, valueExpr], ctx, state) {
+      let currentValue = Number(state[varName]) || 0;
+      let operandValue = Number(this.evalExpr(valueExpr, ctx)) || 0;
+
+      switch (operator) {
+        case '+': state[varName] = currentValue + operandValue; break;
+        case '-': state[varName] = currentValue - operandValue; break;
+        case '*': state[varName] = currentValue * operandValue; break;
+        case '/': state[varName] = operandValue !== 0 ? currentValue / operandValue : currentValue; break;
+      }
+
+      setTimeout(() => window.ayisha?.render(), 0);
+      return true;
+    }
+
+    handleSubDirective(vNode, ctx, state, el, event, expression, completionListener = null) {
+      if (event === 'click') {
+        const done = completionListener ? completionListener.addAsyncTask() : null;
+        el.addEventListener('click', (e) => {
+          this.handleClick(e, expression, ctx, state, el);
+          if (done) done();
+        });
+        return true;
+      }
+      return false;
+    }
+  }
+
+  class FetchDirective extends Directive {
+    constructor(evaluator, bindingManager, errorHandler, fetchManager) {
+      super(evaluator, bindingManager, errorHandler);
+      this.fetchManager = fetchManager;
+    }
+
+    apply(vNode, ctx, state, el, completionListener = null) {
+      const expr = vNode.directives['@fetch'];
+      if (!expr) return;
+
+      if (vNode.subDirectives?.['@fetch'] || vNode.directives['@when']) {
+        return;
+      }
+
+      const autoExpr = this.evaluator.autoVarExpr(expr);
+      const resultVar = vNode.directives['@result'] || 'result';
+      const ctxWithVNode = Object.assign({}, ctx, { _vNode: vNode });
+
+      const fetchPromise = this.fetchManager.setupFetch(autoExpr, resultVar, ctxWithVNode);
+      if (completionListener && fetchPromise && typeof fetchPromise.then === 'function') {
+        // Wrap the fetchPromise to also store the result in ctx._eventResult for @then
+        completionListener.addTask(
+          fetchPromise.then(data => {
+            console.log('Fetch result:', data);
+            ctxWithVNode._eventResult = data;
+            return data;
+          })
+        );
+      }
+
+      if (vNode.directives['@watch']) {
+        this.handleWatchDirective(vNode, autoExpr, resultVar);
+      }
+    }
+
+    handleSubDirective(vNode, ctx, state, el, event, expression, completionListener = null) {
+      const eventName = event === 'hover' ? 'mouseover' : event;
+
+      const done = completionListener ? completionListener.addAsyncTask() : null;
+
+      el.addEventListener(eventName, (e) => {
+        const resultVar = vNode.directives['@result'] || 'result';
+        const ctxWithVNode = Object.assign({}, ctx, { _vNode: vNode });
+
+        try {
+          let url = this.evaluator.evalExpr(expression, ctxWithVNode);
+          if (url === undefined) {
+            url = expression;
+          }
+
+          const fetchPromise = this.fetchManager.setupFetch(url, resultVar, ctxWithVNode, e, true);
+          if (fetchPromise) {
+            fetchPromise.then(data => {
+              ctxWithVNode._eventResult = data;
+            }).finally(() => { if (done) done(); });
+          } else if (done) {
+            done();
+          }
+
+        } catch (err) {
+          this.showError(el, err, expression);
+          if (done) done();
+        }
+      });
+
+      return true;
+    }
+
+    handleWatchDirective(vNode, expr, resultVar) {
+      vNode.directives['@watch'].split(',').forEach(watchExpr => {
+        watchExpr = watchExpr.trim();
+        const match = watchExpr.match(/^([\w$]+)\s*=>\s*(.+)$/) ||
+          watchExpr.match(/^([\w$]+)\s*:\s*(.+)$/);
+
+        if (match) {
+          const prop = match[1];
+          const code = match[2];
+          this.evaluator.ensureVarInState(code);
+
+          window.ayisha.addWatcher(prop, (newVal) => {
+            try {
+              this.executeExpression(code, {}, { newVal }, true);
+            } catch (e) {
+              console.error('Watcher error:', e);
+            }
+          }, { oneShot: true });
+        } else {
+          window.ayisha.addWatcher(watchExpr, () => {
+            this.fetchManager.setupFetch(expr, resultVar, undefined, undefined, true);
+          }, { oneShot: true });
+        }
+      });
+    }
+  }
+
+  class ValidateDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      const expr = vNode.directives['@validate'];
+      const modelVar = vNode.directives['@model'];
+
+      if (el && expr && modelVar) {
+        this.bindingManager.bindValidation(el, expr, modelVar);
+      }
+
+      if (completionListener) {
+        completionListener.addTask(() => Promise.resolve());
+      }
+    }
+  }
+
+  class PrevDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      if (el) {
+        const wrapper = document.createElement('div');
+        wrapper.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+        wrapper.style.color = '#fff';
+        wrapper.style.padding = '1em';
+        wrapper.style.borderRadius = '4px';
+        wrapper.style.marginTop = '1em';
+        wrapper.style.overflow = 'auto';
+
+        let currentValue = state;
+        let prevValue = undefined;
+        let titleText = 'CURRENT & PREVIOUS VALUE';
+        const prevExpr = vNode.directives['@prev'];
+        let reactivity = window.ayisha && window.ayisha._reactivity ? window.ayisha._reactivity : null;
+
+        if (typeof prevExpr === 'string' && prevExpr.trim()) {
+          try {
+            currentValue = this.evaluator.evalExpr(prevExpr, ctx);
+            titleText = `PREV: ${prevExpr}`;
+            if (state._prevValues && prevExpr in state._prevValues) {
+              prevValue = state._prevValues[prevExpr];
+            } else {
+              prevValue = undefined;
+            }
+          } catch (e) {
+            currentValue = { error: 'Invalid expression', details: e.message };
+            titleText = `PREV: ${prevExpr}`;
+          }
+        } else {
+          if (state._prevValues) {
+            prevValue = {};
+            for (const k in state) {
+              if (Object.prototype.hasOwnProperty.call(state, k)) {
+                prevValue[k] = state._prevValues[k];
+              }
+            }
+          }
+        }
+
+
+        function safeStringify(val) {
+          if (val === undefined) return 'undefined';
+          if (val === null) return 'null';
+          try {
+            const seen = new WeakSet();
+            return JSON.stringify(val, function (key, value) {
+              if (typeof value === 'object' && value !== null) {
+                if (seen.has(value)) return '[Circular]';
+                seen.add(value);
+              }
+              if (typeof value === 'undefined') return 'undefined';
+              if (typeof value === 'function') return '[Function]';
+              if (key === '_ayishaInstance') return undefined;
+              return value;
+            }, 2);
+          } catch (e) {
+            try {
+              return String(val);
+            } catch {
+              return '[Unserializable]';
+            }
+          }
+        }
+
+        const title = document.createElement('h3');
+        title.textContent = titleText;
+        title.style.margin = '0.5em 0 2em';
+        title.style.fontSize = '1.1em';
+        title.style.fontWeight = 'bold';
+        title.style.color = '#fff';
+        wrapper.appendChild(title);
+
+        const pre = document.createElement('pre');
+        pre.style.margin = '0';
+        pre.style.whiteSpace = 'pre-wrap';
+        pre.style.fontFamily = 'monospace';
+        try {
+          pre.textContent =
+            'Current Value:\n' + safeStringify(currentValue) +
+            '\n\nPrevious Value:\n' + safeStringify(prevValue);
+        } catch (e) {
+          pre.textContent = 'Error displaying previous value: ' + e.message;
+        }
+        wrapper.appendChild(pre);
+
+        el.appendChild(wrapper);
+      }
+      if (completionListener) {
+        completionListener.addTask(() => Promise.resolve());
+      }
+    }
+  }
+
+  class StateDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      if (el) {
+        const wrapper = document.createElement('div');
+        wrapper.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+        wrapper.style.color = '#fff';
+        wrapper.style.padding = '1em';
+        wrapper.style.borderRadius = '4px';
+        wrapper.style.marginTop = '1em';
+        wrapper.style.overflow = 'auto';
+
+        let stateValue = state;
+        let titleText = 'CURRENT STATE';
+        const stateExpr = vNode.directives['@state'];
+        if (typeof stateExpr === 'string' && stateExpr.trim()) {
+          try {
+            stateValue = this.evaluator.evalExpr(stateExpr, ctx);
+            titleText = `STATE: ${stateExpr}`;
+          } catch (e) {
+            stateValue = { error: 'Invalid expression', details: e.message };
+            titleText = `STATE: ${stateExpr}`;
+          }
+        }
+
+        // Se undefined/null, mostra un valore di default generico
+        if (stateValue === undefined) stateValue = null;
+
+        function removeCircular(obj) {
+          const seen = new WeakSet();
+          return JSON.parse(JSON.stringify(obj, function (key, value) {
+            if (typeof value === 'object' && value !== null) {
+              if (seen.has(value)) return undefined;
+              seen.add(value);
+            }
+            if (key === '_ayishaInstance') return undefined;
+            return value;
+          }));
+        }
+
+        const title = document.createElement('h3');
+        title.textContent = titleText;
+        title.style.margin = '0.5em 0 2em';
+        title.style.fontSize = '1.1em';
+        title.style.fontWeight = 'bold';
+        title.style.color = '#fff';
+        wrapper.appendChild(title);
+
+        const pre = document.createElement('pre');
+        pre.style.margin = '0';
+        pre.style.whiteSpace = 'pre-wrap';
+        pre.style.fontFamily = 'monospace';
+        try {
+          pre.textContent = JSON.stringify(removeCircular(stateValue), null, 2);
+        } catch (e) {
+          pre.textContent = '[Non serializzabile]';
+        }
+        wrapper.appendChild(pre);
+
+        el.appendChild(wrapper);
+      }
+
+      if (completionListener) {
+        completionListener.addTask(() => Promise.resolve());
+      }
+    }
+  }
+
+  class LogDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      if (el) {
+        el.textContent = 'Log: ' + JSON.stringify(vNode.directives, null, 2);
+      }
+
+      if (completionListener) {
+        completionListener.addTask(() => Promise.resolve());
+      }
+    }
+  }
+
+  class AttrDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      const expr = vNode.directives['@attr'];
+      let attrs = {};
+      try {
+        attrs = this.evaluator.evalExpr(expr, ctx);
+      } catch { }
+      if (el && typeof attrs === 'object') {
+        Object.entries(attrs).forEach(([k, v]) => {
+          el.setAttribute(k, v);
+        });
+      }
+
+      if (completionListener) {
+        completionListener.addTask(() => Promise.resolve());
+      }
+    }
+  }
+
+  class FocusDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      const expr = vNode.directives['@focus'];
+      if (!expr) return;
+
+      // Only ensure simple variable names, not complex expressions
+      if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(expr.trim()) &&
+        !expr.includes('=') && !expr.includes('<') && !expr.includes('>') &&
+        !expr.includes('!') && !expr.includes('&') && !expr.includes('|') &&
+        !expr.includes("'") && !expr.includes('"') && !expr.includes('(') && !expr.includes(')')) {
+        this.evaluator.ensureVarInState(expr);
+      }
+
+      const done = completionListener ? completionListener.addAsyncTask() : null;
+
+      el.addEventListener('focus', (e) => {
+        try {
+          this.executeExpression(expr, ctx, e, true);
+          if (done) done();
+        } catch (err) {
+          this.showError(el, err, expr);
+          if (done) done();
+        }
+      });
+    }
+
+    handleSubDirective(vNode, ctx, state, el, event, expression, completionListener = null) {
+      if (event === 'focus') {
+        // Only ensure simple variable names, not complex expressions
+        if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(expression.trim()) &&
+          !expression.includes('=') && !expression.includes('<') && !expression.includes('>') &&
+          !expression.includes('!') && !expression.includes('&') && !expression.includes('|') &&
+          !expression.includes("'") && !expression.includes('"') && !expression.includes('(') && !expression.includes(')')) {
+          this.evaluator.ensureVarInState(expression);
+        }
+        const done = completionListener ? completionListener.addAsyncTask() : null;
+        el.addEventListener('focus', (e) => {
+          try {
+            this.executeExpression(expression, ctx, e, true);
+            if (done) done();
+          } catch (err) {
+            this.showError(el, err, expression);
+            if (done) done();
+          }
+        });
+        return true;
+      }
+      return false;
+    }
+  }
+
+  class BlurDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      const expr = vNode.directives['@blur'];
+      if (!expr) return;
+
+      // Only ensure simple variable names, not complex expressions
+      if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(expr.trim()) &&
+        !expr.includes('=') && !expr.includes('<') && !expr.includes('>') &&
+        !expr.includes('!') && !expr.includes('&') && !expr.includes('|') &&
+        !expr.includes("'") && !expr.includes('"') && !expr.includes('(') && !expr.includes(')')) {
+        this.evaluator.ensureVarInState(expr);
+      }
+
+      const done = completionListener ? completionListener.addAsyncTask() : null;
+
+      el.addEventListener('blur', (e) => {
+        try {
+          this.executeExpression(expr, ctx, e, true);
+          if (done) done();
+        } catch (err) {
+          this.showError(el, err, expr);
+          if (done) done();
+        }
+      });
+    }
+
+    handleSubDirective(vNode, ctx, state, el, event, expression, completionListener = null) {
+      if (event === 'blur') {
+        // Only ensure simple variable names, not complex expressions
+        if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(expression.trim()) &&
+          !expression.includes('=') && !expression.includes('<') && !expression.includes('>') &&
+          !expression.includes('!') && !expression.includes('&') && !expression.includes('|') &&
+          !expression.includes("'") && !expression.includes('"') && !expression.includes('(') && !expression.includes(')')) {
+          this.evaluator.ensureVarInState(expression);
+        }
+        const done = completionListener ? completionListener.addAsyncTask() : null;
+        el.addEventListener('blur', (e) => {
+          try {
+            this.executeExpression(expression, ctx, e, true);
+            if (done) done();
+          } catch (err) {
+            this.showError(el, err, expression);
+            if (done) done();
+          }
+        });
+        return true;
+      }
+      return false;
+    }
+  }
+
+  class ChangeDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      const expr = vNode.directives['@change'];
+      if (!expr) return;
+
+      // Only ensure simple variable names, not complex expressions
+      if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(expr.trim()) &&
+        !expr.includes('=') && !expr.includes('<') && !expr.includes('>') &&
+        !expr.includes('!') && !expr.includes('&') && !expr.includes('|') &&
+        !expr.includes("'") && !expr.includes('"') && !expr.includes('(') && !expr.includes(')')) {
+        this.evaluator.ensureVarInState(expr);
+      }
+
+      const done = completionListener ? completionListener.addAsyncTask() : null;
+
+      el.addEventListener('change', (e) => {
+        try {
+          this.executeExpression(expr, ctx, e, true);
+          if (done) done();
+        } catch (err) {
+          this.showError(el, err, expr);
+          if (done) done();
+        }
+      });
+    }
+
+    handleSubDirective(vNode, ctx, state, el, event, expression, completionListener = null) {
+      if (event === 'change') {
+        // Only ensure simple variable names, not complex expressions
+        if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(expression.trim()) &&
+          !expression.includes('=') && !expression.includes('<') && !expression.includes('>') &&
+          !expression.includes('!') && !expression.includes('&') && !expression.includes('|') &&
+          !expression.includes("'") && !expression.includes('"') && !expression.includes('(') && !expression.includes(')')) {
+          this.evaluator.ensureVarInState(expression);
+        }
+        const done = completionListener ? completionListener.addAsyncTask() : null;
+        el.addEventListener('change', (e) => {
+          try {
+            this.executeExpression(expression, ctx, e, true);
+            if (done) done();
+          } catch (err) {
+            this.showError(el, err, expression);
+            if (done) done();
+          }
+        });
+        return true;
+      }
+      return false;
+    }
+  }
+
+  class InputDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      const expr = vNode.directives['@input'];
+      if (!expr) return;
+
+      // Only ensure simple variable names, not complex expressions
+      if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(expr.trim()) &&
+        !expr.includes('=') && !expr.includes('<') && !expr.includes('>') &&
+        !expr.includes('!') && !expr.includes('&') && !expr.includes('|') &&
+        !expr.includes("'") && !expr.includes('"') && !expr.includes('(') && !expr.includes(')')) {
+        this.evaluator.ensureVarInState(expr);
+      }
+
+      const done = completionListener ? completionListener.addAsyncTask() : null;
+
+      el.addEventListener('input', (e) => {
+        try {
+          this.executeExpression(expr, ctx, e, true);
+          if (done) done();
+        } catch (err) {
+          this.showError(el, err, expr);
+          if (done) done();
+        }
+      });
+    }
+
+    handleSubDirective(vNode, ctx, state, el, event, expression, completionListener = null) {
+      if (event === 'input') {
+        // Only ensure simple variable names, not complex expressions
+        if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(expression.trim()) &&
+          !expression.includes('=') && !expression.includes('<') && !expression.includes('>') &&
+          !expression.includes('!') && !expression.includes('&') && !expression.includes('|') &&
+          !expression.includes("'") && !expression.includes('"') && !expression.includes('(') && !expression.includes(')')) {
+          this.evaluator.ensureVarInState(expression);
+        }
+        const done = completionListener ? completionListener.addAsyncTask() : null;
+        el.addEventListener('input', (e) => {
+          try {
+            this.executeExpression(expression, ctx, e, true);
+            if (done) done();
+          } catch (err) {
+            this.showError(el, err, expression);
+            if (done) done();
+          }
+        });
+        return true;
+      }
+      return false;
+    }
+  }
+
+  class DoDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      // PATCH: esegui @do solo se NON c'è @watch, @when, @fetch, @click, @input, @change, @blur, @focus, @hover, @go, @set, @model, @validate, @key, @result, @then, @finally, @error, @payload, @headers, @method, @page, @component, @src, @state, @log, @text, @class, @style, @show, @hide, @if, @for, @switch, @case, @default, @source, @map, @filter, @reduce, @initial, @animate, @link, @key, @set, @model, @validate, @key, @result, @then, @finally, @error, @payload, @headers, @method, @page, @component, @src, @state, @log, @text, @class, @style, @show, @hide, @if, @for, @switch, @case, @default, @source, @map, @filter, @reduce, @initial, @animate, @link, @key, @set, @model, @validate, @key, @result, @then, @finally, @error, @payload, @headers, @method, @page, @component, @src, @state, @log, @text, @class, @style, @show, @hide, @if, @for, @switch, @case, @default, @source, @map, @filter, @reduce, @initial, @animate, @link
+      // (in pratica: SOLO se @do è l'unica direttiva, o se usata con @when)
+      const expr = vNode.directives['@do'];
+      if (!expr) return;
+
+      // Se c'è una direttiva triggerante, NON eseguire qui (sarà il watcher/evento a triggerare)
+      const triggerDirectives = [
+        '@watch', '@when', '@fetch', '@click', '@input', '@change', '@blur', '@focus', '@hover', '@go', '@set', '@model', '@validate', '@key', '@result', '@then', '@finally', '@error', '@payload', '@headers', '@method', '@page', '@component', '@src', '@state', '@log', '@text', '@class', '@style', '@show', '@hide', '@if', '@for', '@switch', '@case', '@default', '@source', '@map', '@filter', '@reduce', '@initial', '@animate', '@link'
+      ];
+      for (const dir of triggerDirectives) {
+        if (vNode.directives[dir] && dir !== '@do') return;
+      }
+
+      // Se siamo qui, @do è "standalone" (o solo con @when)
+      this.executeExpression(expr, ctx);
+      if (completionListener) {
+        completionListener.addTask(() => Promise.resolve());
+      }
+    }
+  }
+
+  class WhenDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      const whenExpr = vNode.directives['@when'];
+      const doExpr = vNode.directives['@do'];
+      const goExpr = vNode.directives['@go'];
+      const waitExpr = vNode.directives['@wait'];
+
+      if (!doExpr && !goExpr) {
+        console.warn('@when richiede almeno @do o @go');
+        return;
+      }
+
+      const directiveKey = `when_${whenExpr}_${doExpr || ''}_${goExpr || ''}`;
+      if (!window._ayishaWhenLastState) window._ayishaWhenLastState = {};
+
+      // Setup watcher only once per vNode
+      if (!vNode._ayishaWhenWatcherSetup) {
+        vNode._ayishaWhenWatcherSetup = true;
+        // Estrarre tutte le dipendenze (variabili) usate nell'espressione @when
+        const deps = this.evaluator.extractDependencies(whenExpr);
+        if (window.ayisha && typeof window.ayisha.addWatcher === 'function') {
+          deps.forEach(dep => {
+            window.ayisha.addWatcher(dep, () => {
+              this._ayishaWhenReactiveTrigger(vNode, ctx, state, el, directiveKey, whenExpr, doExpr, goExpr, waitExpr, completionListener);
+            });
+          });
+        }
+      }
+
+      this._ayishaWhenReactiveTrigger(vNode, ctx, state, el, directiveKey, whenExpr, doExpr, goExpr, waitExpr, completionListener, true);
+    }
+
+    _ayishaWhenReactiveTrigger(vNode, ctx, state, el, directiveKey, whenExpr, doExpr, goExpr, waitExpr, completionListener = null, isFirstRender = false) {
+      let condition = false;
+      try {
+        condition = this.evaluator.evalExpr(whenExpr, ctx);
+      } catch (e) {
+        console.error('Errore valutazione @when:', e);
+        return;
+      }
+      const isTrue = !!condition;
+      let wasTrue = window._ayishaWhenLastState[directiveKey];
+      if (typeof wasTrue !== 'boolean') wasTrue = false;
+      // PATCH: trigger @do/@go solo su rising edge (da false a true), MAI su ogni render o su update di variabili non rilevanti
+      if (isTrue && !wasTrue) {
+        let executed = false;
+        const executeNow = () => {
+          if (executed) return;
+          executed = true;
+          window._ayishaWhenLastState[directiveKey] = true;
+          try {
+            if (doExpr) this.executeExpression(doExpr, ctx, null, false);
+            if (goExpr) {
+              let page;
+              try {
+                let expr = this.evaluator.autoPageName(goExpr);
+                page = this.evaluator.evalExpr(expr, ctx);
+              } catch (e) { page = undefined; }
+              if (!page && typeof goExpr === 'string' && goExpr.trim()) {
+                page = goExpr.trim().replace(/^['"]|['"]$/g, '');
+              }
+              if (typeof page === 'string' && page.length > 0) {
+                // Solo se cambia davvero la pagina
+                if (state._currentPage !== page) {
+                  state._currentPage = page;
+                  if (window && window.history && typeof window.history.pushState === 'function') {
+                    window.history.pushState({}, '', '/' + page);
+                    window.dispatchEvent(new PopStateEvent('popstate'));
+                  }
+                }
+              }
+            }
+            if (completionListener) {
+              completionListener.addTask(() => Promise.resolve());
+            }
+          } catch (error) {
+            console.error('❌ Errore esecuzione @when:', error);
+          }
+        };
+        const delay = waitExpr ? this.parseDelay(waitExpr, ctx, state) : 0;
+        if (delay > 0) {
+          if (completionListener) {
+            const delayPromise = new Promise((resolve) => {
+              setTimeout(() => {
+                let stillTrue = false;
+                try {
+                  stillTrue = this.evaluator.evalExpr(whenExpr, ctx);
+                } catch { }
+                if (!!stillTrue) {
+                  executeNow();
+                } else {
+                  window._ayishaWhenLastState[directiveKey] = false;
+                }
+                resolve();
+              }, delay);
+            });
+            completionListener.addTask(delayPromise);
+          } else {
+            setTimeout(() => {
+              let stillTrue = false;
+              try {
+                stillTrue = this.evaluator.evalExpr(whenExpr, ctx);
+              } catch { }
+              if (!!stillTrue) {
+                executeNow();
+              } else {
+                window._ayishaWhenLastState[directiveKey] = false;
+              }
+            }, delay);
+          }
+        } else {
+          executeNow();
+        }
+      } else if (!isTrue && wasTrue) {
+        window._ayishaWhenLastState[directiveKey] = false;
+      }
+    }
+
+    parseDelay(waitExpr, ctx, state) {
+      try {
+        let delay = this.evaluator.evalExpr(waitExpr, ctx);
+        const parsedDelay = parseInt(delay, 10);
+        return isNaN(parsedDelay) ? 0 : Math.max(0, parsedDelay);
+      } catch (error) {
+        console.error('❌ Errore nel parsing del delay @wait:', error, waitExpr);
+        return 0;
+      }
+    }
+  }
+
+  class GoDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      if (vNode.directives['@when']) return;
+
+      let expr = vNode.directives['@go'];
+      if (this.evaluator && typeof this.evaluator.autoPageName === 'function') {
+        expr = this.evaluator.autoPageName(expr);
+      }
+
+      let page = this.evaluator ? this.evaluator.evalExpr(expr, ctx) : expr;
+
+      if (typeof page === 'string') {
+        // Gestisci i percorsi relativi e assoluti
+        let finalPage = this.resolvePath(page);
+
+        state._currentPage = finalPage;
+
+        if (window && window.history && typeof window.history.pushState === 'function') {
+          const url = finalPage ? '/' + finalPage : '/';
+          window.history.pushState({}, '', url);
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }
+
+        if (typeof window.ayisha?.render === 'function') {
+          setTimeout(() => window.ayisha.render(), 0);
+        }
+      }
+
+      if (completionListener) {
+        completionListener.addTask(() => Promise.resolve());
+      }
+    }
+
+    resolvePath(targetPage) {
+      if (!targetPage) return '';
+
+      // Se il percorso inizia con '/', è un percorso assoluto
+      if (targetPage.startsWith('/')) {
+        return targetPage.substring(1); // Rimuovi il '/' iniziale
+      }
+
+      // Se il percorso è relativo, sostituisce completamente il percorso corrente
+      return targetPage;
+    }
+  }
+
+  class WaitDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      // handled reactively in AyishaVDOM, no-op for SEO
+      if (completionListener) {
+        completionListener.addTask(() => Promise.resolve());
+      }
+    }
+  }
+
+  class SetDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      const expr = vNode.directives['@set'];
+      if (!expr || vNode._setProcessed) return;
+
+      let setExprs = expr;
+      if (Array.isArray(setExprs)) {
+        setExprs = setExprs.flat().filter(Boolean);
+      } else if (typeof setExprs === 'string') {
+        setExprs = setExprs.split(/;;|\n/).map(s => s.trim()).filter(Boolean);
+      } else {
+        setExprs = [setExprs];
+      }
+
+      setExprs.forEach(e => {
+        try {
+          const assignmentRegex = /([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=([^=].*)/g;
+          let match;
+          while ((match = assignmentRegex.exec(e)) !== null) {
+            const varName = match[1];
+            if (!(varName in state) || state[varName] === undefined) {
+              state[varName] = this.evaluator.evalExpr(match[2], ctx);
+            }
+          }
+        } catch (error) {
+          console.error('Error in @set directive:', error);
+          if (el) el.setAttribute('data-ayisha-set-error', error.message);
+        }
+      });
+
+      vNode._setProcessed = true;
+      delete vNode.directives['@set'];
+
+      if (completionListener) {
+        completionListener.addTask(() => Promise.resolve());
+      }
+    }
+
+    handleSubDirective(vNode, ctx, state, el, event, expression, completionListener = null) {
+      if (['click', 'input', 'change', 'focus', 'blur'].includes(event)) {
+        const done = completionListener ? completionListener.addAsyncTask() : null;
+        el.addEventListener(event, () => {
+          try {
+            this.executeExpression(expression, ctx, null, true);
+            if (done) done();
+          } catch (err) {
+            this.showError(el, err, expression);
+            if (done) done();
+          }
+        });
+        return true;
+      }
+      return false;
+    }
+  }
+
+  class ThenDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      // @then is handled by the completion listener system
+      // This directive just marks that completion tracking is needed
+      if (completionListener) {
+        completionListener.addTask(() => Promise.resolve());
+      }
+    }
+  }
+
+  class FinallyDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      // @finally is handled by the completion listener system
+      // This directive just marks that completion tracking is needed
+      if (completionListener) {
+        completionListener.addTask(() => Promise.resolve());
+      }
+    }
+  }
+
+  class KeyDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      if (el && vNode.directives['@key']) {
+        el.setAttribute('data-ayisha-key', vNode.directives['@key']);
+      }
+
+      if (completionListener) {
+        completionListener.addTask(() => Promise.resolve());
+      }
+    }
+  }
+
+  class SrcDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      if (el && vNode.directives['@src']) {
+        const src = vNode.directives['@src'];
+        const loadPromise = window.ayisha?.componentManager?.loadExternalComponent(src).then(html => {
+          if (html) el.innerHTML = html;
+        });
+
+        if (completionListener && loadPromise) {
+          completionListener.addTask(loadPromise);
+        }
+      }
+    }
+  }
+
+  class PageDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      if (el && vNode.directives['@page']) {
+        const page = vNode.directives['@page'];
+        el.style.display = (state._currentPage === page) ? '' : 'none';
+      }
+
+      if (completionListener) {
+        completionListener.addTask(() => Promise.resolve());
+      }
+    }
+  }
+
+  class ComponentDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      // Modular VDOM component loading (for <component @src="...">)
+      const src = vNode.directives['@src'];
+      if (!src) {
+        return this.errorHandler.createErrorElement(`Error: <b>&lt;component&gt;</b> requires the <b>@src</b> attribute`);
+      }
+
+      let srcUrl = null;
+      try {
+        srcUrl = this.evaluator.evalExpr(src, ctx);
+      } catch (e) {
+        srcUrl = src;
+      }
+      // Fallback to raw attribute if still falsy
+      if (!srcUrl) srcUrl = src;
+      if (typeof srcUrl === 'string') srcUrl = srcUrl.trim();
+      // Normalize quotes (single or double)
+      if (typeof srcUrl === 'string' && /^['"].*['"]$/.test(srcUrl)) {
+        srcUrl = srcUrl.slice(1, -1);
+      }
+      if (!srcUrl || srcUrl === 'undefined' || srcUrl === 'null') {
+        return this.errorHandler.createErrorElement(`Error: Invalid component URL`);
+      }
+      if (srcUrl.startsWith('./')) srcUrl = srcUrl.substring(2);
+
+      const cm = window.ayisha?.componentManager;
+      if (cm && cm.getCachedComponent(srcUrl)) {
+        const componentHtml = cm.getCachedComponent(srcUrl);
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = componentHtml;
+        window.ayisha?._processComponentInitBlocks(tempDiv);
+        const componentVNode = window.ayisha?.parse(tempDiv);
+        if (componentVNode && componentVNode.children) {
+          const frag = document.createDocumentFragment();
+          componentVNode.children.forEach(child => {
+            const node = state._ayishaInstance._renderVNode(child, ctx);
+            if (node) frag.appendChild(node);
+          });
+
+          if (completionListener) {
+            completionListener.addTask(() => Promise.resolve());
+          }
+          return frag;
+        }
+      }
+
+      if (cm && !cm.getCachedComponent(srcUrl)) {
+        const loadPromise = cm.loadExternalComponent(srcUrl).then(html => {
+          if (html) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            window.ayisha?._processComponentInitBlocks(tempDiv);
+            if (!window.ayisha?._isRendering) {
+              clearTimeout(window.ayisha?._componentRenderTimeout);
+              window.ayisha._componentRenderTimeout = setTimeout(() => window.ayisha.render(), 10);
+            }
+          } else {
+            console.error(`ComponentManager: Failed to load component ${srcUrl}`);
+          }
+        }).catch(err => {
+          console.error('Error loading component:', err);
+          cm.cache[srcUrl] = `<div class='component-error' style='padding: 10px; background: #ffe6e6; border: 1px solid #ff6b6b; border-radius: 4px; color: #d32f2f;'>Errore: ${err.message}</div>`;
+          if (!window.ayisha?._isRendering) {
+            clearTimeout(window.ayisha?._componentRenderTimeout);
+            window.ayisha._componentRenderTimeout = setTimeout(() => window.ayisha.render(), 10);
+          }
+        });
+
+        if (completionListener) {
+          completionListener.addTask(loadPromise);
+        }
+      }
+
+      const placeholder = document.createElement('div');
+      placeholder.className = 'component-loading';
+      placeholder.style.cssText = 'padding: 10px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; color: #6c757d; font-size: 14px; text-align: center;';
+      placeholder.innerHTML = `⏳ Loading component: <code>${srcUrl}</code>`;
+      return placeholder;
+    }
+  }
+
+  class SwitchDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      // VDOM switch logic
+      const swVal = this.evaluator.evalExpr(vNode.directives['@switch'], ctx);
+      let defaultNode = null;
+      for (const child of vNode.children) {
+        if (!child.directives) continue;
+        if (child.directives['@case'] != null) {
+          let cv = child.directives['@case'];
+          if (/^['"].*['"]$/.test(cv)) cv = cv.slice(1, -1);
+          if (String(cv) === String(swVal)) {
+            if (completionListener) {
+              completionListener.addTask(() => Promise.resolve());
+            }
+            return state._ayishaInstance._renderVNode(child, ctx);
+          }
+        }
+        if (child.directives['@default'] != null) defaultNode = child;
+      }
+
+      if (completionListener) {
+        completionListener.addTask(() => Promise.resolve());
+      }
+      return defaultNode ? state._ayishaInstance._renderVNode(defaultNode, ctx) : document.createComment('noswitch');
+    }
+  }
+
+  class CaseDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      // CaseDirective: gestito dal parent SwitchDirective
+      if (completionListener) {
+        completionListener.addTask(() => Promise.resolve());
+      }
+    }
+  }
+
+  class DefaultDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      // DefaultDirective: gestito dal parent SwitchDirective
+      if (completionListener) {
+        completionListener.addTask(() => Promise.resolve());
+      }
+    }
+  }
+
+  class SourceDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      if (el && vNode.directives['@source']) {
+        const src = vNode.directives['@source'];
+        const data = this.evaluator?.evalExpr(src, ctx);
+        el.ayishaSourceData = data;
+      }
+
+      if (completionListener) {
+        completionListener.addTask(() => Promise.resolve());
+      }
+    }
+  }
+
+  class MapDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      if (el && vNode.directives['@map']) {
+        const mapFn = vNode.directives['@map'];
+        const data = el.ayishaSourceData;
+        if (Array.isArray(data)) {
+          try {
+            const fn = this.evaluator?.evalExpr(mapFn, ctx);
+            el.ayishaSourceData = data.map(fn);
+          } catch { }
+        }
+      }
+
+      if (completionListener) {
+        completionListener.addTask(() => Promise.resolve());
+      }
+    }
+  }
+
+  class FilterDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      if (el && vNode.directives['@filter']) {
+        const filterFn = vNode.directives['@filter'];
+        const data = el.ayishaSourceData;
+        if (Array.isArray(data)) {
+          try {
+            const fn = this.evaluator?.evalExpr(filterFn, ctx);
+            el.ayishaSourceData = data.filter(fn);
+          } catch { }
+        }
+      }
+
+      if (completionListener) {
+        completionListener.addTask(() => Promise.resolve());
+      }
+    }
+  }
+
+  class ReduceDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      if (el && vNode.directives['@reduce']) {
+        const reduceFn = vNode.directives['@reduce'];
+        const initial = vNode.directives['@initial'];
+        const data = el.ayishaSourceData;
+        if (Array.isArray(data)) {
+          try {
+            const fn = this.evaluator?.evalExpr(reduceFn, ctx);
+            el.ayishaSourceData = data.reduce(fn, initial);
+          } catch { }
+        }
+      }
+
+      if (completionListener) {
+        completionListener.addTask(() => Promise.resolve());
+      }
+    }
+  }
+
+  class InitialDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      // InitialDirective: usato da ReduceDirective
+      if (completionListener) {
+        completionListener.addTask(() => Promise.resolve());
+      }
+    }
+  }
+
+  class AnimateDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      if (el && vNode.directives['@animate']) {
+        el.classList.add(vNode.directives['@animate']);
+      }
+
+      if (completionListener) {
+        completionListener.addTask(() => Promise.resolve());
+      }
+    }
+  }
+
+  class LinkDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      if (el && vNode.directives['@link']) {
+        const done = completionListener ? completionListener.addAsyncTask() : null;
+        el.addEventListener('click', e => {
+          e.preventDefault();
+          const targetPage = vNode.directives['@link'];
+
+          let finalPage = this.resolvePath(targetPage);
+
+          state._currentPage = finalPage;
+
+          if (window && window.history && typeof window.history.pushState === 'function') {
+            const url = finalPage ? '/' + finalPage : '/';
+            window.history.pushState({}, '', url);
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          }
+
+          setTimeout(() => {
+            window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+          }, 10);
+
+          if (typeof window.ayisha?.render === 'function') {
+            setTimeout(() => window.ayisha.render(), 0);
+          }
+
+          if (done) done();
+        });
+      }
+    }
+
+    resolvePath(targetPage) {
+      if (!targetPage) return '';
+
+      if (targetPage.startsWith('/')) {
+        return targetPage.substring(1);
+      }
+
+      return targetPage;
+    }
+  }
+
+  class HoverDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      const expr = vNode.directives['@hover'];
+      if (!expr) return;
+
+      const done = completionListener ? completionListener.addAsyncTask() : null;
+
+      const applyHover = (e) => {
+        try {
+          this.executeExpression(expr, ctx, e, true);
+          if (done) done();
+        } catch (err) {
+          this.showError(el, err, expr);
+          if (done) done();
+        }
+      };
+
+      el.addEventListener('mouseover', applyHover);
+      el.addEventListener('mouseout', applyHover);
+    }
+
+    handleSubDirective(vNode, ctx, state, el, event, expression, completionListener = null) {
+      if (event === 'hover') {
+        const done = completionListener ? completionListener.addAsyncTask() : null;
+        const applyHover = (e) => {
+          try {
+            this.executeExpression(expression, ctx, e, true);
+            if (done) done();
+          } catch (err) {
+            this.showError(el, err, expression);
+            if (done) done();
+          }
+        };
+
+        el.addEventListener('mouseover', applyHover);
+        el.addEventListener('mouseout', applyHover);
+        return true;
+      }
+      return false;
+    }
+  }
+
+  // Modular Directives Object
+  const ModularDirectives = {
+    '@if': IfDirective,
+    '@not': NotDirective,
+    '@for': ForDirective,
+    '@model': ModelDirective,
+    '@file': FileDirective,
+    '@files': FilesDirective,
+    '@show': ShowDirective,
+    '@hide': HideDirective,
+    '@text': TextDirective,
+    '@class': ClassDirective,
+    '@style': StyleDirective,
+    '@click': ClickDirective,
+    '@fetch': FetchDirective,
+    '@validate': ValidateDirective,
+    '@state': StateDirective,
+    '@log': LogDirective,
+    '@attr': AttrDirective,
+    '@focus': FocusDirective,
+    '@blur': BlurDirective,
+    '@change': ChangeDirective,
+    '@input': InputDirective,
+    '@when': WhenDirective,
+    '@do': DoDirective,
+    '@go': GoDirective,
+    '@wait': WaitDirective,
+    '@set': SetDirective,
+    '@then': ThenDirective,
+    '@finally': FinallyDirective,
+    '@key': KeyDirective,
+    '@src': SrcDirective,
+    '@page': PageDirective,
+    '@component': ComponentDirective,
+    '@switch': SwitchDirective,
+    '@case': CaseDirective,
+    '@default': DefaultDirective,
+    '@source': SourceDirective,
+    '@map': MapDirective,
+    '@filter': FilterDirective,
+    '@reduce': ReduceDirective,
+    '@initial': InitialDirective,
+    '@animate': AnimateDirective,
+    '@link': LinkDirective,
+    '@prev': PrevDirective,
+    '@hover': HoverDirective,
+    '@date': DateDirective,
+    '@dateonly': DateOnlyDirective,
+    '@time': TimeDirective
+  };
+
+  // Enhanced Directive Manager
+  class DirectiveManager {
+    constructor(evaluator, bindingManager, errorHandler, fetchManager) {
+      this.directives = new Map();
+      this.evaluator = evaluator;
+      this.bindingManager = bindingManager;
+      this.errorHandler = errorHandler;
+      this.fetchManager = fetchManager;
+
+      this.initializeDirectives();
+    }
+
+    initializeDirectives() {
+      this.register('@if', new IfDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@not', new NotDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@for', new ForDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@model', new ModelDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@file', new FileDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@files', new FilesDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@hide', new HideDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@text', new TextDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@date', new DateDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@dateonly', new DateOnlyDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@time', new TimeDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@class', new ClassDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@style', new StyleDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@click', new ClickDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@fetch', new FetchDirective(this.evaluator, this.bindingManager, this.errorHandler, this.fetchManager));
+      this.register('@validate', new ValidateDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@state', new StateDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@log', new LogDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@attr', new AttrDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@focus', new FocusDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@blur', new BlurDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@change', new ChangeDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@input', new InputDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@when', new WhenDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@do', new DoDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@go', new GoDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@wait', new WaitDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@set', new SetDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@then', new ThenDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@finally', new FinallyDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@key', new KeyDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@src', new SrcDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@page', new PageDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@component', new ComponentDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@switch', new SwitchDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@case', new CaseDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@default', new DefaultDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@source', new SourceDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@map', new MapDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@filter', new FilterDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@reduce', new ReduceDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@initial', new InitialDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@animate', new AnimateDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@prev', new PrevDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@link', new LinkDirective(this.evaluator, this.bindingManager, this.errorHandler));
+      this.register('@hover', new HoverDirective(this.evaluator, this.bindingManager, this.errorHandler));
+    }
+
+    register(name, directive) {
+      this.directives.set(name, directive);
+    }
+
+    getDirective(name) {
+      return this.directives.get(name);
+    }
+    applyDirectives(vNode, ctx, state, el, completionListener = null) {
+      if (
+        vNode.directives &&
+        vNode.directives['@watch'] &&
+        vNode.directives['@do'] &&
+        window.ayisha &&
+        typeof window.ayisha.addWatcher === 'function'
+      ) {
+        if (!window._ayishaGlobalWatchRegistry) window._ayishaGlobalWatchRegistry = new Set();
+        let uniqueId = null;
+        let ancestry = [];
+        let node = vNode;
+        while (node) {
+          let tag = node.tag || '';
+          let staticAttrs = '';
+          if (node.attrs) {
+            staticAttrs = Object.entries(node.attrs)
+              .filter(([k, v]) => typeof v === 'string' && !k.startsWith('@'))
+              .map(([k, v]) => `${k}=${v}`)
+              .join(';');
+          }
+          let forKey = node.directives && node.directives['@for'] ? `@for=${node.directives['@for']}` : '';
+          ancestry.push(`${tag}|${staticAttrs}|${forKey}`);
+          node = node.parent || node._parent || null;
+        }
+        ancestry = ancestry.reverse();
+        uniqueId = ancestry.join('>') + '::' + vNode.directives['@watch'] + '::' + vNode.directives['@do'];
+
+        vNode.directives['@__autoKey'] = uniqueId;
+        vNode.directives['@watch'].split(',').forEach(watchExpr => {
+          const prop = watchExpr.trim();
+          const regKey = prop + '::' + vNode.directives['@do'] + '::' + uniqueId;
+          if (!window._ayishaGlobalWatchRegistry.has(regKey)) {
+            window._ayishaGlobalWatchRegistry.add(regKey);
+            window.ayisha.addWatcher(prop, () => {
+              try {
+                window.ayisha.evaluator.executeDirectiveExpression(vNode.directives['@do'], ctx, null, true);
+              } catch (e) {
+                console.error('Watcher+@do error:', e);
+              }
+            }, { oneShot: false });
+          }
+        });
+      }
+      Object.keys(vNode.directives || {}).forEach(directiveName => {
+        if (directiveName === '@then' || directiveName === '@finally') return;
+
+        const directive = this.getDirective(directiveName);
+        if (directive) {
+          try {
+            directive.apply(vNode, ctx, state, el, completionListener);
+          } catch (error) {
+            console.error(`Error applying directive ${directiveName}:`, error);
+            this.errorHandler.showAyishaError(el, error, vNode.directives[directiveName]);
+          }
+        }
+      });
+
+      // Apply sub-directives
+      Object.entries(vNode.subDirectives || {}).forEach(([directiveName, events]) => {
+        const directive = this.getDirective(directiveName);
+        if (directive) {
+          Object.entries(events).forEach(([event, expression]) => {
+            try {
+              const handled = directive.handleSubDirective(vNode, ctx, state, el, event, expression, completionListener);
+              if (!handled) {
+                console.warn(`Unhandled sub-directive: ${directiveName}:${event}`);
+              }
+            } catch (error) {
+              console.error(`Error applying sub-directive ${directiveName}:${event}:`, error);
+              this.errorHandler.showAyishaError(el, error, expression);
+            }
+          });
+        }
+      });
+    }
+  }
+
   class DirectiveLogger {
     constructor(evaluator) {
       this.evaluator = evaluator;
@@ -1056,9 +4093,6 @@
     }
   }
 
-  /**
-   * Module: Central Logger
-   */
   class CentralLogger {
     constructor() {
       this.logs = [];
@@ -1385,493 +4419,121 @@
     }
   }
 
+  // === MAIN AYISHA VDOM CLASS ===
 
-  class ErrorHandler {
-    showAyishaError(el, err, expr) {
-      if (!el) return;
-      let banner = el.parentNode && el.parentNode.querySelector('.ayisha-error-banner');
-      if (!banner) {
-        banner = document.createElement('div');
-        banner.className = 'ayisha-error-banner';
-        banner.style.background = '#c00';
-        banner.style.color = '#fff';
-        banner.style.padding = '0.5em 1em';
-        banner.style.margin = '0.5em 0';
-        banner.style.borderRadius = '4px';
-        banner.style.fontWeight = 'bold';
-        banner.style.border = '1px solid #900';
-        banner.style.position = 'relative';
-        banner.style.zIndex = '1000';
-        banner.innerHTML = `<b>Errore JS:</b> ${err.message}<br><code>${expr}</code>`;
-        el.parentNode && el.parentNode.insertBefore(banner, el.nextSibling);
-      } else {
-        banner.innerHTML = `<b>Errore JS:</b> ${err.message}<br><code>${expr}</code>`;
-      }
-    }
-
-    createErrorElement(message) {
-      const errorDiv = document.createElement('div');
-      errorDiv.className = 'ayisha-directive-error';
-      errorDiv.style.background = '#c00';
-      errorDiv.style.color = '#fff';
-      errorDiv.style.padding = '1em';
-      errorDiv.style.margin = '0.5em 0';
-      errorDiv.style.borderRadius = '4px';
-      errorDiv.style.fontWeight = 'bold';
-      errorDiv.style.border = '1px solid #900';
-      errorDiv.innerHTML = message;
-      return errorDiv;
-    }
-
-    createWarningElement(message) {
-      const warnDiv = document.createElement('div');
-      warnDiv.className = 'ayisha-directive-warning';
-      warnDiv.style.background = '#ffeb3b';
-      warnDiv.style.color = '#333';
-      warnDiv.style.padding = '1em';
-      warnDiv.style.margin = '0.5em 0';
-      warnDiv.style.borderRadius = '4px';
-      warnDiv.style.fontWeight = 'bold';
-      warnDiv.style.border = '1px solid #e0c200';
-      warnDiv.innerHTML = message;
-      return warnDiv;
-    }
-  }
-
-  class BindingManager {
-    constructor(evaluator, renderCallback) {
-      this.evaluator = evaluator;
-      this.renderCallback = renderCallback;
-      this.modelBindings = [];
-    }
-
-    bindModel(el, key, ctx) {
-      let inputTypeForInit = null;
-      if (el.type === 'number') {
-        inputTypeForInit = 'number';
-      } else if (el.type === 'checkbox') {
-        inputTypeForInit = 'checkbox';
-      }
-
-      function getRootAndPath(key, ctx, globalState) {
-        if (key.includes('.')) {
-          const path = key.split('.');
-          const rootName = path[0];
-          if (ctx && typeof ctx[rootName] === 'object' && ctx[rootName] !== null) {
-            return { root: ctx[rootName], path: path.slice(1) };
-          }
-          return { root: globalState, path: path };
-        } else {
-          if (ctx && typeof ctx[key] === 'object' && ctx[key] !== null) {
-            return { root: ctx[key], path: [] };
-          }
-          return { root: globalState, path: [key] };
-        }
-      }
-
-      const { root, path } = getRootAndPath(key, ctx, this.evaluator.state);
-      let ref = root;
-      if (path.length > 0) {
-        for (let i = 0; i < path.length - 1; i++) {
-          if (typeof ref[path[i]] !== 'object' || ref[path[i]] === null) {
-            ref[path[i]] = {};
-          }
-          ref = ref[path[i]];
-        }
-        const last = path[path.length - 1];
-        if (el.type === 'number') {
-          if (typeof ref[last] !== 'number') ref[last] = 0;
-        } else if (el.type === 'checkbox') {
-          if (typeof ref[last] !== 'boolean') ref[last] = false;
-        } else {
-          if (typeof ref[last] !== 'string') ref[last] = '';
-        }
-      } else if (typeof ref === 'object' && ref !== null) {
-      } else {
-        if (el.type === 'number') {
-          if (typeof this.evaluator.state[key] !== 'number') this.evaluator.state[key] = 0;
-        } else if (el.type === 'checkbox') {
-          if (typeof this.evaluator.state[key] !== 'boolean') this.evaluator.state[key] = false;
-        } else {
-          if (typeof this.evaluator.state[key] !== 'string') this.evaluator.state[key] = '';
-        }
-      }
-
-      const update = () => {
-        const val = this.evaluator.evalExpr(key, ctx);
-        if (el.type === 'checkbox') {
-          el.checked = !!val;
-        } else if (el.type === 'radio') {
-          el.checked = val == el.value;
-        } else if (el.type === 'color') {
-          if (val && typeof val === 'string' && val.match(/^#[0-9A-Fa-f]{6}$/)) {
-            el.value = val;
-          } else if (val && typeof val === 'string' && val.match(/^[0-9A-Fa-f]{6}$/)) {
-            el.value = '#' + val;
-          } else {
-            el.value = '#000000';
-          }
-        } else {
-          const safeVal = val == null ? '' : String(val);
-          if (el.value !== safeVal) el.value = safeVal;
-        }
-      };
-
-      this.modelBindings.push({ el, update });
-      update();
-
-      const handleInput = () => {
-        let inputTypeForInit = null;
-        if (el.type === 'number') {
-          inputTypeForInit = 'number';
-        } else if (el.type === 'checkbox') {
-          inputTypeForInit = 'checkbox';
-        }
-
-        const { root, path } = getRootAndPath(key, ctx, this.evaluator.state);
-        let ref = root;
-        let value;
-
-        if (el.type === 'checkbox') {
-          value = el.checked;
-        } else if (el.type === 'number') {
-          value = el.value === '' ? undefined : Number(el.value);
-        } else {
-          value = el.value;
-        }
-
-        if (path.length > 0) {
-          for (let i = 0; i < path.length - 1; i++) {
-            if (typeof ref[path[i]] !== 'object' || ref[path[i]] === null) {
-              ref[path[i]] = {};
-            }
-            ref = ref[path[i]];
-          }
-          const last = path[path.length - 1];
-          ref[last] = value;
-        } else if (typeof ref === 'object' && ref !== null) {
-        } else {
-          this.evaluator.state[key] = value;
-        }
-        this.renderCallback();
-      };
-
-      if (el.type === 'checkbox' || el.type === 'radio') {
-        el.addEventListener('change', handleInput);
-      } else {
-        el.addEventListener('input', handleInput);
-      }
-    }
-
-    bindValidation(el, rulesStr, modelVar = null) {
-      const rules = [];
-      let currentRule = '';
-      let inRegex = false;
-
-      for (let i = 0; i < rulesStr.length; i++) {
-        const char = rulesStr[i];
-        if (char === '^' && !inRegex) {
-          inRegex = true;
-          currentRule += char;
-        } else if (char === '$' && inRegex) {
-          inRegex = false;
-          currentRule += char;
-          rules.push(currentRule.trim());
-          currentRule = '';
-        } else if (char === ',' && !inRegex) {
-          if (currentRule.trim()) {
-            rules.push(currentRule.trim());
-          }
-          currentRule = '';
-        } else {
-          currentRule += char;
-        }
-      }
-
-      if (currentRule.trim()) {
-        rules.push(currentRule.trim());
-      }
-
-      if (!modelVar) {
-        return;
-      }
-
-      if (!this.evaluator.state._validate) {
-        this.evaluator.state._validate = {};
-      }
-
-      this.evaluator.state._validate[modelVar] = false;
-
-      const validate = () => {
-        let valid = true;
-
-        for (const rule of rules) {
-          if (/^\^.*\$$/.test(rule)) {
-            try {
-              const re = new RegExp(rule);
-              const testResult = re.test(el.value || '');
-              if (!testResult) {
-                valid = false;
-                break;
-              } else {
-              }
-            } catch (e) {
-              valid = false;
-              break;
-            }
-          }
-          else if (rule === 'required') {
-            if (!el.value || !el.value.trim()) {
-              valid = false;
-              break;
-            }
-          }
-          else if (rule.startsWith('minLength:')) {
-            const minLen = parseInt(rule.split(':')[1], 10);
-            if (el.value.length < minLen) {
-              valid = false;
-              break;
-            }
-          }
-          else if (rule.startsWith('maxLength:')) {
-            const maxLen = parseInt(rule.split(':')[1], 10);
-            if (el.value.length > maxLen) {
-              valid = false;
-              break;
-            }
-          }
-          else if (rule.startsWith('min:')) {
-            const minVal = parseFloat(rule.split(':')[1]);
-            const val = parseFloat(el.value);
-            if (isNaN(val) || val < minVal) {
-              valid = false;
-              break;
-            }
-          }
-          else if (rule.startsWith('max:')) {
-            const maxVal = parseFloat(rule.split(':')[1]);
-            const val = parseFloat(el.value);
-            if (isNaN(val) || val > maxVal) {
-              valid = false;
-              break;
-            }
-          }
-          else if (rule === 'email') {
-            const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-            if (!emailRegex.test(el.value || '')) {
-              valid = false;
-              break;
-            }
-          }
-          else if (rule === 'phone') {
-            const phoneRegex = /^\+\d{1,3}\s?\d{3,4}\s?\d{3,4}\s?\d{3,4}$/;
-            if (!phoneRegex.test(el.value || '')) {
-              valid = false;
-              break;
-            }
-          }
-          else if (rule === 'password') {
-            const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-            if (!passwordRegex.test(el.value || '')) {
-              valid = false;
-              break;
-            }
-          }
-          else if (rule.startsWith('regex:')) {
-            let pattern = rule.slice(6);
-            try {
-              const re = new RegExp(pattern);
-              if (!re.test(el.value || '')) {
-                valid = false;
-                break;
-              }
-            } catch (e) {
-              valid = false;
-              break;
-            }
-          }
-        }
-
-        this.evaluator.state._validate[modelVar] = valid;
-        el.classList.toggle('invalid', !valid);
-        el.classList.toggle('valid', valid && el.value.length > 0);
-
-        return valid;
-      };
-
-      validate();
-      el.addEventListener('input', () => {
-        validate();
-        this.renderCallback();
-      });
-      el.addEventListener('blur', validate);
-    }
-
-    updateBindings() {
-      this.modelBindings.forEach(b => b.update());
-    }
-
-    clearBindings() {
-      this.modelBindings = [];
-    }
-  }
   class AyishaVDOM {
-    // === SEO: Bot detection ===
+    showAllErrors(container = document.body) {
+      if (!this.errorBus) return;
+      const old = container.querySelector('.ayisha-error-list');
+      if (old) old.remove();
+      const errors = this.errorBus.getAll();
+      if (!errors.length) return;
+      const wrapper = document.createElement('div');
+      wrapper.className = 'ayisha-error-list';
+      wrapper.style.cssText = `
+      background: #fff3f3;
+      color: #c00;
+      border: 1px solid #c00;
+      border-radius: 8px;
+      padding: 16px;
+      margin: 16px 0;
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      font-size: 13px;
+      max-width: 600px;
+      box-shadow: 0 2px 8px rgba(200,0,0,0.08);
+    `;
+      wrapper.innerHTML = `<div style='font-weight:bold; color:#900; margin-bottom:8px;'>❌ Ayisha Error Log (${errors.length})</div>`;
+      errors.forEach((err, i) => {
+        const div = document.createElement('div');
+        div.style.cssText = `margin-bottom:10px; padding:8px; border-bottom:1px solid #fdd;`;
+        div.innerHTML = `
+        <div style='font-weight:bold;'>${i + 1}. ${err.error?.message || err.error || 'Unknown error'}</div>
+        <div style='color:#333; font-size:12px;'>${err.context && err.context.expr ? `<b>Expr:</b> <code>${err.context.expr}</code><br>` : ''}
+          ${err.context && err.context.type ? `<b>Type:</b> ${err.context.type}<br>` : ''}
+          <b>Time:</b> ${new Date(err.timestamp).toLocaleString()}
+        </div>
+      `;
+        wrapper.appendChild(div);
+      });
+      container.appendChild(wrapper);
+    }
+
     isBot() {
       const ua = navigator.userAgent.toLowerCase();
       return /bot|crawler|spider|googlebot|bingbot|facebookexternalhit|twitterbot/i.test(ua);
     }
 
-    // === SEO: Rendering per bot ===
     renderForSEO() {
-      console.log('🤖 Rendering SEO attivo');
       this.processAllDirectivesSync();
       this.loadAllComponentsSync();
       this.executeAllFetchSync();
       this.generateMetaTags();
     }
 
-    // === SEO: Processa direttive sincrone ===
     processAllDirectivesSync() {
-      // Process @if: show/hide elements based on condition
-      const ifElements = document.querySelectorAll('[\\@if]');
-      ifElements.forEach(el => {
-        const expr = el.getAttribute('@if');
-        let visible = false;
-        try {
-          visible = this.evaluator.evalExpr(expr, this.state);
-        } catch {}
-        el.style.display = visible ? '' : 'none';
-      });
-
-      // Process @for: repeat elements for each item in array
-      const forElements = document.querySelectorAll('[\\@for]');
-      forElements.forEach(el => {
-        const expr = el.getAttribute('@for');
-        // Support both "item in items" and "index, item in items"
-        let match = expr.match(/(\\w+),\\s*(\\w+) in (.+)/);
-        let arr = [];
-        let itemVar = null, indexVar = null, arrExpr = null;
-        if (match) {
-          indexVar = match[1];
-          itemVar = match[2];
-          arrExpr = match[3];
-        } else {
-          match = expr.match(/(\\w+) in (.+)/);
-          if (match) {
-            itemVar = match[1];
-            arrExpr = match[2];
-          }
-        }
-        if (arrExpr) {
-          try {
-            arr = this.evaluator.evalExpr(arrExpr, this.state) || [];
-            if (typeof arr === 'object' && !Array.isArray(arr)) arr = Object.values(arr);
-          } catch {}
-        }
-        // Remove previous clones
-        const parent = el.parentNode;
-        if (!parent) return;
-        // Remove all previous clones marked with data-ayisha-for-clone
-        parent.querySelectorAll('[data-ayisha-for-clone]').forEach(clone => clone.remove());
-        // Hide the template element
-        el.style.display = 'none';
-        arr.forEach((val, idx) => {
-          const clone = el.cloneNode(true);
-          clone.removeAttribute('@for');
-          clone.setAttribute('data-ayisha-for-clone', '1');
-          clone.style.display = '';
-          const walker = document.createTreeWalker(clone, NodeFilter.SHOW_TEXT, null, false);
-          let node;
-          while ((node = walker.nextNode())) {
-            let text = node.textContent;
-            if (itemVar) text = text.replace(new RegExp('{{\\s*' + itemVar + '\\s*}}', 'g'), val);
-            if (indexVar) text = text.replace(new RegExp('{{\\s*' + indexVar + '\\s*}}', 'g'), idx);
-            node.textContent = text;
-          }
-          parent.insertBefore(clone, el.nextSibling);
+      Object.keys(ModularDirectives).forEach(dir => {
+        const elements = document.querySelectorAll(`[\\${dir}]`);
+        elements.forEach(el => {
+          const DirectiveClass = ModularDirectives[dir];
+          const directive = new DirectiveClass(this.evaluator, this.bindingManager, this.errorHandler);
+          const vNode = {
+            _el: el,
+            directives: { [dir]: el.getAttribute(dir) }
+          };
+          directive.apply(vNode, this.state, this.state, el);
         });
       });
-
-      const modelElements = document.querySelectorAll('[\\@model]');
-      modelElements.forEach(el => {
-        const key = el.getAttribute('@model');
-        let val = '';
-        try {
-          val = this.evaluator.evalExpr(key, this.state);
-        } catch {}
-        if (el.type === 'checkbox') {
-          el.checked = !!val;
-        } else if (el.type === 'radio') {
-          el.checked = val == el.value;
-        } else {
-          el.value = val == null ? '' : String(val);
-        }
-      });
     }
-    // === SEO: Carica tutti i componenti ===
+
     loadAllComponentsSync() {
       const components = document.querySelectorAll('[data-component]');
       components.forEach(el => {
         const componentName = el.getAttribute('data-component');
-        if (this.components && this.components[componentName]) {
-          el.innerHTML = this.components[componentName];
+        if (this.componentManager && this.componentManager.getComponent(componentName)) {
+          el.innerHTML = this.componentManager.getComponent(componentName);
         }
       });
     }
 
-    // === SEO: Esegui tutte le fetch ===
     executeAllFetchSync() {
-      // For SEO: synchronously fetch and populate data for @fetch
       const fetchElements = document.querySelectorAll('[\\@fetch]');
       const fetchPromises = [];
       fetchElements.forEach(el => {
         const fetchConfig = el.getAttribute('@fetch');
-        // Support: @fetch="url as resultVar"
         let url = fetchConfig, resultVar = 'result';
         const asMatch = fetchConfig.match(/(.+) as (\w+)/);
         if (asMatch) {
           url = asMatch[1].trim();
           resultVar = asMatch[2].trim();
         }
-        // Evaluate url if it's an expression
         try {
           url = this.evaluator.evalExpr(url, this.state);
-        } catch {}
+        } catch { }
         if (!url) return;
-        // Synchronous fetch is not possible in modern browsers, but for SEO we can use async/await and block rendering
-        // We'll use fetch with await and set state synchronously for bots
         fetchPromises.push(
           fetch(url)
             .then(res => res.json())
             .then(data => {
               this.state[resultVar] = data;
-              // Optionally, update DOM if needed
             })
             .catch(() => { this.state[resultVar] = null; })
         );
       });
-      // Block until all fetches are done (for bots)
       if (fetchPromises.length > 0) {
-        // This is a sync function, but for SEO we can cheat: block with a busy-wait (not ideal, but for bots it's ok)
-        // In real SSR, this would be truly synchronous
         const start = Date.now();
         let done = false;
         Promise.all(fetchPromises).then(() => { done = true; });
-        // Busy-wait for up to 2 seconds
         while (!done && Date.now() - start < 2000) {
           // Block
         }
       }
     }
-    // === SEO: Genera meta tags ===
+
     generateMetaTags() {
-      // Estrai titolo dal contenuto
       const h1 = document.querySelector('h1');
       if (h1 && !document.title) {
         document.title = h1.textContent;
       }
-      // Genera description automatica
       const content = document.body.textContent.slice(0, 160);
       if (!document.querySelector('meta[name="description"]')) {
         const meta = document.createElement('meta');
@@ -1880,151 +4542,15 @@
         document.head.appendChild(meta);
       }
     }
-    /**
-     * Gestione direttive: @when, @do, @go, @wait
-     * @when: osserva un'espressione, quando true attiva @do/@go (eventualmente dopo @wait)
-     * @do: esegue un'espressione
-     * @go: cambia _currentPage e aggiorna l'URL come @link
-     * @wait: attende n ms prima di attivare @do/@go
-     * Previene loop infiniti e segnala errori di sintassi
-     */
-    _handleWhenActionDirectives(vNode, ctx) {
-      if (!vNode.directives || !vNode.directives['@when']) return;
-      const whenExpr = vNode.directives['@when'];
-      const doExpr = vNode.directives['@do'];
-      const goExpr = vNode.directives['@go'];
-      const waitExpr = vNode.directives['@wait'];
-      const fetchExpr = vNode.directives['@fetch'];
-      const resultExpr = vNode.directives['@result'];
-      // Errore se manca almeno una azione
-      if (!doExpr && !goExpr && !fetchExpr) {
-        if (vNode._el) {
-          vNode._el.setAttribute('data-ayisha-when-error', '@when richiede almeno @do, @go o @fetch');
-        }
-        return;
-      }
-      if (!this._whenDirectiveTimers) this._whenDirectiveTimers = new WeakMap();
-      if (!this._whenDirectiveLoopGuards) this._whenDirectiveLoopGuards = new WeakMap();
-      let timer = this._whenDirectiveTimers.get(vNode) || null;
-      let loopGuard = this._whenDirectiveLoopGuards.get(vNode) || { count: 0, lastPage: null, lastDo: null, lastTime: 0 };
-      const evaluateWhen = () => {
-        try {
-          return !!this.evaluator.evalExpr(whenExpr, ctx);
-        } catch {
-          return false;
-        }
-      };
-      const triggerActions = () => {
-        // Loop guard: se la stessa azione viene triggerata >5 volte in 2s, errore
-        const now = Date.now();
-        let key = '';
-        if (goExpr) key += 'go:' + this.evaluator.evalExpr(goExpr, ctx);
-        if (doExpr) key += 'do:' + doExpr;
-        if (fetchExpr) key += 'fetch:' + fetchExpr;
-        if (key === loopGuard.lastDo && (now - loopGuard.lastTime) < 2000) {
-          loopGuard.count++;
-        } else {
-          loopGuard.count = 1;
-        }
-        loopGuard.lastDo = key;
-        loopGuard.lastTime = now;
-        this._whenDirectiveLoopGuards.set(vNode, loopGuard);
-        if (loopGuard.count > 5) {
-          if (vNode._el) {
-            vNode._el.setAttribute('data-ayisha-when-error', 'Loop rilevato nelle direttive @when/@go/@do/@fetch');
-          }
-          return;
-        }
-        if (doExpr) {
-          try { this.evaluator.executeDirectiveExpression(doExpr, ctx); } catch (e) { /* error */ }
-        }
-        if (goExpr) {
-          try {
-            let page = goExpr;
-            if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(goExpr.trim())) {
-              if (typeof this.state[goExpr.trim()] !== 'undefined') {
-                page = this.evaluator.evalExpr(goExpr, ctx);
-              } else {
-                page = goExpr.trim();
-              }
-            } else {
-              page = this.evaluator.evalExpr(goExpr, ctx);
-            }
-            if (typeof page === 'string') {
-              this.state._currentPage = page;
-              if (window && window.history && typeof window.history.pushState === 'function') {
-                let url = page;
-                if (!/\.html$/.test(url) && document.querySelector(`component[@page='${page}']`)) {
-                  url = page + '.html';
-                }
-                window.history.pushState({}, '', url);
-                window.dispatchEvent(new PopStateEvent('popstate'));
-              }
-              if (typeof window.ayisha?.render === 'function') {
-                setTimeout(() => window.ayisha.render(), 0);
-              }
-            }
-          } catch (e) { /* error */ }
-        }
-        if (fetchExpr) {
-          try {
-            this.fetchManager.setupFetch(fetchExpr, resultExpr || 'result', ctx, null, true);
-          } catch (e) { /* error */ }
-        }
-      };
-      if (!this._whenDirectiveLastValues) this._whenDirectiveLastValues = new WeakMap();
-      let waiting = false;
-      const checkAndTrigger = () => {
-        const nowValue = evaluateWhen();
-        let lastValue = this._whenDirectiveLastValues.get(vNode);
-        if (nowValue !== lastValue && !waiting) {
-          if (nowValue) {
-            if (waitExpr) {
-              let ms = parseInt(this.evaluator.evalExpr(waitExpr, ctx), 10);
-              if (isNaN(ms)) ms = 0;
-              if (timer) clearTimeout(timer);
-              waiting = true;
-              timer = setTimeout(() => {
-                triggerActions();
-                timer = null;
-                waiting = false;
-                this._whenDirectiveTimers.delete(vNode);
-              }, ms);
-              this._whenDirectiveTimers.set(vNode, timer);
-            } else {
-              triggerActions();
-            }
-          } else if (timer) {
-            clearTimeout(timer);
-            timer = null;
-            waiting = false;
-            this._whenDirectiveTimers.delete(vNode);
-          }
-        }
-        this._whenDirectiveLastValues.set(vNode, nowValue);
-      };
-      if (!vNode._ayishaWhenWatcher) {
-        vNode._ayishaWhenWatcher = true;
-        let deps = [];
-        try {
-          deps = whenExpr.match(/\b[a-zA-Z_$][a-zA-Z0-9_$]*\b/g) || [];
-          const jsGlobals = [
-            'true','false','null','undefined','if','else','for','while','switch','case','default','try','catch','finally','return','var','let','const','function','window','document','Math','Date','Array','Object','String','Number','Boolean','RegExp','JSON','console','setTimeout','setInterval','localStorage','sessionStorage','history','location','navigator'
-          ];
-          deps = deps.filter(v => !jsGlobals.includes(v));
-        } catch {}
-        deps.forEach(dep => {
-          if (typeof dep === 'string' && dep in this.state) {
-            this.addWatcher(dep, checkAndTrigger);
-          }
-        });
-      }
-      if (!this._whenDirectiveLastValues.has(vNode)) {
-        this._whenDirectiveLastValues.set(vNode, evaluateWhen());
-      }
-    }
-    static version = "1.0.1";
+
+    static version = "1.0.2";
+
     constructor(root = document.body) {
+      this.errorBus = new AyishaErrorBus();
+      this.errorBus.onError(() => {
+        setTimeout(() => this.showAllErrors(), 0);
+      });
+
       this.root = root;
       this.state = {};
       this._initBlocks = [];
@@ -2041,10 +4567,18 @@
       this.router = new Router(this.state, () => this.render());
       this.fetchManager = new FetchManager(this.evaluator);
       this.helpSystem = new DirectiveHelpSystem();
-      this.errorHandler = new ErrorHandler();
+      this.errorHandler = new ErrorHandler(this.errorBus);
       this.bindingManager = new BindingManager(this.evaluator, () => this.render());
       this.centralLogger = new CentralLogger();
       this.centralLogger.initializeLoggers(this.evaluator, this.fetchManager, this.componentManager);
+
+      // Initialize the modular directive system
+      this.directiveManager = new DirectiveManager(
+        this.evaluator,
+        this.bindingManager,
+        this.errorHandler,
+        this.fetchManager
+      );
 
       if (!('_currentPage' in this.state) || !this.state._currentPage) {
         let firstPage = null;
@@ -2064,9 +4598,9 @@
         this.state._currentPage = firstPage || 'home';
       }
 
-    if (this.isBot && typeof this.isBot === 'function' && this.isBot()) {
-      this.renderForSEO();
-    }
+      if (this.isBot && typeof this.isBot === 'function' && this.isBot()) {
+        this.renderForSEO();
+      }
       window.ayisha = this;
     }
 
@@ -2172,6 +4706,23 @@
           else if (varName === '_locale') this.state[varName] = (navigator.language || navigator.userLanguage || 'en');
         }
       });
+
+      // Remove any _ayishaInstance that might have been accidentally added
+      if ('_ayishaInstance' in this.state) {
+        delete this.state._ayishaInstance;
+      }
+
+      // Clean up invalid variable names that contain operators
+      const stateKeysToRemove = Object.keys(this.state).filter(key => {
+        return key.includes('=') || key.includes('<') || key.includes('>') ||
+          key.includes('!') || key.includes('&') || key.includes('|') ||
+          key.includes("'") || key.includes('"') || key.includes('(') || key.includes(')') ||
+          key.includes(' ');
+      });
+      stateKeysToRemove.forEach(key => {
+        console.warn(`Removing invalid state variable: "${key}"`);
+        delete this.state[key];
+      });
     }
 
     _preInitializeEssentialVariables() {
@@ -2179,6 +4730,11 @@
       if (!this.state._currentPage) this.state._currentPage = '';
       if (!this.state._version) this.state._version = AyishaVDOM.version;
       if (!this.state._locale) this.state._locale = (navigator.language || navigator.userLanguage || 'en');
+
+      // Remove any circular references
+      if ('_ayishaInstance' in this.state) {
+        delete this.state._ayishaInstance;
+      }
 
       const getBreakpoint = (w) => {
         if (w < 576) return 'xs';
@@ -2268,6 +4824,29 @@
       if (this._isRendering) return;
       this._isRendering = true;
 
+      // Preventive cleanup of circular references
+      if ('_ayishaInstance' in this.state) {
+        delete this.state._ayishaInstance;
+      }
+
+      // Clean up invalid variable names that contain operators (aggressive cleanup)
+      const stateKeysToRemove = Object.keys(this.state).filter(key => {
+        return key.includes('=') || key.includes('<') || key.includes('>') ||
+          key.includes('!') || key.includes('&') || key.includes('|') ||
+          key.includes("'") || key.includes('"') || key.includes('(') || key.includes(')') ||
+          key.includes(' ') || key.includes('+') || key.includes('-') || key.includes('*') ||
+          key.includes('/') || key.includes('%') || key.includes('[') || key.includes(']') ||
+          key.includes('{') || key.includes('}') || key.includes('?') || key.includes(':') ||
+          key.includes(';') || key.includes(',') || !(/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key));
+      });
+
+      if (stateKeysToRemove.length > 0) {
+        console.warn(`🧹 Cleaning up ${stateKeysToRemove.length} invalid state variables:`, stateKeysToRemove);
+        stateKeysToRemove.forEach(key => {
+          delete this.state[key];
+        });
+      }
+
       const scrollX = window.scrollX, scrollY = window.scrollY;
       const active = document.activeElement;
       let focusInfo = null;
@@ -2311,7 +4890,13 @@
 
       if (focusInfo) {
         let node = this.root;
-        focusInfo.path.forEach(i => node = node.childNodes[i]);
+        for (const i of focusInfo.path) {
+          if (!node || !node.childNodes || !node.childNodes[i]) {
+            node = undefined;
+            break;
+          }
+          node = node.childNodes[i];
+        }
         if (node && (node.tagName === 'INPUT' || node.tagName === 'TEXTAREA')) {
           node.focus();
           try {
@@ -2327,13 +4912,13 @@
       window.scrollTo(scrollX, scrollY);
       this.bindingManager.updateBindings();
 
-      // PATCH: Forza la chiamata dei watcher delle direttive @when dopo ogni render
       if (this._whenDirectiveWatchers) {
-        this._whenDirectiveWatchers.forEach(fn => { try { fn(); } catch {} });
+        this._whenDirectiveWatchers.forEach(fn => { try { fn(); } catch { } });
       }
 
       this._isRendering = false;
     }
+
 
     _addLogIndicators() {
       const logElements = this.root.querySelectorAll('[data-ayisha-log="true"]');
@@ -2419,7 +5004,7 @@
       let directiveCount = 0;
 
       Object.keys(vNode.directives).forEach(directive => {
-        if (directive === '@log') return; 
+        if (directive === '@log') return;
 
         directiveCount++;
 
@@ -2665,65 +5250,24 @@
     }
 
     _renderVNode(vNode, ctx) {
-      // (Gestione @do rimossa: ora solo _handleWhenDoGoWaitDirectives gestisce @do in modo corretto e reattivo)
-      // PATCH: Gestione @go click e trigger automatico su transizione @when
-      if (vNode.directives && vNode.directives['@go']) {
-        const goExpr = vNode.directives['@go'];
-        // Handler click (se vuoi anche navigazione manuale)
-        if (!vNode._goHandlerAdded) {
-          vNode._goHandlerAdded = true;
-          if (!vNode._goId) {
-            vNode._goId = 'go-' + Math.random().toString(36).substr(2, 9);
-          }
-          setTimeout(() => {
-            const el = document.querySelector(`[data-ayisha-go-id="${vNode._goId}"]`);
-            if (el) {
-              el.addEventListener('click', e => {
-                e.preventDefault();
-                try {
-                  this.evaluator.executeDirectiveExpression(goExpr, ctx, e);
-                } catch (err) {
-                  console.error('Errore in @go:', err, goExpr);
-                }
-              });
-            }
-          }, 0);
-        }
-        // PATCH: trigger automatico su transizione @when (come @do)
-        if (vNode.directives['@when']) {
-          if (!this._goWatcherAdded) this._goWatcherAdded = new WeakSet();
-          if (!this._goWatcherAdded.has(vNode)) {
-            this._goWatcherAdded.add(vNode);
-            if (!this._goLastValue) this._goLastValue = new WeakMap();
-            this._goLastValue.set(vNode, false);
-            const checkGo = () => {
-              const nowValue = !!this.evaluator.evalExpr(vNode.directives['@when'], ctx);
-              const lastValue = this._goLastValue.get(vNode);
-              if (nowValue && !lastValue) {
-                try {
-                  this.evaluator.executeDirectiveExpression(goExpr, ctx);
-                } catch (err) {
-                  console.error('Errore trigger automatico @go:', err, goExpr);
-                }
-              }
-              this._goLastValue.set(vNode, nowValue);
-            };
-            if (!this._goWatchers) this._goWatchers = [];
-            this._goWatchers.push(checkGo);
-          }
-        }
-      }
-      // PATCH: trigger watcher @go automatici dopo ogni render
-      if (this._goWatchers) {
-        this._goWatchers.forEach(fn => { try { fn(); } catch {} });
-      }
-      // Gestione direttive @when, @do, @go, @wait
-      this._handleWhenActionDirectives(vNode, ctx);
       if (!vNode) return null;
-      // Esegui watcher delle direttive @when
-      if (this._whenDirectiveWatchers) {
-        this._whenDirectiveWatchers.forEach(fn => { try { fn(); } catch {} });
+
+      // Create completion listener if @then or @finally are present
+      let completionListener = null;
+      if (vNode && (vNode.directives?.['@then'] || vNode.directives?.['@finally'])) {
+        completionListener = new DirectiveCompletionListener(vNode, ctx, this);
+
+        // Register @then expressions
+        if (vNode.directives['@then']) {
+          completionListener.addThen(vNode.directives['@then']);
+        }
+
+        // Register @finally expressions
+        if (vNode.directives['@finally']) {
+          completionListener.addFinally(vNode.directives['@finally']);
+        }
       }
+
       if (vNode.directives && vNode.directives['@set'] && !vNode._setProcessed) {
         let setExprs = vNode.directives['@set'];
         if (Array.isArray(setExprs)) {
@@ -2755,7 +5299,11 @@
       }
 
       Object.entries(vNode.directives || {}).forEach(([dir, expr]) => {
-        if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(expr.trim())) {
+        // Only ensure variables for simple variable names (no operators, quotes, etc.)
+        if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(expr.trim()) &&
+          !expr.includes('=') && !expr.includes('<') && !expr.includes('>') &&
+          !expr.includes('!') && !expr.includes('&') && !expr.includes('|') &&
+          !expr.includes("'") && !expr.includes('"') && !expr.includes('(') && !expr.includes(')')) {
           if (dir === '@model') this.evaluator.ensureVarInState(expr, true);
           else this.evaluator.ensureVarInState(expr);
         }
@@ -2763,7 +5311,11 @@
 
       Object.values(vNode.subDirectives || {}).forEach(ev =>
         Object.values(ev).forEach(expr => {
-          if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(expr.trim())) {
+          // Only ensure variables for simple variable names
+          if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(expr.trim()) &&
+            !expr.includes('=') && !expr.includes('<') && !expr.includes('>') &&
+            !expr.includes('!') && !expr.includes('&') && !expr.includes('|') &&
+            !expr.includes("'") && !expr.includes('"') && !expr.includes('(') && !expr.includes(')')) {
             this.evaluator.ensureVarInState(expr);
           }
         })
@@ -2831,15 +5383,21 @@
       if (vNode.directives['@hide'] && this.evaluator.evalExpr(vNode.directives['@hide'], ctx)) return null;
 
       if (vNode.directives['@for']) {
-        return this._handleForDirective(vNode, ctx);
+        // Usa la classe ForDirective tramite il manager
+        const forDirective = this.directiveManager.directives.get('@for');
+        const stateWithInstance = { ...this.state, _ayishaInstance: this };
+        return forDirective.apply(vNode, ctx, stateWithInstance, null, completionListener);
       }
 
       if (vNode.directives['@switch']) {
-        return this._handleSwitchDirective(vNode, ctx);
+        // Usa la classe SwitchDirective tramite il manager
+        const switchDirective = this.directiveManager.directives.get('@switch');
+        const stateWithInstance = { ...this.state, _ayishaInstance: this };
+        return switchDirective.apply(vNode, ctx, stateWithInstance, null, completionListener);
       }
 
       if (vNode.directives['@source']) {
-        return this._handleFunctionalDirectives(vNode, ctx);
+        return this._handleFunctionalDirectives(vNode, ctx, completionListener);
       }
 
       if (vNode.tag === 'component') {
@@ -2847,11 +5405,11 @@
           const pageName = vNode.directives['@page'];
           const currentPage = this.state._currentPage || this.state.currentPage;
           if (String(pageName) !== String(currentPage)) {
-            this._handleComponentDirective(vNode, ctx);
+            this._handleComponentDirective(vNode, ctx, completionListener);
             return null;
           }
         }
-        return this._handleComponentDirective(vNode, ctx);
+        return this._handleComponentDirective(vNode, ctx, completionListener);
       }
 
       if (vNode.tag === 'no') {
@@ -2859,6 +5417,12 @@
       }
 
       const el = document.createElement(vNode.tag);
+      // Prevent default submit for all forms (Ayisha global patch)
+      if (vNode.tag === 'form') {
+        el.addEventListener('submit', function (e) {
+          e.preventDefault();
+        });
+      }
       // PATCH: Se c'è @go, aggiungi attributo identificativo
       if (vNode.directives && vNode.directives['@go'] && vNode._goId) {
         el.setAttribute('data-ayisha-go-id', vNode._goId);
@@ -2869,138 +5433,38 @@
         el.setAttribute(k, this.evaluator.evalAttrValue(v, ctx));
       });
 
+      // Pre-save original text for @text:hover and similar sub-directives
+      if (vNode.subDirectives?.['@text']) {
+        if (vNode.children && vNode.children.length > 0) {
+          el._ayishaOriginalText = vNode.children
+            .filter(child => child.type === 'text')
+            .map(child => child.text)
+            .join('');
+        } else {
+          el._ayishaOriginalText = el.textContent || el.innerText || '';
+        }
+      }
+
       this._handleSpecialDirectives(el, vNode, ctx);
-      this._handleStandardDirectives(el, vNode, ctx);
+
+      // Use the modular directive manager to apply all directives
+      this.directiveManager.applyDirectives(vNode, ctx, this.state, el, completionListener);
 
       vNode.children.forEach(child => {
         const node = this._renderVNode(child, ctx);
         if (node) el.appendChild(node);
       });
 
-      this._handleSubDirectives(el, vNode, ctx);
-
-      if (vNode.directives && vNode.directives['@then']) {
-        let thenExprs = vNode.directives['@then'];
-        if (Array.isArray(thenExprs)) {
-          thenExprs = thenExprs.flat().filter(Boolean);
-        } else if (typeof thenExprs === 'string') {
-          thenExprs = thenExprs.split(/;;|\n/).map(s => s.trim()).filter(Boolean);
-        } else {
-          thenExprs = [thenExprs];
-        }
-        thenExprs.forEach(expr => {
-          try {
-            if (!this.evaluator.executeDirectiveExpression(expr, ctx, null, false)) {
-              const cleanExpr = String(expr).replace(/\bstate\./g, '');
-              new Function('state', 'ctx', `with(state){with(ctx||{}){${cleanExpr}}}`)(this.state, ctx);
-            }
-          } catch (e) {
-            console.error('Error in @then directive:', e, 'Expression:', expr);
-            el.setAttribute('data-ayisha-then-error', e.message);
-          }
-        });
-      }
-
-      if (vNode.directives && vNode.directives['@finally']) {
-        let finallyExprs = vNode.directives['@finally'];
-        if (Array.isArray(finallyExprs)) {
-          finallyExprs = finallyExprs.flat().filter(Boolean);
-        } else if (typeof finallyExprs === 'string') {
-          finallyExprs = finallyExprs.split(/;;|\n/).map(s => s.trim()).filter(Boolean);
-        } else {
-          finallyExprs = [finallyExprs];
-        }
-        finallyExprs.forEach(expr => {
-          try {
-            if (!this.evaluator.executeDirectiveExpression(expr, ctx, null, false)) {
-              const cleanExpr = String(expr).replace(/\bstate\./g, '');
-              new Function('state', 'ctx', `with(state){with(ctx||{}){${cleanExpr}}}`)(this.state, ctx);
-            }
-          } catch (e) {
-            console.error('Error in @finally directive:', e, 'Expression:', expr);
-            el.setAttribute('data-ayisha-finally-error', e.message);
-          }
-        });
+      // Mark completion for sync directives if using completion listener
+      // ULTRA-FIX: markSyncDone() must be called only ONCE and only if not already done, and only if total > 0
+      if (completionListener && !completionListener.done && completionListener.total > 0) {
+        completionListener.markSyncDone();
       }
 
       return el;
     }
 
-    _handleForDirective(vNode, ctx) {
-      let match = vNode.directives['@for'].match(/(\w+),\s*(\w+) in (.+)/);
-      if (match) {
-        const [, indexVar, itemVar, expr] = match;
-        let arr = this.evaluator.evalExpr(expr, ctx) || [];
-        if (typeof arr === 'object' && !Array.isArray(arr)) arr = Object.values(arr);
-        const frag = document.createDocumentFragment();
-        arr.forEach((val, index) => {
-          const clone = JSON.parse(JSON.stringify(vNode));
-          delete clone.directives['@for'];
-          const subCtx = {
-            ...ctx,
-            [itemVar]: val,
-            [indexVar]: index,
-            [`${itemVar}_index`]: index,
-            [`${itemVar}_ref`]: `${expr.split('.')[0]}[${index}]`
-          };
-          const node = this._renderVNode(clone, subCtx);
-          if (node) frag.appendChild(node);
-        });
-        return frag;
-      }
-
-      match = vNode.directives['@for'].match(/(\w+) in (.+)/);
-      if (match) {
-        const [, it, expr] = match;
-        let arr = this.evaluator.evalExpr(expr, ctx) || [];
-        if (typeof arr === 'object' && !Array.isArray(arr)) arr = Object.values(arr);
-
-        const originalArrayName = expr.split('.')[0];
-        const isFiltered = expr.includes('.filter');
-
-        const frag = document.createDocumentFragment();
-        arr.forEach((val, index) => {
-          const clone = JSON.parse(JSON.stringify(vNode));
-          delete clone.directives['@for'];
-
-          let originalIndex = index;
-          if (isFiltered && this.state[originalArrayName]) {
-            originalIndex = this.state[originalArrayName].findIndex(item =>
-              item.id === val.id || JSON.stringify(item) === JSON.stringify(val)
-            );
-          }
-
-          const subCtx = {
-            ...ctx,
-            [it]: val,
-            $index: index,
-            $originalIndex: originalIndex,
-            $arrayName: originalArrayName
-          };
-          const node = this._renderVNode(clone, subCtx);
-          if (node) frag.appendChild(node);
-        });
-        return frag;
-      }
-      return null;
-    }
-
-    _handleSwitchDirective(vNode, ctx) {
-      const swVal = this.evaluator.evalExpr(vNode.directives['@switch'], ctx);
-      let defaultNode = null;
-      for (const child of vNode.children) {
-        if (!child.directives) continue;
-        if (child.directives['@case'] != null) {
-          let cv = child.directives['@case'];
-          if (/^['"].*['"]$/.test(cv)) cv = cv.slice(1, -1);
-          if (String(cv) === String(swVal)) return this._renderVNode(child, ctx);
-        }
-        if (child.directives['@default'] != null) defaultNode = child;
-      }
-      return defaultNode ? this._renderVNode(defaultNode, ctx) : document.createComment('noswitch');
-    }
-
-    _handleFunctionalDirectives(vNode, ctx) {
+    _handleFunctionalDirectives(vNode, ctx, completionListener = null) {
       let sourceData = this.evaluator.evalExpr(vNode.directives['@source'], ctx);
 
       let arr = [];
@@ -3091,82 +5555,18 @@
         }
       }
 
+      if (completionListener) {
+        completionListener.addTask(() => Promise.resolve());
+      }
+
       if (used) return document.createComment('functional');
       return null;
     }
 
-    _handleComponentDirective(vNode, ctx) {
-      if (!vNode.directives['@src']) {
-        return this.errorHandler.createErrorElement(`Error: <b>&lt;component&gt;</b> requires the <b>@src</b> attribute`);
-      }
-
-      let srcUrl = null;
-      try {
-        srcUrl = this.evaluator.evalExpr(vNode.directives['@src'], ctx);
-      } catch (e) {
-        console.warn('Error evaluating @src:', e);
-      }
-
-      if (!srcUrl) {
-        const rawSrc = vNode.directives['@src'].trim();
-        if (/^['\"].*['\"]$/.test(rawSrc)) {
-          srcUrl = rawSrc.slice(1, -1);
-        } else {
-          srcUrl = rawSrc;
-        }
-      }
-
-      if (!srcUrl || srcUrl === 'undefined' || srcUrl === 'null') {
-        return this.errorHandler.createErrorElement(`Error: Invalid component URL`);
-      }
-
-      if (srcUrl.startsWith('./')) {
-        srcUrl = srcUrl.substring(2);
-      }
-      if (this.componentManager.getCachedComponent(srcUrl)) {
-        const componentHtml = this.componentManager.getCachedComponent(srcUrl);
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = componentHtml;
-        this._processComponentInitBlocks(tempDiv);
-        const componentVNode = this.parse(tempDiv);
-        if (componentVNode && componentVNode.children) {
-          const frag = document.createDocumentFragment();
-          componentVNode.children.forEach(child => {
-            const node = this._renderVNode(child, ctx);
-            if (node) frag.appendChild(node);
-          });
-          return frag;
-        }
-      }
-
-      if (!this.componentManager.getCachedComponent(srcUrl)) {
-        this.componentManager.loadExternalComponent(srcUrl).then(html => {
-          if (html) {
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = html;
-            this._processComponentInitBlocks(tempDiv);
-            if (!this._isRendering) {
-              clearTimeout(this._componentRenderTimeout);
-              this._componentRenderTimeout = setTimeout(() => this.render(), 10);
-            }
-          } else {
-            console.error(`ComponentManager: Failed to load component ${srcUrl}`);
-          }
-        }).catch(err => {
-          console.error('Error loading component:', err);
-          this.componentManager.cache[srcUrl] = `<div class='component-error' style='padding: 10px; background: #ffe6e6; border: 1px solid #ff6b6b; border-radius: 4px; color: #d32f2f;'>Errore: ${err.message}</div>`;
-          if (!this._isRendering) {
-            clearTimeout(this._componentRenderTimeout);
-            this._componentRenderTimeout = setTimeout(() => this.render(), 10);
-          }
-        });
-      }
-
-      const placeholder = document.createElement('div');
-      placeholder.className = 'component-loading';
-      placeholder.style.cssText = 'padding: 10px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; color: #6c757d; font-size: 14px; text-align: center;';
-      placeholder.innerHTML = `� Loading component: <code>${srcUrl}</code>`;
-      return placeholder;
+    _handleComponentDirective(vNode, ctx, completionListener = null) {
+      const componentDirective = this.directiveManager.directives.get('@component');
+      const stateWithInstance = { ...this.state, _ayishaInstance: this };
+      return componentDirective.apply(vNode, ctx, stateWithInstance, null, completionListener);
     }
 
     _processComponentInitBlocks(tempDiv) {
@@ -3194,11 +5594,11 @@
         }
 
         let cleanCode = code.trim()
-          .replace(/[\u200B-\u200D\uFEFF]/g, '') 
-          .replace(/\r\n/g, '\n') 
-          .replace(/\r/g, '\n') 
-          .replace(/\n\s*\n/g, '\n') 
-          .replace(/\n\s+/g, '\n') 
+          .replace(/[\u200B-\u200D\uFEFF]/g, '')
+          .replace(/\r\n/g, '\n')
+          .replace(/\r/g, '\n')
+          .replace(/\n\s*\n/g, '\n')
+          .replace(/\n\s+/g, '\n')
           .trim();
 
         let transformed = cleanCode;
@@ -3298,7 +5698,6 @@
     }
 
     _handleSpecialDirectives(el, vNode, ctx) {
-      // @set: behaves like <init>, creates/sets variable only once at first render, then disappears from DOM and VDOM
       if (vNode.directives && vNode.directives['@set'] && !vNode._setProcessed) {
         const setExpr = vNode.directives['@set'];
         const setId = `${vNode.tag}-${JSON.stringify(vNode.attrs)}-${setExpr}`;
@@ -3328,47 +5727,6 @@
           el.parentNode.removeChild(el);
         }
         return; // Do not process further directives for this node
-      }
-
-
-      if (vNode.directives.hasOwnProperty('@state')) {
-        const wrapper = document.createElement('div');
-        wrapper.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-        wrapper.style.color = '#fff';
-        wrapper.style.padding = '1em';
-        wrapper.style.borderRadius = '4px';
-        wrapper.style.marginTop = '1em';
-        wrapper.style.overflow = 'auto';
-
-        let stateValue = this.state;
-        let titleText = 'CURRENT STATE';
-        const stateExpr = vNode.directives['@state'];
-        if (typeof stateExpr === 'string' && stateExpr.trim()) {
-          try {
-            stateValue = this.evaluator.evalExpr(stateExpr, ctx);
-            titleText = `STATE: ${stateExpr}`;
-          } catch (e) {
-            stateValue = { error: 'Invalid expression', details: e.message };
-            titleText = `STATE: ${stateExpr}`;
-          }
-        }
-
-        const title = document.createElement('h3');
-        title.textContent = titleText;
-        title.style.margin = '0.5em 0 2em';
-        title.style.fontSize = '1.1em';
-        title.style.fontWeight = 'bold';
-        title.style.color = '#fff';
-        wrapper.appendChild(title);
-
-        const pre = document.createElement('pre');
-        pre.style.margin = '0';
-        pre.style.whiteSpace = 'pre-wrap';
-        pre.style.fontFamily = 'monospace';
-        pre.textContent = JSON.stringify(stateValue, null, 2);
-        wrapper.appendChild(pre);
-
-        el.appendChild(wrapper);
       }
 
       if (vNode.directives.hasOwnProperty('@attr')) {
@@ -3447,628 +5805,6 @@
       }
     }
 
-    _handleStandardDirectives(el, vNode, ctx) {
-      if (vNode.directives['@click']) {
-        el.addEventListener('click', e => {
-          if (el.tagName === 'BUTTON') {
-            e.preventDefault();
-          }
-          const expr = vNode.directives['@click'];
-          this.evaluator.ensureVarInState(expr);
-          let codeToRun = expr;
-          if (this.evaluator.hasInterpolation(expr)) {
-            codeToRun = this.evaluator.evalAttrValue(expr, ctx);
-          }
-
-          let processedCode = codeToRun.replace(/\bstate\./g, '');
-
-          try {
-            const contextObjMatch = processedCode.match(/^(\w+)\.(\w+)(\+\+|--|=.+)$/);
-            if (contextObjMatch) {
-              const [, objName, propName, operation] = contextObjMatch;
-
-              if (ctx && ctx[objName]) {
-                const targetObj = ctx[objName];
-
-                if (targetObj && typeof targetObj === 'object' && targetObj.id) {
-                  for (const [stateKey, stateValue] of Object.entries(this.state)) {
-                    if (Array.isArray(stateValue)) {
-                      const index = stateValue.findIndex(item =>
-                        item && typeof item === 'object' && item.id === targetObj.id
-                      );
-                      if (index !== -1) {
-                        if (operation === '++') {
-                          this.state[stateKey][index][propName] = (this.state[stateKey][index][propName] || 0) + 1;
-                          setTimeout(() => this.render(), 0);
-                          return;
-                        } else if (operation === '--') {
-                          this.state[stateKey][index][propName] = (this.state[stateKey][index][propName] || 0) - 1;
-                          setTimeout(() => this.render(), 0);
-                          return;
-                        } else if (operation.startsWith('=')) {
-                          const valueExpr = operation.substring(1).trim();
-                          const value = this.evaluator.evalExpr(valueExpr, ctx);
-                          this.state[stateKey][index][propName] = value;
-                          setTimeout(() => this.render(), 0);
-                          return;
-                        }
-                      }
-                    }
-                  }
-                }
-
-                if (operation === '++') {
-                  targetObj[propName] = (targetObj[propName] || 0) + 1;
-                  setTimeout(() => this.render(), 0);
-                  return;
-                } else if (operation === '--') {
-                  targetObj[propName] = (targetObj[propName] || 0) - 1;
-                  setTimeout(() => this.render(), 0);
-                  return;
-                } else if (operation.startsWith('=')) {
-                  const valueExpr = operation.substring(1).trim();
-                  const value = this.evaluator.evalExpr(valueExpr, ctx);
-                  targetObj[propName] = value;
-                  setTimeout(() => this.render(), 0);
-                  return;
-                }
-              }
-            }
-
-            const filterMatch = processedCode.match(/^(\w+)\s*=\s*(\w+)\.filter\((.+)\)$/);
-            if (filterMatch) {
-              const [, targetVar, sourceVar, filterExpr] = filterMatch;
-
-              if (ctx && filterExpr.includes('!==') && targetVar === sourceVar) {
-                const varMatch = filterExpr.match(/!==\s*(\w+)\.id/);
-                let objectToDelete = null;
-
-                if (varMatch) {
-                  const varName = varMatch[1];
-                  objectToDelete = ctx[varName];
-                } else {
-                  for (const [ctxKey, ctxValue] of Object.entries(ctx)) {
-                    if (ctxValue && typeof ctxValue === 'object' && ctxValue.id && ctxKey !== 'users') {
-                      objectToDelete = ctxValue;
-                      break;
-                    }
-                  }
-                }
-
-                if (objectToDelete && objectToDelete.id) {
-                  const itemToDeleteId = objectToDelete.id;
-                  this.state[targetVar] = this.state[targetVar].filter(p => p.id !== itemToDeleteId);
-                  setTimeout(() => this.render(), 0);
-                  return;
-                }
-              }
-            }
-
-            const arrayMatches = processedCode.match(/([\w$]+)\.(push|pop|shift|unshift|filter|map|reduce|forEach|slice|splice)/g);
-            if (arrayMatches) {
-              arrayMatches.forEach(match => {
-                const varName = match.split('.')[0];
-                if (!(varName in this.state) || !Array.isArray(this.state[varName])) {
-                  this.state[varName] = [];
-                }
-              });
-            }
-
-            const incrementMatch = processedCode.match(/^(\w+)\+\+$/);
-            if (incrementMatch) {
-              const varName = incrementMatch[1];
-              if (!(varName in this.state)) {
-                this.state[varName] = 0;
-              }
-              let currentValue = Number(this.state[varName]) || 0;
-              this.state[varName] = currentValue + 1;
-              setTimeout(() => this.render(), 0);
-              return;
-            }
-
-            const decrementMatch = processedCode.match(/^(\w+)--$/);
-            if (decrementMatch) {
-              const varName = decrementMatch[1];
-              let currentValue = Number(this.state[varName]) || 0;
-              this.state[varName] = currentValue - 1;
-              setTimeout(() => this.render(), 0);
-              return;
-            }
-
-            const arithMatch = processedCode.match(/^(\w+)\s*([+\-*\/])=\s*(.+)$/);
-            if (arithMatch) {
-              const [, varName, operator, valueExpr] = arithMatch;
-              let currentValue = Number(this.state[varName]) || 0;
-              let operandValue = Number(this.evaluator.evalExpr(valueExpr, ctx)) || 0;
-              switch (operator) {
-                case '+': this.state[varName] = currentValue + operandValue; break;
-                case '-': this.state[varName] = currentValue - operandValue; break;
-                case '*': this.state[varName] = currentValue * operandValue; break;
-                case '/': this.state[varName] = operandValue !== 0 ? currentValue / operandValue : currentValue; break;
-              }
-              setTimeout(() => this.render(), 0);
-              return;
-            }
-
-            if (processedCode.includes(';')) {
-              try {
-                if (this.evaluator.executeMultipleExpressions(processedCode, ctx, e)) {
-                  setTimeout(() => this.render(), 0);
-                  return;
-                }
-              } catch (multiError) {
-                console.warn('Multiple expressions handler failed:', multiError);
-              }
-            }
-
-            const assignMatch = processedCode.match(/^(\w+)\s*=\s*(.+)$/);
-            if (assignMatch) {
-              const [, varName, valueExpr] = assignMatch;
-              if (valueExpr.includes('=>')) {
-                throw new Error('Assignment with arrow function, using fallback');
-              }
-              const value = this.evaluator.evalExpr(valueExpr, ctx);
-              this.state[varName] = value;
-              setTimeout(() => this.render(), 0);
-              return;
-            }
-
-            try {
-              if (this.evaluator.executeMultipleExpressions(processedCode, ctx, e)) {
-                return;
-              }
-            } catch (multiError) {
-              console.warn('Multiple expressions handler also failed:', multiError);
-            }
-
-            const func = new Function('state', 'ctx', `with(state){with(ctx||{}){${processedCode}}}`);
-            func(this.state, ctx || {});
-            setTimeout(() => this.render(), 0);
-          } catch (err) {
-            this.errorHandler.showAyishaError(el, err, processedCode);
-          }
-        });
-      }
-
-      if (vNode.directives['@hover']) {
-        const rawExpr = vNode.directives['@hover'];
-        const applyHover = e => {
-          try {
-            if (!this.evaluator.executeDirectiveExpression(rawExpr, ctx, e, true)) {
-              let codeToRun = rawExpr;
-              if (this.evaluator.hasInterpolation(rawExpr)) {
-                codeToRun = this.evaluator.evalAttrValue(rawExpr, ctx);
-              }
-              const cleanCode = codeToRun.replace(/\bstate\./g, '');
-              new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
-                (this.state, ctx, e);
-            }
-          } catch (err) {
-            this.errorHandler.showAyishaError(el, err, rawExpr);
-          }
-        };
-        el.addEventListener('mouseover', applyHover);
-        el.addEventListener('mouseout', applyHover);
-      }
-
-      if (vNode.directives['@input']) {
-        el.addEventListener('input', e => {
-          const expr = vNode.directives['@input'];
-          this.evaluator.ensureVarInState(expr);
-
-          try {
-            if (!this.evaluator.executeDirectiveExpression(expr, ctx, e, true)) {
-              let codeToRun = expr;
-              if (this.evaluator.hasInterpolation(expr)) {
-                codeToRun = this.evaluator.evalAttrValue(expr, ctx);
-              }
-              const cleanCode = codeToRun.replace(/\bstate\./g, '');
-              new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
-                (this.state, ctx, e);
-            }
-          } catch (err) {
-            this.errorHandler.showAyishaError(el, err, expr);
-          }
-        });
-      }
-
-      if (vNode.directives['@focus']) {
-        el.addEventListener('focus', e => {
-          const expr = vNode.directives['@focus'];
-          this.evaluator.ensureVarInState(expr);
-
-          try {
-            if (!this.evaluator.executeDirectiveExpression(expr, ctx, e, true)) {
-              let codeToRun = expr;
-              if (this.evaluator.hasInterpolation(expr)) {
-                codeToRun = this.evaluator.evalAttrValue(expr, ctx);
-              }
-              const cleanCode = codeToRun.replace(/\bstate\./g, '');
-              new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
-                (this.state, ctx, e);
-            }
-          } catch (err) {
-            this.errorHandler.showAyishaError(el, err, expr);
-          }
-        });
-      }
-
-      if (vNode.directives['@blur']) {
-        el.addEventListener('blur', e => {
-          const expr = vNode.directives['@blur'];
-          this.evaluator.ensureVarInState(expr);
-
-          try {
-            if (!this.evaluator.executeDirectiveExpression(expr, ctx, e, true)) {
-              let codeToRun = expr;
-              if (this.evaluator.hasInterpolation(expr)) {
-                codeToRun = this.evaluator.evalAttrValue(expr, ctx);
-              }
-              const cleanCode = codeToRun.replace(/\bstate\./g, '');
-              new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
-                (this.state, ctx, e);
-            }
-          } catch (err) {
-            this.errorHandler.showAyishaError(el, err, expr);
-          }
-        });
-      }
-
-      if (vNode.directives['@change']) {
-        el.addEventListener('change', e => {
-          const expr = vNode.directives['@change'];
-          this.evaluator.ensureVarInState(expr);
-
-          try {
-            if (!this.evaluator.executeDirectiveExpression(expr, ctx, e, true)) {
-              let codeToRun = expr;
-              if (this.evaluator.hasInterpolation(expr)) {
-                codeToRun = this.evaluator.evalAttrValue(expr, ctx);
-              }
-              const cleanCode = codeToRun.replace(/\bstate\./g, '');
-              new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
-                (this.state, ctx, e);
-            }
-          } catch (err) {
-            this.errorHandler.showAyishaError(el, err, expr);
-          }
-        });
-      }
-
-      // PATCH: fetch gestito da @when se presente
-      if (vNode.directives['@fetch'] && !vNode.subDirectives['@fetch'] && !vNode.directives['@when']) {
-        const expr = this.evaluator.autoVarExpr(vNode.directives['@fetch']);
-        const rk = vNode.directives['@result'] || 'result';
-        this.fetchManager.setupFetch(expr, rk, ctx);
-
-        if (vNode.directives['@watch']) {
-          this._handleWatchDirective(vNode, expr, rk);
-        }
-      }
-
-      if (vNode.directives['@watch'] && !vNode.directives['@fetch']) {
-        this._handleGenericWatchDirective(vNode);
-      }
-
-      if (vNode.directives['@text'] && !vNode.subDirectives['@text']) {
-        try {
-          const expr = vNode.directives['@text'];
-
-          const isMultiple = this.evaluator.hasMultipleAssignments(expr);
-
-          if (isMultiple) {
-            this.evaluator.executeDirectiveExpression(expr, ctx, null, false);
-          } else {
-            const textValue = this.evaluator.evalExpr(expr, ctx);
-            if (textValue === undefined) {
-              el.textContent = '';
-            } else if (textValue === null) {
-              el.textContent = 'null';
-            } else {
-              el.textContent = String(textValue);
-            }
-          }
-        } catch (error) {
-          console.error('Error in @text directive:', error, 'Expression:', vNode.directives['@text']);
-          el.textContent = `[Error: ${error.message}]`;
-        }
-      }
-
-      if (vNode.directives['@model']) {
-        this.bindingManager.bindModel(el, vNode.directives['@model'], ctx);
-      }
-
-      if (vNode.directives['@class'] && !vNode.subDirectives['@class']) {
-        const clsMap = this.evaluator.evalExpr(vNode.directives['@class'], ctx) || {};
-        Object.entries(clsMap).forEach(([cls, cond]) => el.classList.toggle(cls, !!cond));
-      }
-
-      if (vNode.directives['@style']) {
-        try {
-          const styles = this.evaluator.evalExpr(vNode.directives['@style'], ctx) || {};
-          if (typeof styles === 'object' && styles !== null && !Array.isArray(styles)) {
-            Object.entries(styles).forEach(([prop, val]) => {
-              if (typeof prop === 'string' && prop.trim()) {
-                el.style[prop] = val;
-              }
-            });
-          }
-        } catch (e) {
-          console.warn('Error applying @style directive:', e);
-        }
-      }
-
-      if (vNode.directives['@validate']) {
-        const modelVar = vNode.directives['@model'] || null;
-        this.bindingManager.bindValidation(el, vNode.directives['@validate'], modelVar);
-      }
-
-      if (vNode.directives['@link']) {
-        el.setAttribute('href', vNode.directives['@link']);
-        el.addEventListener('click', e => {
-          e.preventDefault();
-          this.state._currentPage = vNode.directives['@link'];
-        });
-      }
-
-      if (vNode.directives['@animate']) {
-        const animationClass = vNode.directives['@animate'];
-        el.classList.add(animationClass);
-        if (animationClass === 'fadeIn' || animationClass === 'fade-in') {
-          el.style.opacity = '1';
-          el.style.transition = 'opacity 0.3s ease-in-out';
-        }
-      }
-
-      if (vNode.directives['@component']) {
-        const n = vNode.directives['@component'];
-        if (this.componentManager.getComponent(n)) {
-          const frag = document.createRange().createContextualFragment(this.componentManager.getComponent(n));
-          const compVNode = this.parse(frag);
-          const compEl = this._renderVNode(compVNode, ctx);
-          if (compEl) el.appendChild(compEl);
-        }
-      }
-    }
-
-    _handleSubDirectives(el, vNode, ctx) {
-      Object.entries(vNode.subDirectives).forEach(([dir, evs]) => {
-        Object.entries(evs).forEach(([evt, expr]) => {
-          const eventName = evt === 'hover' ? 'mouseover' : evt;
-          const isEvent = (
-            dir === '@click' || dir === '@hover' || dir === '@set' || dir === '@fetch' ||
-            dir === '@model' || dir === '@focus' || dir === '@blur' || dir === '@change' ||
-            dir === '@input' || dir === '@class' || dir === '@text'
-          ) && (
-              evt === 'click' || evt === 'hover' || evt === 'focus' || evt === 'input' || evt === 'change' || evt === 'blur'
-            );
-
-          if (isEvent) {
-            const getEvaluatedExpr = () => {
-              if (dir === '@class' && expr.trim().startsWith('{')) {
-                return this.evaluator.evalExpr(expr, ctx);
-              }
-              return this.evaluator.evalAttrValue(expr, ctx);
-            };
-
-            if (dir === '@fetch') {
-              this._handleFetchSubDirective(el, eventName, expr, vNode, ctx);
-              return;
-            }
-
-            if (dir === '@class') {
-              this._handleClassSubDirective(el, evt, getEvaluatedExpr, ctx);
-              return;
-            }
-
-            if (dir === '@text') {
-              this._handleTextSubDirective(el, evt, getEvaluatedExpr, ctx);
-              return;
-            }
-
-            el.addEventListener(eventName, e => {
-              let codeToRun = getEvaluatedExpr();
-              try {
-                const cleanCode = String(codeToRun).replace(/\bstate\./g, '');
-
-                if (!this.evaluator.executeMultipleExpressions(cleanCode, ctx, e)) {
-                  new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
-                    (this.state, ctx, e);
-                }
-              } catch (err) {
-                this.errorHandler.showAyishaError(el, err, codeToRun);
-              }
-            });
-          }
-        });
-      });
-    }
-
-    _handleFetchSubDirective(el, eventName, expr, vNode, ctx) {
-      el.addEventListener(eventName, e => {
-        const resultVar = vNode.directives['@result'] || 'result';
-
-        try {
-          let url = this.evaluator.evalExpr(expr, ctx);
-          if (url === undefined) {
-            url = expr;
-          }
-          this.fetchManager.setupFetch(url, resultVar, ctx, e, true);
-        } catch (err) {
-          this.fetchManager.setupFetch(expr, resultVar, ctx, e, true);
-        }
-      });
-    }
-
-    _handleClassSubDirective(el, evt, getEvaluatedExpr, ctx) {
-      if (evt === 'hover') {
-        el.addEventListener('mouseover', e => {
-          try {
-            const clsMap = getEvaluatedExpr() || {};
-            Object.entries(clsMap).forEach(([cls, cond]) => {
-              if (cond) el.classList.add(cls);
-            });
-          } catch (error) {
-            console.error('Error in hover class directive:', error);
-          }
-        });
-        el.addEventListener('mouseout', e => {
-          try {
-            const clsMap = getEvaluatedExpr() || {};
-            Object.entries(clsMap).forEach(([cls, cond]) => {
-              if (cond) el.classList.remove(cls);
-            });
-          } catch (error) {
-            console.error('Error in hover class directive:', error);
-          }
-        });
-      } else if (evt === 'focus') {
-        el.addEventListener('focus', e => {
-          try {
-            const clsMap = getEvaluatedExpr() || {};
-            Object.entries(clsMap).forEach(([cls, cond]) => {
-              if (cond) el.classList.add(cls);
-            });
-          } catch (error) {
-            console.error('Error in focus class directive:', error);
-          }
-        });
-        el.addEventListener('blur', e => {
-          try {
-            const clsMap = getEvaluatedExpr() || {};
-            Object.entries(clsMap).forEach(([cls, cond]) => {
-              if (cond) el.classList.remove(cls);
-            });
-          } catch (error) {
-            console.error('Error in blur class directive:', error);
-          }
-        });
-      } else if (evt === 'input') {
-        el.addEventListener('input', e => {
-          try {
-            const clsMap = getEvaluatedExpr() || {};
-            Object.entries(clsMap).forEach(([cls, cond]) => {
-              if (cond) el.classList.add(cls);
-            });
-          } catch (error) {
-            console.error('Error in input class directive:', error);
-          }
-        });
-        el.addEventListener('blur', e => {
-          try {
-            const clsMap = getEvaluatedExpr() || {};
-            Object.entries(clsMap).forEach(([cls, cond]) => {
-              if (cond) el.classList.remove(cls);
-            });
-          } catch (error) {
-            console.error('Error in input blur class directive:', error);
-          }
-        });
-      } else if (evt === 'click') {
-        el.addEventListener('click', e => {
-          try {
-            const clsMap = getEvaluatedExpr() || {};
-            Object.entries(clsMap).forEach(([cls, cond]) => {
-              if (cond) {
-                el.classList.toggle(cls);
-              }
-            });
-          } catch (error) {
-            console.error('Error in click class directive:', error);
-          }
-        });
-      } else {
-        el.addEventListener(evt, e => {
-          try {
-            const clsMap = getEvaluatedExpr() || {};
-            Object.entries(clsMap).forEach(([cls, cond]) => {
-              if (cond) {
-                el.classList.add(cls);
-              }
-            });
-          } catch (error) {
-            console.error('Error in class directive:', error);
-          }
-        });
-      }
-    }
-
-    _handleTextSubDirective(el, evt, getInterpolatedExpr, ctx) {
-      if (!el._ayishaOriginalText) {
-        el._ayishaOriginalText = el.textContent || el.innerText || '';
-      }
-
-      if (evt === 'click') {
-        el.addEventListener('click', e => {
-          const newText = this.evaluator.evalExpr(getInterpolatedExpr(), ctx, e);
-          el.textContent = newText;
-        });
-      } else if (evt === 'hover') {
-        el.addEventListener('mouseover', e => {
-          const newText = this.evaluator.evalExpr(getInterpolatedExpr(), ctx, e);
-          el.textContent = newText;
-        });
-        el.addEventListener('mouseout', () => {
-          el.textContent = el._ayishaOriginalText || '';
-        });
-      } else if (evt === 'input' || evt === 'focus' || evt === 'blur') {
-        el.addEventListener(evt, e => {
-          const newText = this.evaluator.evalExpr(getInterpolatedExpr(), ctx, e);
-          el.textContent = newText;
-        });
-      }
-    }
-
-    _handleWatchDirective(vNode, expr, rk) {
-      vNode.directives['@watch'].split(',').forEach(watchExpr => {
-        watchExpr = watchExpr.trim();
-        let match = watchExpr.match(/^([\w$]+)\s*=>\s*(.+)$/) || watchExpr.match(/^([\w$]+)\s*:\s*(.+)$/);
-        if (match) {
-          const prop = match[1];
-          const code = match[2];
-          this.evaluator.ensureVarInState(code);
-
-          this.addWatcher(prop, function (newVal) {
-            const state = window.ayisha.state;
-            try {
-              window.ayisha.evaluator.ensureVarInState(code);
-              if (!window.ayisha.evaluator.executeDirectiveExpression(code, {}, { newVal }, true)) {
-                new Function('state', 'newVal', `with(state) { ${code} }`)(state, newVal);
-              }
-            } catch (e) {
-              console.error('Watcher error:', e, 'Code:', code, 'Prop:', prop, 'NewVal:', newVal);
-            }
-          });
-        } else {
-          this.addWatcher(watchExpr, () => this.fetchManager.setupFetch(expr, rk, undefined, undefined, true));
-        }
-      });
-    }
-
-    _handleGenericWatchDirective(vNode) {
-      vNode.directives['@watch'].split(',').forEach(watchExpr => {
-        watchExpr = watchExpr.trim();
-        const match = watchExpr.match(/^(\w+)\s*=>\s*(.+)$/)
-          || watchExpr.match(/^(\w+)\s*:\s*(.+)$/);
-        if (match) {
-          const prop = match[1];
-          const code = match[2];
-
-          this.addWatcher(prop, function (newVal) {
-            const state = window.ayisha.state;
-            window.ayisha.evaluator.ensureVarInState(code);
-            try {
-              if (!window.ayisha.evaluator.executeDirectiveExpression(code, {}, { newVal }, true)) {
-                new Function('state', 'newVal', `with(state){ ${code} }`)(state, newVal);
-              }
-            } catch (e) {
-              console.error('Generic watcher error:', e, 'Code:', code);
-            }
-          });
-        }
-      });
-    }
-
     mount() {
       this.root.childNodes.forEach(child => {
         if (child.nodeType === 1 && child.tagName && child.tagName.toLowerCase() === 'init') {
@@ -4094,6 +5830,7 @@
       }
 
       this._preInitializeEssentialVariables();
+      // PATCH: Make state reactive BEFORE running <init> blocks, so all assignments are tracked
       this._makeReactive();
       this._runInitBlocks();
       this.reactivitySystem.enableWatchers();
@@ -4113,14 +5850,21 @@
         while (el && el !== this.root) {
           if (el.hasAttribute('@link')) {
             e.preventDefault();
-            this.state._currentPage = el.getAttribute('@link');
+            const targetPage = el.getAttribute('@link');
+
+            // Determina il percorso corretto
+            let finalPage = targetPage;
+            if (targetPage.startsWith('/')) {
+              finalPage = targetPage.substring(1);
+            }
+
+            this.state._currentPage = finalPage;
             this.render();
             return;
           }
           el = el.parentNode;
         }
       }, true);
-
     }
   }
 
@@ -4132,21 +5876,23 @@
       const style = document.createElement('style');
       style.id = 'ayisha-default-animations';
       style.textContent = `
+        /* FadeIn animation for both .fadeIn and .fade-in */
         .fadeIn, .fade-in {
           animation: ayishaFadeIn 0.3s ease-in-out;
         }
-        
+
         @keyframes ayishaFadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
         }
-        
+
+        /* Slide-down animation */
         .slide-down {
           overflow: hidden;
           transition: height 0.3s ease-in-out;
         }
-        
-        /* Stili per @log display come sibling */
+
+        /* Styles for @log display as sibling */
         .ayisha-log-display {
           background: rgba(0, 20, 40, 0.95) !important;
           color: #fff !important;
@@ -4162,7 +5908,8 @@
           line-height: 1.4 !important;
           display: block !important;
         }
-        
+
+        /* Styles for @log error display */
         .ayisha-log-error-display {
           background: rgba(255, 0, 0, 0.9) !important;
           color: white !important;
@@ -4179,7 +5926,6 @@
     }
   };
 
-  // Auto-initialize when DOM is ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       addDefaultAnimationStyles();
