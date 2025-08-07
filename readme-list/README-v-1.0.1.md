@@ -1,27 +1,25 @@
-# Ayisha.js v1.0.2
+
+# Ayisha.js v1.0.1
 
 Ayisha.js is a micro JavaScript framework for building reactive, component-based user interfaces. It offers a minimalist syntax, a powerful directive system, and an extremely lightweight bundle for fast and modern web development.
 
 ## Main Features
 
 - **Virtual DOM** and reactive rendering
-- **50+ directives** for every use case (`@if`, `@for`, `@model`, `@click`, `@when`, `@do`, `@go`, etc.)
+- **40+ directives** for every use case (`@if`, `@for`, `@model`, `@click`, `@when`, `@do`, `@go`, etc.)
 - **Native components** and async loading of external components
 - **Built-in SPA routing** with advanced navigation
-- **Async fetch and state management** with error handling
+- **Async fetch and state management**
 - **Form validation and two-way binding**
-- **File upload support** with base64 encoding
-- **Date formatting directives**
 - **Smart logger** for directive debugging
 - **Inline help system** for all directives
-- **Enhanced error reporting** and debugging
 
 ## Installation
 
 ### Via CDN (recommended)
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.0.2-min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.0.1-min.js"></script>
 ```
 
 ### Local Download
@@ -29,13 +27,13 @@ Ayisha.js is a micro JavaScript framework for building reactive, component-based
 Download the file and include it in your project:
 
 ```html
-<script src="Ayisha-1.0.2.js"></script>
+<script src="Ayisha-1.0.1.js"></script>
 ```
 
 Or use the minified version:
 
 ```html
-<script src="Ayisha-1.0.2-min.js"></script>
+<script src="Ayisha-1.0.1-min.js"></script>
 ```
 
 ## Basic Example
@@ -56,73 +54,36 @@ Or use the minified version:
   </ul>
 </div>
 
-<script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.0.2-min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.0.0-min.js"></script>
 ```
-
-## What's New in v1.0.2
-
-### New Directives
-
-- **`@file`** - Handle single file uploads with base64 encoding
-- **`@files`** - Handle multiple file uploads
-- **`@not`** - Inverse conditional rendering
-- **`@date`** - Format dates with locale support
-- **`@dateonly`** - Display only date (no time)
-- **`@time`** - Display only time
-- **`@prev`** - Show previous values for debugging
-- **`@error`** - Custom error handling for fetch operations
-
-### Enhanced Features
-
-- **Improved Error Handling** - Better error reporting and debugging capabilities
-- **Enhanced Fetch Management** - Better error handling, caching, and duplicate request prevention
-- **Modular Directive System** - Complete rewrite with modular architecture
-- **Better State Management** - Improved reactivity with history tracking
-- **Enhanced Validation** - More robust form validation with nested object support
 
 ## Complete Directive Reference
 
 ### **Directive Execution Order (Hierarchy)**
 Directives execute in this priority order:
 
-1. **@page** / **@if** / **@not** / **@show** / **@hide** — Conditional rendering
+1. **@page** / **@if** / **@show** / **@hide** — Conditional rendering
 2. **@for** — Loop iteration  
 3. **@fetch** / **@result** / **@source** / **@map** / **@filter** / **@reduce** — Data handling
 4. **@src** — Component loading
-5. **@model** / **@validate** / **@file** / **@files** — Form binding and validation
+5. **@model** / **@validate** — Form binding and validation
 6. **@class** / **@style** — Styling
 7. **@click** / **@input** / **@focus** / **@blur** / **@change** / **@hover** / **@set** — Events
-8. **@text** / **@date** / **@dateonly** / **@time** — Text content and formatting
+8. **@text** — Text content
 9. **@key** — Loop optimization
 10. **@then** / **@finally** — Post-execution
-11. **@log** / **@state** / **@attr** / **@prev** — Debug helpers
+11. **@log** / **@state** / **@attr** — Debug helpers
 
 ### **Core Directives**
 
 | Directive | Description | Example |
 |-----------|-------------|---------|
 | `@if` | Show element if condition is true | `<div @if="isLoggedIn">Welcome!</div>` |
-| `@not` | Show element if condition is false | `<div @not="isLoggedIn">Please login</div>` |
 | `@show` | Show/hide element (CSS display) | `<div @show="menuOpen">Menu</div>` |
 | `@hide` | Hide element if condition is true | `<div @hide="loading">Content</div>` |
 | `@for` | Loop over arrays/objects | `<li @for="item in items" @key="item.id">{{item.name}}</li>` |
 | `@model` | Two-way data binding | `<input @model="searchQuery">` |
 | `@click` | Handle click events | `<button @click="count++">Increment</button>` |
-
-### **File Upload Directives**
-
-| Directive | Description | Example |
-|-----------|-------------|---------|
-| `@file` | Single file upload as base64 | `<input type="file" @file="avatar">` |
-| `@files` | Multiple file uploads as base64 array | `<input type="file" multiple @files="gallery">` |
-
-### **Date Formatting Directives**
-
-| Directive | Description | Example |
-|-----------|-------------|---------|
-| `@date` | Format full date and time | `<span @date="createdAt">Jan 1, 2025, 10:30 AM</span>` |
-| `@dateonly` | Format date only | `<span @dateonly="createdAt">Jan 1, 2025</span>` |
-| `@time` | Format time only | `<span @time="createdAt">10:30 AM</span>` |
 
 ### **Advanced Navigation Directives**
 
@@ -139,7 +100,6 @@ Directives execute in this priority order:
 |-----------|-------------|---------|
 | `@fetch` | Perform HTTP request | `<div @fetch="'https://api.com/data'" @result="data"></div>` |
 | `@result` | Target variable for @fetch result | `<div @fetch="apiUrl" @result="users"></div>` |
-| `@error` | Custom error variable for @fetch | `<div @fetch="apiUrl" @result="data" @error="myError"></div>` |
 | `@source` | Data source for transformations | `<div @source="items" @map="item*2" @result="doubled"></div>` |
 | `@map` | Transform array items | `<div @source="items" @map="item => item.name"></div>` |
 | `@filter` | Filter array items | `<div @source="items" @filter="item.active"></div>` |
@@ -158,7 +118,7 @@ Directives execute in this priority order:
 | Directive | Description | Example |
 |-----------|-------------|---------|
 | `@validate` | Input validation rules | `<input @model="email" @validate="required,email">` |
-| `@set` | Set state values on events | `<button @click="isOpen=true; count=0">Reset</button>` |
+| `@set` | Set state values on events | `<button @set:click="isOpen=true; count=0">Reset</button>` |
 
 ### **Event Directives**
 
@@ -196,7 +156,6 @@ Directives execute in this priority order:
 |-----------|-------------|---------|
 | `@log` | Show directive debug info | `<button @click="count++" @log>Debug me</button>` |
 | `@state` | Show current state as JSON | `<div @state></div>` |
-| `@prev` | Show current and previous values | `<div @prev="userName"></div>` |
 | `@attr` | Show state attributes list | `<div @attr></div>` |
 | `no` | Disable interpolation | `<no>{{this won't be processed}}</no>` |
 
@@ -220,10 +179,10 @@ Most directives support event-specific variants:
 
 ### Advanced Forms
 ```html
-<form @set="loading=true; error=''">
+<form>
   <input @model="user.email" @validate="required,email">
   <input @model="user.password" @validate="required,minLength:8">
-  <button  
+  <button @set:click="loading=true; error=''" 
           @fetch:click="'/api/login'" 
           @result="loginResult">
     Login
@@ -260,70 +219,6 @@ Most directives support event-specific variants:
   <div @default class="status-unknown">
     <span>❓ Unknown status</span>
   </div>
-</div>
-```
-
-### File Upload with Preview
-```html
-<div>
-  <input type="file" @file="profilePicture" accept="image/*">
-  <div @if="profilePicture">
-    <img @src="profilePicture" alt="Profile Preview" style="max-width: 200px;">
-  </div>
-</div>
-
-<!-- Multiple files -->
-<div>
-  <input type="file" multiple @files="gallery" accept="image/*">
-  <div @for="image in gallery" @key="$index">
-    <img @src="image" alt="Gallery Image" style="max-width: 100px; margin: 5px;">
-  </div>
-</div>
-```
-
-### Date Formatting
-```html
-<div>
-  <p @date="post.createdAt"></p>        <!-- "January 1, 2025, 2:30 PM" -->
-  <p @dateonly="post.createdAt"></p>    <!-- "January 1, 2025" -->
-  <p @time="post.createdAt"></p>        <!-- "2:30 PM" -->
-</div>
-```
-
-### Enhanced Error Handling
-```html
-<div>
-  <button @fetch:click="'/api/users'" @result="users" @error="userError">
-    Load Users
-  </button>
-  
-  <div @if="userError" class="error">
-    Error: {{userError.error}}
-  </div>
-  
-  <div @if="users && !userError">
-    <div @for="user in users">{{user.name}}</div>
-  </div>
-</div>
-```
-
-### Conditional Rendering with @not
-```html
-<div @not="user.isLoggedIn">
-  <h2>Please log in to continue</h2>
-  <button @click="showLoginForm=true">Login</button>
-</div>
-
-<div @if="user.isLoggedIn">
-  <h2>Welcome back, {{user.name}}!</h2>
-</div>
-```
-
-### Debug with Previous Values
-```html
-<div>
-  <input @model="searchQuery">
-  <div @prev="searchQuery"></div>  <!-- Shows current and previous values -->
 </div>
 ```
 
@@ -402,14 +297,13 @@ Available validation rules:
 <!-- Fetch with error handling -->
 <button @click="loading=true; error=''" 
         @fetch:click="apiUrl" 
-        @result="data"
-        @error="customError">
+        @result="data">
   Load Data
 </button>
 
 <div @if="loading">Loading...</div>
-<div @if="customError">Error: {{customError.error}}</div>
-<div @if="data && !loading && !customError">
+<div @if="error">Error: {{error}}</div>
+<div @if="data && !loading">
   <!-- Success content -->
 </div>
 ```
@@ -450,12 +344,6 @@ Show current state:
 <div @state="user.name"></div>  <!-- Specific property -->
 ```
 
-Show previous values for debugging:
-```html
-<div @prev></div>               <!-- All previous values -->
-<div @prev="userName"></div>    <!-- Specific variable history -->
-```
-
 ## Performance Tips
 
 1. **Use @key for lists**: Always provide unique keys for @for loops
@@ -470,18 +358,13 @@ Show previous values for debugging:
 
 3. **Batch state updates**: Use @set for multiple updates
 ```html
-<button @click="loading=true; error=''; step=1">Start</button>
+<button @set:click="loading=true; error=''; step=1">Start</button>
 ```
 
 4. **Use @show vs @if**: Use @show for frequent toggles, @if for rare conditions
 ```html
 <div @show="menuOpen">Menu</div>      <!-- Frequent toggle -->
 <div @if="user.isAdmin">Admin</div>   <!-- Rare condition -->
-```
-
-5. **Use @not for cleaner inverse conditions**:
-```html
-<div @not="user.isAdmin">Regular user content</div>
 ```
 
 ## API Reference
@@ -491,27 +374,10 @@ Show previous values for debugging:
 - Binding: `@model="variableName"`
 - Updates: `@click="variableName = newValue"`
 
-### File Handling
-- Single file: `@file="variableName"` (stores base64 string)
-- Multiple files: `@files="arrayVariable"` (stores array of base64 strings)
-
-### Date Formatting
-- Full format: `@date="isoDateString"`
-- Date only: `@dateonly="isoDateString"`
-- Time only: `@time="isoDateString"`
-
-## Migration from v1.0.1
-
-### Breaking Changes
-- Enhanced error handling may change error object structure
-- Improved state management may affect direct state manipulation
-
-### New Features to Adopt
-1. Use `@file` and `@files` for file uploads
-2. Use `@date`, `@dateonly`, `@time` for date formatting
-3. Use `@not` for cleaner inverse conditions
-4. Use `@prev` for debugging state changes
-5. Use `@error` for custom fetch error handling
+### Event Handling
+- Standard: `@click="expression"`
+- Variants: `@click:input`, `@fetch:hover`, `@model:change`
+- Multiple: `@set:click="var1=1; var2='hello'; var3=var3+1"`
 
 ## License
 
@@ -519,6 +385,6 @@ MIT License © 2025 devBen
 
 ---
 
-**Ayisha.js v1.0.2** - Build reactive UIs with minimal code. Fast, lightweight, and powerful.
+**Ayisha.js** - Build reactive UIs with minimal code. Fast, lightweight, and powerful.
 
 *Created with ❤️ by [devBen](https://github.com/BenJrSky)*
