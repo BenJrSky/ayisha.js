@@ -1,16 +1,15 @@
-# Ayisha.js v1.0.3
+# Ayisha.js v1.0.2
 
 Ayisha.js is a micro JavaScript framework for building reactive, component-based user interfaces. It offers a minimalist syntax, a powerful directive system, and an extremely lightweight bundle for fast and modern web development.
 
 ## Main Features
 
 - **Virtual DOM** and reactive rendering
-- **50+ directives** for every use case (`@if`, `@for`, `@model`, `@click`, `@when`, `@do`, `@go`, `@form`, etc.)
+- **50+ directives** for every use case (`@if`, `@for`, `@model`, `@click`, `@when`, `@do`, `@go`, etc.)
 - **Native components** and async loading of external components
 - **Built-in SPA routing** with advanced navigation
 - **Async fetch and state management** with error handling
 - **Form validation and two-way binding**
-- **Declarative forms with `@form`**
 - **File upload support** with base64 encoding
 - **Date formatting directives**
 - **Smart logger** for directive debugging
@@ -22,7 +21,7 @@ Ayisha.js is a micro JavaScript framework for building reactive, component-based
 ### Via CDN (recommended)
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.0.3-min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.0.2-min.js"></script>
 ```
 
 ### Local Download
@@ -30,13 +29,13 @@ Ayisha.js is a micro JavaScript framework for building reactive, component-based
 Download the file and include it in your project:
 
 ```html
-<script src="Ayisha-1.0.3.js"></script>
+<script src="Ayisha-1.0.2.js"></script>
 ```
 
 Or use the minified version:
 
 ```html
-<script src="Ayisha-1.0.3-min.js"></script>
+<script src="Ayisha-1.0.2-min.js"></script>
 ```
 
 ## Basic Example
@@ -57,14 +56,13 @@ Or use the minified version:
   </ul>
 </div>
 
-<script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.0.3-min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.0.2-min.js"></script>
 ```
 
-## What's New in v1.0.3
+## What's New in v1.0.2
 
 ### New Directives
 
-- **`@form`** - Declarative form container with built-in validation and submission
 - **`@file`** - Handle single file uploads with base64 encoding
 - **`@files`** - Handle multiple file uploads
 - **`@not`** - Inverse conditional rendering
@@ -80,8 +78,7 @@ Or use the minified version:
 - **Enhanced Fetch Management** - Better error handling, caching, and duplicate request prevention
 - **Modular Directive System** - Complete rewrite with modular architecture
 - **Better State Management** - Improved reactivity with history tracking
-- **Enhanced Validation** - More robust and extensible form validation engine (`_validate`)
-- **Native Form Handling** - `@form` now manages validation, submission, and error display automatically
+- **Enhanced Validation** - More robust form validation with nested object support
 
 ## Complete Directive Reference
 
@@ -92,7 +89,7 @@ Directives execute in this priority order:
 2. **@for** — Loop iteration  
 3. **@fetch** / **@result** / **@source** / **@map** / **@filter** / **@reduce** — Data handling
 4. **@src** — Component loading
-5. **@form** / **@model** / **@validate** / **@file** / **@files** — Form binding and validation
+5. **@model** / **@validate** / **@file** / **@files** — Form binding and validation
 6. **@class** / **@style** — Styling
 7. **@click** / **@input** / **@focus** / **@blur** / **@change** / **@hover** / **@set** — Events
 8. **@text** / **@date** / **@dateonly** / **@time** — Text content and formatting
@@ -109,15 +106,8 @@ Directives execute in this priority order:
 | `@show` | Show/hide element (CSS display) | `<div @show="menuOpen">Menu</div>` |
 | `@hide` | Hide element if condition is true | `<div @hide="loading">Content</div>` |
 | `@for` | Loop over arrays/objects | `<li @for="item in items" @key="item.id">{{item.name}}</li>` |
-| `@form` | Declarative form container | `<form @form @result="onSubmit">...</form>` |
 | `@model` | Two-way data binding | `<input @model="searchQuery">` |
 | `@click` | Handle click events | `<button @click="count++">Increment</button>` |
-### **Form Container Directive**
-
-| Directive | Description | Example |
-|-----------|-------------|---------|
-| `@form` | Declarative form with built-in validation and submission | `<form @form @result="onSubmit">...</form>` |
-
 
 ### **File Upload Directives**
 
@@ -167,7 +157,7 @@ Directives execute in this priority order:
 
 | Directive | Description | Example |
 |-----------|-------------|---------|
-| `@validate` | Input validation rules (improved in 1.0.3) | `<input @model="email" @validate="required,email">` |
+| `@validate` | Input validation rules | `<input @model="email" @validate="required,email">` |
 | `@set` | Set state values on events | `<button @click="isOpen=true; count=0">Reset</button>` |
 
 ### **Event Directives**
@@ -230,20 +220,16 @@ Most directives support event-specific variants:
 
 ### Advanced Forms
 ```html
-<form @form @result="loginResult">
+<form @set="loading=true; error=''">
   <input @model="user.email" @validate="required,email">
   <input @model="user.password" @validate="required,minLength:8">
-  <button type="submit">Login</button>
+  <button  
+          @fetch:click="'/api/login'" 
+          @result="loginResult">
+    Login
+  </button>
 </form>
 ```
-
-<!-- With custom validation and error display -->
-<form @form @result="onSubmit" @error="formError">
-  <input @model="user.email" @validate="required,email">
-  <input @model="user.password" @validate="required,minLength:8">
-  <div @if="formError" class="error">{{formError}}</div>
-  <button type="submit">Login</button>
-</form>
 
 ### Dynamic Data Processing
 ```html
@@ -338,111 +324,6 @@ Most directives support event-specific variants:
 <div>
   <input @model="searchQuery">
   <div @prev="searchQuery"></div>  <!-- Shows current and previous values -->
-</div>
-```
-
-### Full Form Example with Validation
-```html
-<form @form @result="onSubmit" @error="formError">
-  <input @model="user.email" @validate="required,email">
-  <input @model="user.password" @validate="required,minLength:8">
-  <input @model="user.age" @validate="required,min:18">
-  <button type="submit">Register</button>
-  <div @if="formError" class="error">{{formError}}</div>
-</form>
-```
-
-### Advanced Contact Form Example (Italiano)
-
-```html
-<div class="comment-box" @form="comunicazione">
-  <h3>Scrivici</h3>
-  <div class="form-inner">
-    <form method="post" action="blog-details.html">
-      <div class="row clearfix">
-        <div class="col-lg-6 col-md-6 col-sm-12 single-column">
-          <div class="form-group">
-            <label>Nome <span>*</span></label>
-            <input type="text" @model="name" @validate="minLength=3">
-            <label @if="_validate.name==false" class="text-danger">Nome non valido</label>
-          </div>
-        </div>
-        <div class="col-lg-6 col-md-6 col-sm-12 single-column">
-          <div class="form-group">
-            <label>Telefono <span>*</span></label>
-            <input type="email" @model="phone" @validate="phone">
-            <label @if="_validate.phone==false" class="text-danger">Telefono non valido</label>
-          </div>
-        </div>
-        <div class="col-lg-12 col-md-12 col-sm-12 single-column">
-          <div class="form-group">
-            <label>Messaggio <span>*</span></label>
-            <textarea @model="message" @validate="minLength=20" @change="sent=false"></textarea>
-            <label @if="_validate.message==false" class="text-danger">Scrivi almeno 20 caratteri</label>
-          </div>
-        </div>
-        <div class="col-lg-12 col-md-12 col-sm-12 single-column">
-          <div class="message-btn">
-            <button class="theme-btn btn-one px-5 py-2"
-              @if="_validate.comunicazione" @fetch:click="/api/content"
-              @method="post" @headers="{ 'Content-Type': 'application/json'}"
-              @payload="{ schemaName: 'messages', data: { name: name, phone: phone, message: message, read: false, public:false } }"
-              @then="name=''; phone=''; message='';sent=true"
-              @result="responseMessage">Invia</button>
-            <button @not="_validate.comunicazione" class="border rounded-pill px-5 py-2">Invia</button>
-            <label @show="sent">Messaggio Inviato</label>
-          </div>
-        </div>
-      </div>
-    </form>
-  </div>
-</div>
-```
-
-### Advanced Contact Form Example (English)
-
-```html
-<div class="comment-box" @form="contact">
-  <h3>Contact Us</h3>
-  <div class="form-inner">
-    <form method="post" action="blog-details.html">
-      <div class="row clearfix">
-        <div class="col-lg-6 col-md-6 col-sm-12 single-column">
-          <div class="form-group">
-            <label>Name <span>*</span></label>
-            <input type="text" @model="name" @validate="minLength=3">
-            <label @if="_validate.name==false" class="text-danger">Name is not valid</label>
-          </div>
-        </div>
-        <div class="col-lg-6 col-md-6 col-sm-12 single-column">
-          <div class="form-group">
-            <label>Phone <span>*</span></label>
-            <input type="email" @model="phone" @validate="phone">
-            <label @if="_validate.phone==false" class="text-danger">Phone is not valid</label>
-          </div>
-        </div>
-        <div class="col-lg-12 col-md-12 col-sm-12 single-column">
-          <div class="form-group">
-            <label>Message <span>*</span></label>
-            <textarea @model="message" @validate="minLength=20" @change="sent=false"></textarea>
-            <label @if="_validate.message==false" class="text-danger">Please write at least 20 characters</label>
-          </div>
-        </div>
-        <div class="col-lg-12 col-md-12 col-sm-12 single-column">
-          <div class="message-btn">
-            <button class="theme-btn btn-one px-5 py-2"
-              @if="_validate.contact" @fetch:click="/api/content"
-              @method="post" @headers="{ 'Content-Type': 'application/json'}"
-              @payload="{ schemaName: 'messages', data: { name: name, phone: phone, message: message, read: false, public:false } }"
-              @then="name=''; phone=''; message='';sent=true"
-              @result="responseMessage">Send</button>
-            <button @not="_validate.contact" class="border rounded-pill px-5 py-2">Send</button>
-            <label @show="sent">Message Sent</label>
-          </div>
-        </div>
-      </div>
-    </form>
-  </div>
 </div>
 ```
 
@@ -619,20 +500,18 @@ Show previous values for debugging:
 - Date only: `@dateonly="isoDateString"`
 - Time only: `@time="isoDateString"`
 
-## Migration from v1.0.2
+## Migration from v1.0.1
 
 ### Breaking Changes
-- `@form` now manages form submission and validation automatically; remove manual event handlers for forms
-- Validation logic is now stricter and more extensible; custom rules may need to be updated
+- Enhanced error handling may change error object structure
+- Improved state management may affect direct state manipulation
 
 ### New Features to Adopt
-1. Use `@form` for all forms to get automatic validation and error handling
-2. Use improved `@validate` for more robust validation
-3. Use `@file` and `@files` for file uploads
-4. Use `@date`, `@dateonly`, `@time` for date formatting
-5. Use `@not` for cleaner inverse conditions
-6. Use `@prev` for debugging state changes
-7. Use `@error` for custom fetch error handling
+1. Use `@file` and `@files` for file uploads
+2. Use `@date`, `@dateonly`, `@time` for date formatting
+3. Use `@not` for cleaner inverse conditions
+4. Use `@prev` for debugging state changes
+5. Use `@error` for custom fetch error handling
 
 ## License
 
@@ -640,6 +519,6 @@ MIT License © 2025 devBen
 
 ---
 
-**Ayisha.js v1.0.3** - Build reactive UIs with minimal code. Fast, lightweight, and powerful.
+**Ayisha.js v1.0.2** - Build reactive UIs with minimal code. Fast, lightweight, and powerful.
 
 *Created with ❤️ by [devBen](https://github.com/BenJrSky)*
