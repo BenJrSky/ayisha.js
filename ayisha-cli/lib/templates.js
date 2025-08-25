@@ -15,7 +15,7 @@ const cdnTemplates = {
 </head>
 <body>
     <div id="app"></div>
-    <script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.0.4-min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/ayisha.js"></script>
     <script>
         const app = new AyishaVDOM('#app');
         app.render({
@@ -46,7 +46,7 @@ const cdnTemplates = {
 </head>
 <body>
     <div id="app"></div>
-    <script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.0.4-min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/ayisha.js"></script>
     <script>
         const app = new AyishaVDOM('#app');
         // SPA routing logic here
@@ -79,8 +79,8 @@ const modernTemplates = {
     <script type="module" src="/src/main.js"></script>
 </body>
 </html>`,
-      'src/main.js': `// Import Ayisha from CDN for now - will be replaced with proper module later
-import { AyishaVDOM } from 'https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.0.4-min.js';
+      'src/main.js': `// Import Ayisha from GitHub
+import { AyishaVDOM } from 'https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/ayisha.js';
 
 const app = new AyishaVDOM('#app');
 
@@ -114,8 +114,8 @@ export default defineConfig({
     <script type="module" src="/src/main.js"></script>
 </body>
 </html>`,
-      'src/main.js': `// Import Ayisha from CDN for now
-import { AyishaVDOM } from 'https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-min.js';
+      'src/main.js': `// Import Ayisha from GitHub
+import { AyishaVDOM } from 'https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/ayisha.js';
 import './style.css';
 
 const app = new AyishaVDOM('#app');
