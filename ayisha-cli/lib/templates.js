@@ -79,62 +79,23 @@ const modernTemplates = {
     <script type="module" src="/src/main.js"></script>
 </body>
 </html>`,
-      'src/main.js': `import { AyishaVDOM } from '../lib/ayisha.js';
-import './style.css';
+      'src/main.js': `// Import Ayisha from CDN for now - will be replaced with proper module later
+import { AyishaVDOM } from 'https://cdn.jsdelivr.net/npm/ayisha@1.0.4/dist/ayisha-1.0.4-min.js';
 
 const app = new AyishaVDOM('#app');
 
-// Simple SPA router
-class Router {
-  constructor(app) {
-    this.app = app;
-    this.routes = {};
-    window.addEventListener('hashchange', () => this.handleRoute());
-  }
-  
-  addRoute(path, component) {
-    this.routes[path] = component;
-  }
-  
-  handleRoute() {
-    const path = window.location.hash.slice(1) || '/';
-    const component = this.routes[path] || this.routes['/'];
-    this.app.render(component);
-  }
-}
-
-const router = new Router(app);
-
-router.addRoute('/', {
+app.render({
   tag: 'div',
   children: [
-    { tag: 'nav', class: 'navbar', children: '{{projectName}} SPA' },
-    { tag: 'div', class: 'container', children: 'Home Page' }
+    { tag: 'h1', children: 'Welcome to {{projectName}}!' },
+    { tag: 'p', children: 'Your modern Ayisha.js app is ready!' }
   ]
 });
-
-router.handleRoute();
-`,
-      'src/style.css': `body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-}
-
-.navbar {
-  background: #333;
-  color: white;
-  padding: 1rem;
-}
-
-.container {
-  padding: 20px;
-}
 `,
       'vite.config.js': `import { defineConfig } from 'vite';
 
 export default defineConfig({
-  // No alias needed - using relative imports
+  // Basic Vite configuration
 });
 `
     }
@@ -153,23 +114,24 @@ export default defineConfig({
     <script type="module" src="/src/main.js"></script>
 </body>
 </html>`,
-      'src/main.js': `import { AyishaVDOM } from 'ayisha';
+      'src/main.js': `// Import Ayisha from CDN for now
+import { AyishaVDOM } from 'https://cdn.jsdelivr.net/npm/ayisha@1.0.4/dist/ayisha-1.0.4-min.js';
 import './style.css';
 
 const app = new AyishaVDOM('#app');
 
-// Simple SPA router
+// Simple SPA Router
 class Router {
   constructor(app) {
     this.app = app;
     this.routes = {};
     window.addEventListener('hashchange', () => this.handleRoute());
   }
-  
+
   addRoute(path, component) {
     this.routes[path] = component;
   }
-  
+
   handleRoute() {
     const path = window.location.hash.slice(1) || '/';
     const component = this.routes[path] || this.routes['/'];
@@ -206,14 +168,9 @@ router.handleRoute();
 }
 `,
       'vite.config.js': `import { defineConfig } from 'vite';
-import path from 'path';
 
 export default defineConfig({
-  resolve: {
-    alias: {
-      'ayisha': path.resolve(__dirname, '../../ayisha.js')
-    }
-  }
+  // Basic Vite configuration
 });
 `
     }
