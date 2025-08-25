@@ -170,11 +170,12 @@ router.handleRoute();
 }
 `,
       'vite.config.js': `import { defineConfig } from 'vite';
+import path from 'path';
 
 export default defineConfig({
   resolve: {
     alias: {
-      'ayisha': new URL('../ayisha.js', import.meta.url).pathname
+      'ayisha': path.resolve(__dirname, '../../ayisha.js')
     }
   }
 });
