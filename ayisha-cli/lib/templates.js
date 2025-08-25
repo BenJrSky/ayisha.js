@@ -115,7 +115,7 @@ export default defineConfig({
 </body>
 </html>`,
       'src/main.js': `// Import Ayisha from CDN for now
-import { AyishaVDOM } from 'https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.0.4-min.js';
+import { AyishaVDOM } from 'https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-min.js';
 import './style.css';
 
 const app = new AyishaVDOM('#app');
