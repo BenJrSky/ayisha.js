@@ -22,10 +22,10 @@
     "url": "https://github.com/BenJrSky/ayisha.js"
   },
   "dependencies": {
-    "chalk": "^4.1.2",
-    "commander": "^14.0.0",
-    "fs-extra": "^11.3.1",
-    "inquirer": "^12.9.4",
-    "ora": "^8.2.0"
+   "chalk": "^4.1.2",
+    "commander": "^9.4.1",
+    "fs-extra": "^10.1.0",
+    "inquirer": "^8.2.6",
+    "ora": "^5.4.1"
   }
 }
