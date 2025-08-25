@@ -14,18 +14,16 @@ const cdnTemplates = {
     </style>
 </head>
 <body>
-    <div id="app"></div>
+    <div class="container">
+        <init>
+            title = 'Welcome to {{projectName}}!';
+            message = 'Your Ayisha.js app is ready!';
+        </init>
+        
+        <h1>{{ title }}</h1>
+        <p>{{ message }}</p>
+    </div>
     <script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/ayisha.js"></script>
-    <script>
-        const app = new AyishaVDOM('#app');
-        app.render({
-            tag: 'div',
-            children: [
-                { tag: 'h1', children: 'Welcome to {{projectName}}!' },
-                { tag: 'p', children: 'Your Ayisha.js app is ready!' }
-            ]
-        });
-    </script>
 </body>
 </html>`
     }
@@ -45,19 +43,29 @@ const cdnTemplates = {
     </style>
 </head>
 <body>
-    <div id="app"></div>
+    <div>
+        <init>
+            appName = '{{projectName}} SPA';
+            currentPage = 'home';
+        </init>
+        
+        <nav class="navbar">{{ appName }}</nav>
+        
+        <div class="container">
+            <div @page="home">
+                <h1>Home Page</h1>
+                <p>Welcome to your SPA!</p>
+                <a @link="about">Go to About</a>
+            </div>
+            
+            <div @page="about">
+                <h1>About Page</h1>
+                <p>This is the about page.</p>
+                <a @link="home">Back to Home</a>
+            </div>
+        </div>
+    </div>
     <script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/ayisha.js"></script>
-    <script>
-        const app = new AyishaVDOM('#app');
-        // SPA routing logic here
-        app.render({
-            tag: 'div',
-            children: [
-                { tag: 'nav', class: 'navbar', children: '{{projectName}} SPA' },
-                { tag: 'div', class: 'container', children: 'SPA Content' }
-            ]
-        });
-    </script>
 </body>
 </html>`
     }
@@ -73,29 +81,45 @@ const modernTemplates = {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{projectName}}</title>
+    <link rel="stylesheet" href="./src/style.css">
 </head>
 <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
+    <div id="app">
+        <h1>{{ title }}</h1>
+        <p>{{ message }}</p>
+    </div>
+    <script type="module" src="./src/main.js"></script>
 </body>
 </html>`,
-      'src/main.js': `// Import Ayisha from GitHub
-import { AyishaVDOM } from 'https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/ayisha.js';
+      'src/main.js': `import { AyishaVDOM } from '../ayisha.js';
 
-const app = new AyishaVDOM('#app');
-
-app.render({
-  tag: 'div',
-  children: [
-    { tag: 'h1', children: 'Welcome to {{projectName}}!' },
-    { tag: 'p', children: 'Your modern Ayisha.js app is ready!' }
-  ]
+const app = new AyishaVDOM(document.getElementById('app'), {
+  data: {
+    title: 'Welcome to {{projectName}}!',
+    message: 'Your modern Ayisha.js app is ready!'
+  }
 });
+
+app.render();`,
+      'src/style.css': `body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 20px;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+}
 `,
       'vite.config.js': `import { defineConfig } from 'vite';
 
 export default defineConfig({
-  // Basic Vite configuration
+  resolve: {
+    alias: {
+      'ayisha': './ayisha.js'
+    }
+  }
 });
 `
     }
@@ -108,49 +132,39 @@ export default defineConfig({
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{projectName}} - SPA</title>
+    <link rel="stylesheet" href="./src/style.css">
 </head>
 <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
+    <div id="app">
+        <nav class="navbar">{{ appName }}</nav>
+        
+        <div class="container">
+            <div @page="home">
+                <h1>Home Page</h1>
+                <p>Welcome to your SPA!</p>
+                <a @link="about">Go to About</a>
+            </div>
+            
+            <div @page="about">
+                <h1>About Page</h1>
+                <p>This is the about page.</p>
+                <a @link="home">Back to Home</a>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="./src/main.js"></script>
 </body>
 </html>`,
-      'src/main.js': `// Import Ayisha from GitHub
-import { AyishaVDOM } from 'https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/ayisha.js';
-import './style.css';
+      'src/main.js': `import { AyishaVDOM } from '../ayisha.js';
 
-const app = new AyishaVDOM('#app');
-
-// Simple SPA Router
-class Router {
-  constructor(app) {
-    this.app = app;
-    this.routes = {};
-    window.addEventListener('hashchange', () => this.handleRoute());
+const app = new AyishaVDOM(document.getElementById('app'), {
+  data: {
+    appName: '{{projectName}} SPA',
+    currentPage: 'home'
   }
-
-  addRoute(path, component) {
-    this.routes[path] = component;
-  }
-
-  handleRoute() {
-    const path = window.location.hash.slice(1) || '/';
-    const component = this.routes[path] || this.routes['/'];
-    this.app.render(component);
-  }
-}
-
-const router = new Router(app);
-
-router.addRoute('/', {
-  tag: 'div',
-  children: [
-    { tag: 'nav', class: 'navbar', children: '{{projectName}} SPA' },
-    { tag: 'div', class: 'container', children: 'Home Page' }
-  ]
 });
 
-router.handleRoute();
-`,
+app.render();`,
       'src/style.css': `body {
   font-family: Arial, sans-serif;
   margin: 0;
@@ -170,7 +184,11 @@ router.handleRoute();
       'vite.config.js': `import { defineConfig } from 'vite';
 
 export default defineConfig({
-  // Basic Vite configuration
+  resolve: {
+    alias: {
+      'ayisha': './ayisha.js'
+    }
+  }
 });
 `
     }
