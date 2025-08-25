@@ -92,11 +92,12 @@ app.render({
 });
 `,
       'vite.config.js': `import { defineConfig } from 'vite';
+import { fileURLToPath, URL } from 'node:url';
 
 export default defineConfig({
   resolve: {
     alias: {
-      'ayisha': new URL('../ayisha.js', import.meta.url).pathname
+      'ayisha': fileURLToPath(new URL('../../ayisha.js', import.meta.url))
     }
   }
 });
