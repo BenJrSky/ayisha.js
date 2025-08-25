@@ -19,6 +19,13 @@ async function generateProject(options) {
   const templateData = getTemplate(template, mode);
   await copyTemplate(templateData, projectPath, { projectName, includeExamples });
 
+  // Copy ayisha.js for modern mode
+  if (mode === 'modern') {
+    const ayishaSourcePath = path.join(__dirname, '../../ayisha.js');
+    const ayishaDestPath = path.join(projectPath, 'ayisha.js');
+    await fs.copy(ayishaSourcePath, ayishaDestPath);
+  }
+
   // Create package.json based on mode
   await createPackageJson(projectPath, projectName, mode);
 
@@ -73,9 +80,6 @@ async function createPackageJson(projectPath, projectName, mode) {
         "dev": "vite",
         "build": "vite build",
         "preview": "vite preview"
-      },
-      dependencies: {
-        "ayisha": "file:../ayisha.js"
       },
       devDependencies: {
         "vite": "^5.0.0"
