@@ -6939,6 +6939,13 @@ window.__AYISHA_HYDRATION_DATA__ = ${JSON.stringify(this._hydrationData)};
     window.Ayisha = AyishaVDOM;
   }
 
+  // ES Module exports (dentro l'IIFE per compatibilità bundler)
+  if (typeof exports !== 'undefined') {
+    exports.AyishaVDOM = AyishaVDOM;
+    exports.Ayisha = AyishaVDOM;
+    exports.default = AyishaVDOM;
+  }
+
   const addDefaultAnimationStyles = () => {
     if (typeof document === 'undefined') return; 
 
@@ -7010,7 +7017,3 @@ window.__AYISHA_HYDRATION_DATA__ = ${JSON.stringify(this._hydrationData)};
   }
 
 })();
-
-// ES Module exports (fuori dall'IIFE per compatibilità bundler)
-export { AyishaVDOM, AyishaVDOM as Ayisha };
-export default AyishaVDOM;
