@@ -3,11 +3,29 @@
   "version": "1.0.1",
   "description": "Ayisha.js - Un framework JavaScript per SPA, simile a Vue/React",
   "main": "ayisha-1.0.1.js",
-  "keywords": ["ayisha", "ayisha.js", "framework", "spa", "javascript", "vue", "react"],
+  "bin": {
+    "create-ayisha-app": "./ayisha-cli/bin/create-ayisha-app.js"
+  },
+  "keywords": [
+    "ayisha",
+    "ayisha.js",
+    "framework",
+    "spa",
+    "javascript",
+    "vue",
+    "react"
+  ],
   "author": "devBen",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/BenJrSky/ayisha.js"
+  },
+  "dependencies": {
+    "chalk": "^5.6.0",
+    "commander": "^14.0.0",
+    "fs-extra": "^11.3.1",
+    "inquirer": "^12.9.4",
+    "ora": "^8.2.0"
   }
 }

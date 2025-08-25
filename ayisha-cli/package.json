@@ -1,0 +1,22 @@
+{
+  "name": "create-ayisha-app",
+  "version": "1.0.0",
+  "description": "CLI tool to create Ayisha.js applications",
+  "bin": {
+    "create-ayisha-app": "./bin/create-ayisha-app.js"
+  },
+  "keywords": ["ayisha", "cli", "generator", "spa", "framework"],
+  "author": "devBen",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^9.0.0",
+    "inquirer": "^8.0.0",
+    "chalk": "^4.1.2",
+    "fs-extra": "^10.0.0",
+    "ora": "^5.4.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BenJrSky/ayisha.js"
+  }
+}
