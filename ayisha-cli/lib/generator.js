@@ -4,7 +4,7 @@ const { execSync } = require('child_process');
 const { getTemplate } = require('./templates');
 
 async function generateProject(options) {
-  const { projectName, template, includeExamples, setupGit } = options;
+  const { projectName, template, mode = 'cdn', includeExamples, setupGit } = options;
   const projectPath = path.join(process.cwd(), projectName);
 
   // Check if directory exists
@@ -15,18 +15,28 @@ async function generateProject(options) {
   // Create project directory
   await fs.ensureDir(projectPath);
 
-  // Copy template files
-  const templateData = getTemplate(template);
+  // Copy template files based on mode
+  const templateData = getTemplate(template, mode);
   await copyTemplate(templateData, projectPath, { projectName, includeExamples });
 
-  // Create package.json
-  await createPackageJson(projectPath, projectName);
+  // Create package.json based on mode
+  await createPackageJson(projectPath, projectName, mode);
+
+  // Install dependencies for modern mode
+  if (mode === 'modern') {
+    console.log('Installing dependencies...');
+    try {
+      execSync('npm install', { cwd: projectPath, stdio: 'inherit' });
+    } catch (error) {
+      console.warn('Failed to install dependencies. Run "npm install" manually.');
+    }
+  }
 
   // Setup git if requested
   if (setupGit) {
     try {
       execSync('git init', { cwd: projectPath, stdio: 'ignore' });
-      await fs.writeFile(path.join(projectPath, '.gitignore'), gitignoreContent);
+      await fs.writeFile(path.join(projectPath, '.gitignore'), getGitignoreContent(mode));
     } catch (error) {
       // Git not available, skip
     }
@@ -49,20 +59,47 @@ async function copyTemplate(templateData, projectPath, variables) {
   }
 }
 
-async function createPackageJson(projectPath, projectName) {
-  const packageJson = {
-    name: projectName,
-    version: "1.0.0",
-    description: "An Ayisha.js application",
-    main: "index.html",
-    scripts: {
-      "dev": "npx live-server --port=3000",
-      "build": "echo 'No build step needed for Ayisha.js'"
-    },
-    keywords: ["ayisha", "spa", "javascript"],
-    author: "",
-    license: "MIT"
-  };
+async function createPackageJson(projectPath, projectName, mode) {
+  let packageJson;
+  
+  if (mode === 'modern') {
+    packageJson = {
+      name: projectName,
+      version: "1.0.0",
+      description: "An Ayisha.js application",
+      type: "module",
+      main: "src/main.js",
+      scripts: {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview"
+      },
+      dependencies: {
+        "ayisha": "file:../ayisha.js"
+      },
+      devDependencies: {
+        "vite": "^5.0.0"
+      },
+      keywords: ["ayisha", "spa", "javascript", "vite"],
+      author: "",
+      license: "MIT"
+    };
+  } else {
+    // CDN mode
+    packageJson = {
+      name: projectName,
+      version: "1.0.0",
+      description: "An Ayisha.js application",
+      main: "index.html",
+      scripts: {
+        "dev": "npx live-server --port=3000",
+        "build": "echo 'No build step needed for Ayisha.js CDN mode'"
+      },
+      keywords: ["ayisha", "spa", "javascript"],
+      author: "",
+      license: "MIT"
+    };
+  }
   
   await fs.writeFile(
     path.join(projectPath, 'package.json'),
@@ -70,12 +107,14 @@ async function createPackageJson(projectPath, projectName) {
   );
 }
 
-const gitignoreContent = `
-node_modules/
-.DS_Store
-*.log
-dist/
-.env
-`;
+function getGitignoreContent(mode) {
+  const baseContent = `node_modules/\n.DS_Store\n*.log\n.env`;
+  
+  if (mode === 'modern') {
+    return baseContent + `\ndist/\n.vite/`;
+  }
+  
+  return baseContent;
+}
 
 module.exports = { generateProject };
