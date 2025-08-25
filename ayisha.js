@@ -6927,10 +6927,14 @@ window.__AYISHA_HYDRATION_DATA__ = ${JSON.stringify(this._hydrationData)};
 
   // Export per diversi ambienti (dentro l'IIFE)
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = AyishaVDOM;
-    module.exports.Ayisha = AyishaVDOM;
-    module.exports.AyishaVDOM = AyishaVDOM;
+    // CommonJS
+    module.exports = { AyishaVDOM, Ayisha: AyishaVDOM };
     module.exports.default = AyishaVDOM;
+  } else if (typeof define === 'function' && define.amd) {
+    // AMD
+    define([], function() {
+      return { AyishaVDOM, Ayisha: AyishaVDOM, default: AyishaVDOM };
+    });
   } else if (typeof window !== 'undefined') {
     window.Ayisha = AyishaVDOM;
   }
@@ -7007,6 +7011,6 @@ window.__AYISHA_HYDRATION_DATA__ = ${JSON.stringify(this._hydrationData)};
 
 })();
 
-// Export ES Module (al top level per bundler moderni)
-export { AyishaVDOM as Ayisha, AyishaVDOM };
+// ES Module exports (fuori dall'IIFE per compatibilità bundler)
+export { AyishaVDOM, AyishaVDOM as Ayisha };
 export default AyishaVDOM;

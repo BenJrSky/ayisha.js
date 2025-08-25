@@ -27,5 +27,24 @@
     "fs-extra": "^10.1.0",
     "inquirer": "^8.2.6",
     "ora": "^5.4.1"
+  },
+  "scripts": {
+    "build": "rollup -c",
+    "build:esm": "rollup -c --format es",
+    "build:cjs": "rollup -c --format cjs",
+    "build:umd": "rollup -c --format umd"
+  },
+  "devDependencies": {
+    "rollup": "^4.0.0",
+    "@rollup/plugin-terser": "^0.4.4"
+  },
+  "module": "dist/ayisha.esm.js",
+  "browser": "dist/ayisha.umd.js",
+  "exports": {
+    ".": {
+      "import": "./dist/ayisha.esm.js",
+      "require": "./dist/ayisha.cjs.js",
+      "browser": "./dist/ayisha.umd.js"
+    }
   }
 }
