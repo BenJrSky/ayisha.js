@@ -1,4 +1,4 @@
-# Ayisha.js v1.0.4
+# Ayisha.js v1.0.3
 
 Ayisha.js is a micro JavaScript framework for building reactive, component-based user interfaces. It offers a minimalist syntax, a powerful directive system, and an extremely lightweight bundle for fast and modern web development.
 
@@ -22,7 +22,7 @@ Ayisha.js is a micro JavaScript framework for building reactive, component-based
 ### Via CDN (recommended)
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.0.4-min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.0.3-min.js"></script>
 ```
 
 ### Local Download
@@ -30,13 +30,13 @@ Ayisha.js is a micro JavaScript framework for building reactive, component-based
 Download the file and include it in your project:
 
 ```html
-<script src="Ayisha-1.0.4.js"></script>
+<script src="Ayisha-1.0.3.js"></script>
 ```
 
 Or use the minified version:
 
 ```html
-<script src="Ayisha-1.0.4-min.js"></script>
+<script src="Ayisha-1.0.3-min.js"></script>
 ```
 
 ## Basic Example
@@ -57,17 +57,10 @@ Or use the minified version:
   </ul>
 </div>
 
-<script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.0.4-min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.0.3-min.js"></script>
 ```
 
-## What's New in v1.0.4
-
-### Improvements
-
-- **Enhanced Stability** - Bug fixes and performance optimizations
-- **Improved Error Handling** - Better error reporting and debugging capabilities
-- **Code Optimization** - Internal code improvements for better performance
-- **Maintenance Updates** - Updated dependencies and internal optimizations
+## What's New in v1.0.3
 
 ### New Directives
 
