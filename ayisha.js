@@ -947,7 +947,6 @@
       this.renderCallback();
     }
   }
-
   class FetchManager {
     constructor(evaluator) {
       this.evaluator = evaluator;
@@ -1677,8 +1676,6 @@
       this.modelBindings = [];
     }
   }
-
-
   class Directive {
     constructor(evaluator, bindingManager, errorHandler) {
       this.evaluator = evaluator;
@@ -6925,6 +6922,19 @@ window.__AYISHA_HYDRATION_DATA__ = ${JSON.stringify(this._hydrationData)};
     window.AyishaVDOM = AyishaVDOM;
   }
 
+  // Creo l'alias Ayisha per compatibilità
+  const Ayisha = AyishaVDOM;
+
+  // Export per diversi ambienti (dentro l'IIFE)
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = AyishaVDOM;
+    module.exports.Ayisha = AyishaVDOM;
+    module.exports.AyishaVDOM = AyishaVDOM;
+    module.exports.default = AyishaVDOM;
+  } else if (typeof window !== 'undefined') {
+    window.Ayisha = AyishaVDOM;
+  }
+
   const addDefaultAnimationStyles = () => {
     if (typeof document === 'undefined') return; 
 
@@ -6983,7 +6993,7 @@ window.__AYISHA_HYDRATION_DATA__ = ${JSON.stringify(this._hydrationData)};
     }
   };
 
-if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+  if (typeof window !== 'undefined' && typeof document !== 'undefined') {
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
         addDefaultAnimationStyles();
@@ -6996,3 +7006,7 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   }
 
 })();
+
+// Export ES Module (al top level per bundler moderni)
+export { AyishaVDOM as Ayisha, AyishaVDOM };
+export default AyishaVDOM;

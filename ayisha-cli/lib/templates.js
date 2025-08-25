@@ -1,6 +1,8 @@
-const templates = {
+
+// Template per modalità CDN (tradizionale)
+const cdnTemplates = {
   basic: {
-    name: 'Basic Template',
+    name: 'Basic Template (CDN)',
     files: {
       'index.html': `<!DOCTYPE html>
 <html lang="en">
@@ -160,7 +162,7 @@ li {
   },
   
   spa: {
-    name: 'SPA Template',
+    name: 'SPA Template (CDN)',
     files: {
       'index.html': `<!DOCTYPE html>
 <html lang="en">
@@ -574,12 +576,129 @@ body {
   }
 };
 
-function getTemplate(templateName) {
-  return templates[templateName] || templates.basic;
+// Template per modalità moderna (ES modules + bundling)
+const modernTemplates = {
+  basic: {
+    name: 'Basic Template (Modern)',
+    files: {
+      'index.html': `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{projectName}} - Ayisha.js App</title>
+    <link rel="stylesheet" href="src/style.css">
+</head>
+<body>
+    <div id="app"></div>
+    <script type="module" src="src/main.js"></script>
+</body>
+</html>`,
+      'src/main.js': `import { Ayisha } from 'ayisha';
+import App from './App.ayisha';
+
+const app = new Ayisha({
+  el: '#app',
+  component: App
+});
+
+app.mount();`,
+      'src/App.ayisha': `<template>
+  <div class="container">
+    <init>
+      title = '{{projectName}}';
+      count = 0;
+      message = 'Welcome to Ayisha.js!';
+      items = ['Learn Ayisha.js', 'Build amazing apps', 'Deploy to production'];
+    </init>
+    
+    <header>
+      <h1>{{ title }}</h1>
+      <p>{{ message }}</p>
+    </header>
+    
+    <main>
+      <section class="counter">
+        <h2>Counter Example</h2>
+        <button @click="count++" class="btn">Count: {{ count }}</button>
+        <button @click="count = 0" class="btn secondary">Reset</button>
+      </section>
+      
+      <section class="todo">
+        <h2>Todo List</h2>
+        <ul>
+          <li @for="item in items" @key="$index">
+            {{ item }}
+          </li>
+        </ul>
+      </section>
+      
+      <section class="input">
+        <h2>Two-way Binding</h2>
+        <input @model="message" placeholder="Type something...">
+        <p>You typed: <strong>{{ message }}</strong></p>
+      </section>
+    </main>
+  </div>
+</template>
+
+<style>
+/* Stili come nel template CDN */
+</style>`,
+      'package.json': `{
+  "name": "{{projectName}}",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "ayisha": "^1.0.4"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}`,
+      'vite.config.js': `import { defineConfig } from 'vite';
+
+export default defineConfig({
+  server: {
+    port: 3000,
+    open: true
+  },
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets'
+  }
+});`,
+      '.gitignore': `node_modules/
+dist/
+.env
+.env.local
+.env.*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*`
+    }
+  }
+};
+
+// Compatibilità con il codice esistente
+const templates = cdnTemplates;
+
+function getTemplate(templateName, mode = 'cdn') {
+  const templateSource = mode === 'modern' ? modernTemplates : cdnTemplates;
+  return templateSource[templateName] || null;
 }
 
-function getTemplates() {
-  return Object.keys(templates);
+function getTemplates(mode = 'cdn') {
+  const templateSource = mode === 'modern' ? modernTemplates : cdnTemplates;
+  return Object.keys(templateSource).map(key => ({
+    key,
+    name: templateSource[key].name
+  }));
 }
 
-module.exports = { getTemplate, getTemplates };
+module.exports = { getTemplate, getTemplates, cdnTemplates, modernTemplates, templates };

@@ -19,6 +19,7 @@ program
 program
   .argument('[project-name]', 'name of the project')
   .option('-t, --template <template>', 'template to use')
+  .option('-m, --mode <mode>', 'development mode (cdn or modern)', 'cdn')
   .option('-y, --yes', 'skip prompts and use defaults')
   .action(async (projectName, options) => {
     console.log(chalk.blue.bold('\n🚀 Welcome to Ayisha.js CLI!\n'));
@@ -38,6 +39,16 @@ program
             }
             return true;
           }
+        },
+        {
+          type: 'list',
+          name: 'mode',
+          message: 'Choose development mode:',
+          choices: [
+            { name: '🌐 CDN Mode - Traditional script tags (no build process)', value: 'cdn' },
+            { name: '⚡ Modern Mode - ES Modules with bundling and dev server', value: 'modern' }
+          ],
+          default: options.mode || 'cdn'
         },
         {
           type: 'list',
@@ -67,6 +78,7 @@ program
     } else {
       answers = {
         projectName: projectName || 'my-ayisha-app',
+        mode: options.mode || 'cdn',
         template: options.template || 'basic',
         includeExamples: true,
         setupGit: true
@@ -81,8 +93,15 @@ program
       
       console.log(chalk.yellow('\n📁 Next steps:'));
       console.log(chalk.white(`  cd ${answers.projectName}`));
-      console.log(chalk.white('  # Open index.html in your browser'));
-      console.log(chalk.white('  # Or use a local server like Live Server\n'));
+      
+      if (answers.mode === 'modern') {
+        console.log(chalk.white('  npm install'));
+        console.log(chalk.white('  npm run dev'));
+        console.log(chalk.white('  # Your app will be available at http://localhost:3000\n'));
+      } else {
+        console.log(chalk.white('  # Open index.html in your browser'));
+        console.log(chalk.white('  # Or use a local server like Live Server\n'));
+      }
       
       console.log(chalk.blue('🎉 Happy coding with Ayisha.js!'));
     } catch (error) {
