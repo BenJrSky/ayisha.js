@@ -7017,3 +7017,7 @@ window.__AYISHA_HYDRATION_DATA__ = ${JSON.stringify(this._hydrationData)};
   }
 
 })();
+
+// Export ES6 per compatibilità con bundler moderni
+export { AyishaVDOM, AyishaVDOM as Ayisha };
+export default AyishaVDOM;
