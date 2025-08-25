@@ -1,6 +1,6 @@
 {
   "name": "create-ayisha-app",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Ayisha.js - Un framework JavaScript per SPA, simile a Vue/React",
   "main": "ayisha-1.0.1.js",
   "bin": {
@@ -22,7 +22,7 @@
     "url": "https://github.com/BenJrSky/ayisha.js"
   },
   "dependencies": {
-   "chalk": "^4.1.2",
+    "chalk": "^4.1.2",
     "commander": "^9.4.1",
     "fs-extra": "^10.1.0",
     "inquirer": "^8.2.6",
