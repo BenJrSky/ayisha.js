@@ -42,25 +42,18 @@ program
         },
         {
           type: 'list',
-          name: 'mode',
-          message: 'Choose development mode:',
-          choices: [
-            { name: '🌐 CDN Mode - Traditional script tags (no build process)', value: 'cdn' },
-            { name: '⚡ Modern Mode - ES Modules with bundling and dev server', value: 'modern' }
-          ],
-          default: options.mode || 'cdn'
+          name: 'template',
+          message: 'Choose a project template:',
+          choices: ['Basic', 'SPA', 'Form App', 'Dashboard']
         },
         {
           type: 'list',
-          name: 'template',
-          message: 'Choose a template:',
+          name: 'mode',
+          message: 'Choose development mode:',
           choices: [
-            { name: '📄 Basic - Simple single page', value: 'basic' },
-            { name: '🌐 SPA - Multi-page application', value: 'spa' },
-            { name: '📝 Form App - Form-heavy application', value: 'form-app' },
-            { name: '📊 Dashboard - Admin dashboard', value: 'dashboard' }
-          ],
-          default: options.template || 'basic'
+            { name: 'CDN (Traditional - script tag)', value: 'cdn' },
+            { name: 'Modern (ES Modules + Build tools)', value: 'modern' }
+          ]
         },
         {
           type: 'confirm',
@@ -88,7 +81,14 @@ program
     const spinner = ora('Creating project...').start();
 
     try {
-      await generateProject(answers);
+      // Pass mode to generateProject
+      await generateProject({
+        projectName,
+        template: answers.template,
+        mode: answers.mode,
+        includeExamples: answers.includeExamples,
+        setupGit: answers.setupGit
+      });
       spinner.succeed(chalk.green('Project created successfully!'));
       
       console.log(chalk.yellow('\n📁 Next steps:'));
