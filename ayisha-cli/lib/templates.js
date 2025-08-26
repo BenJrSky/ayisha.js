@@ -8,21 +8,33 @@ const cdnTemplates = {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{projectName}}</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <init>
-            title = 'Welcome to {{projectName}}!';
-            message = 'Your Ayisha.js app is ready!';
-        </init>
-        
-        <h1>{{ title }}</h1>
-        <p>{{ message }}</p>
-    </div>
+    <init>
+        title = 'Welcome to {{projectName}}!';
+        message = 'Your Ayisha.js app is ready!';
+    </init>
+    
+    <header>
+        <div>
+            <img src="ayisha-logo-black.png" alt="Ayisha.js Logo">
+            <h1>{{ title }}</h1>
+            <p>{{ message }}</p>
+        </div>
+    </header>
+    
+    <main>
+        <section>
+            <p>Your application is ready to use!</p>
+        </section>
+    </main>
+    
+    <footer>
+        <small><img src="ayisha-logo-black.png" alt="Ayisha.js Logo"></small>
+        <small>Made with ❤️ using <a href="https://ayisha.app" target="_blank">Ayisha.js</a></small>
+    </footer>
+    
     <script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/ayisha.js"></script>
 </body>
 </html>`
@@ -65,6 +77,71 @@ const cdnTemplates = {
             </div>
         </div>
     </div>
+    <script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/ayisha.js"></script>
+</body>
+</html>`
+    }
+  },
+  'Todo': {
+    files: {
+      'index.html': `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{projectName}} - Todo App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <init>
+       newTodo =""
+       todos = []
+    </init>
+    
+    <header>
+        <div>
+            <img src="ayisha-logo-black.png" alt="Ayisha.js Logo">
+            <h1>{{projectName}} Todo App</h1>
+            <p class="hero-subtitle">Build and manage your tasks with the power of Ayisha.js reactive framework</p>
+        </div>
+    </header>
+    
+    <main>
+        <section>
+            <input type="text" @model="newTodo" placeholder="What needs to be done?">
+            <nav>
+                <button @click="if(newTodo.trim()) { todos.push({text: newTodo.trim(), completed: false}); newTodo = '' }">Add Todo</button>
+                <button @click="todos = []">Clear All</button>
+                <button @click="todos = todos.filter(t => !t.completed)">Clear Completed</button>
+            </nav>
+        </section>
+        
+        <div @show="todos.length > 0">
+            <p><strong @text="todos.filter(t => !t.completed).length"></strong> active, 
+            <strong @text="todos.filter(t => t.completed).length"></strong> completed, 
+            <strong @text="todos.length"></strong> total</p>
+        </div>
+        
+        <div @if="todos.length === 0">
+            <p>🎯 No todos yet. Add one above to get started!</p>
+        </div>
+        
+        <ul @if="todos.length > 0">
+            <li @for="todo in todos">
+                <label>
+                    <input type="checkbox" @model="todo.completed">
+                    <span @text="todo.text"></span>
+                    <span @click="todos = todos.filter(t => t !== todo)">❌</span>
+                </label>
+            </li>
+        </ul>
+    </main>
+    
+    <footer>
+        <small><img src="ayisha-logo-black.png" alt="Ayisha.js Logo"></small>
+        <small>Made with ❤️ using <a href="https://ayisha.app" target="_blank">Ayisha.js</a></small>
+    </footer>
+    
     <script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/ayisha.js"></script>
 </body>
 </html>`
@@ -181,6 +258,88 @@ app.render();`,
   padding: 20px;
 }
 `,
+      'vite.config.js': `import { defineConfig } from 'vite';
+
+export default defineConfig({
+  resolve: {
+    alias: {
+      'ayisha': './ayisha.js'
+    }
+  }
+});
+`
+    }
+  },
+  'Todo': {
+    files: {
+      'index.html': `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{projectName}} - Todo App</title>
+    <link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <div>
+                <img src="ayisha-logo-black.png" alt="Ayisha.js Logo">
+                <h1>{{projectName}} Todo App</h1>
+                <p class="hero-subtitle">Build and manage your tasks with the power of Ayisha.js reactive framework</p>
+            </div>
+        </header>
+        
+        <main>
+            <section>
+                <input type="text" @model="newTodo" placeholder="What needs to be done?">
+                <nav>
+                    <button @click="if(newTodo.trim()) { todos.push({text: newTodo.trim(), completed: false}); newTodo = '' }">Add Todo</button>
+                    <button @click="todos = []">Clear All</button>
+                    <button @click="todos = todos.filter(t => !t.completed)">Clear Completed</button>
+                </nav>
+            </section>
+            
+            <div @show="todos.length > 0">
+                <p><strong @text="todos.filter(t => !t.completed).length"></strong> active, 
+                <strong @text="todos.filter(t => t.completed).length"></strong> completed, 
+                <strong @text="todos.length"></strong> total</p>
+            </div>
+            
+            <div @if="todos.length === 0">
+                <p>🎯 No todos yet. Add one above to get started!</p>
+            </div>
+            
+            <ul @if="todos.length > 0">
+                <li @for="todo in todos">
+                    <label>
+                        <input type="checkbox" @model="todo.completed">
+                        <span @text="todo.text"></span>
+                        <span @click="todos = todos.filter(t => t !== todo)">❌</span>
+                    </label>
+                </li>
+            </ul>
+        </main>
+        
+        <footer>
+            <small><img src="ayisha-logo-black.png" alt="Ayisha.js Logo"></small>
+            <small>Made with ❤️ using <a href="https://ayisha.app" target="_blank">Ayisha.js</a></small>
+        </footer>
+    </div>
+    <script type="module" src="./src/main.js"></script>
+</body>
+</html>`,
+      'src/main.js': `import { AyishaVDOM } from '../ayisha.js';
+
+const app = new AyishaVDOM(document.getElementById('app'), {
+  data: {
+    newTodo: '',
+    todos: []
+  }
+});
+
+app.render();`,
+      'src/style.css': `/* This will be replaced with the actual styles.css content */`,
       'vite.config.js': `import { defineConfig } from 'vite';
 
 export default defineConfig({

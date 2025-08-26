@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo App - Ayisha.js</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <init>
+       newTodo =""
+       todos = []
+    </init>
+    
+    <header>
+        <div>
+            <img src="ayisha-logo-black.png" alt="Ayisha.js Logo">
+            <h1>My Todo App</h1>
+            <p class="hero-subtitle">Build and manage your tasks with the power of Ayisha.js reactive framework</p>
+        </div>
+    </header>
+    
+    
+    <main>
+        <section>
+            <input type="text" @model="newTodo" placeholder="What needs to be done?">
+            <nav>
+                <button @click="if(newTodo.trim()) { todos.push({text: newTodo.trim(), completed: false}); newTodo = '' }">Add Todo</button>
+                <button @click="todos = []">Clear All</button>
+                <button @click="todos = todos.filter(t => !t.completed)">Clear Completed</button>
+            </nav>
+        </section>
+        
+        <div @show="todos.length > 0">
+            <p><strong @text="todos.filter(t => !t.completed).length"></strong> active, 
+            <strong @text="todos.filter(t => t.completed).length"></strong> completed, 
+            <strong @text="todos.length"></strong> total</p>
+        </div>
+        
+        <div @if="todos.length === 0">
+            <p>🎯 No todos yet. Add one above to get started!</p>
+        </div>
+        
+        <ul @if="todos.length > 0">
+            <li @for="todo in todos">
+                <label>
+                    <input type="checkbox" @model="todo.completed">
+                    <span @text="todo.text"></span>
+                    <span @click="todos = todos.filter(t => t !== todo)">❌</span>
+                </label>
+            </li>
+        </ul>
+    </main>
+    
+    <footer>
+        <small><img src="ayisha-logo-black.png" alt="Ayisha.js Logo"></small>
+        <small>Made with ❤️ using <a href="https://ayisha.app" target="_blank">Ayisha.js</a></small>
+    </footer>
+    
+    <script src="ayisha-1.0.4.js"></script>
+   
+</body>
+</html>

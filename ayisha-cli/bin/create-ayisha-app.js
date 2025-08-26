@@ -44,7 +44,7 @@ program
           type: 'list',
           name: 'template',
           message: 'Choose a project template:',
-          choices: ['Basic', 'SPA', 'Form App', 'Dashboard']
+          choices: ['Basic', 'SPA', 'Todo']
         },
         {
           type: 'list',

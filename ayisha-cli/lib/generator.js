@@ -19,9 +19,20 @@ async function generateProject(options) {
   const templateData = getTemplate(template, mode);
   await copyTemplate(templateData, projectPath, { projectName, includeExamples });
 
+  // Copy shared assets (CSS and logo) for all templates
+  const assetsPath = path.join(__dirname, '../..');
+  const stylesSourcePath = path.join(assetsPath, 'styles.css');
+  const logoSourcePath = path.join(assetsPath, 'ayisha-logo-black.png');
+
+  const stylesDestPath = path.join(projectPath, 'styles.css');
+  const logoDestPath = path.join(projectPath, 'ayisha-logo-black.png');
+
+  await fs.copy(stylesSourcePath, stylesDestPath);
+  await fs.copy(logoSourcePath, logoDestPath);
+
   // Copy ayisha.js for modern mode
   if (mode === 'modern') {
-    const ayishaSourcePath = path.join(__dirname, '../../ayisha.js');
+    const ayishaSourcePath = path.join(assetsPath, 'ayisha.js');
     const ayishaDestPath = path.join(projectPath, 'ayisha.js');
     await fs.copy(ayishaSourcePath, ayishaDestPath);
   }
