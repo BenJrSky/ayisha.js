@@ -1,6 +1,6 @@
 {
   "name": "create-ayisha-app",
-  "version": "1.0.30",
+  "version": "1.0.31",
   "description": "Ayisha.js - Un framework JavaScript per SPA, simile a Vue/React",
   "main": "ayisha-1.0.1.js",
   "bin": {
