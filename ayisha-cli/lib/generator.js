@@ -38,10 +38,7 @@ async function generateProject(options) {
     await fs.copy(logoSourcePath, logoDestPath);
   }
 
-  await fs.copy(stylesSourcePath, stylesDestPath);
-  await fs.copy(logoSourcePath, logoDestPath);
-
-  // Copy ayisha.js for modern mode - USA actualMode!
+  // Copy ayisha.js for modern mode - CORRETTO: usa actualMode!
   if (actualMode === 'modern') {
     const ayishaSourcePath = path.join(assetsPath, 'ayisha.js');
     const ayishaDestPath = path.join(projectPath, 'ayisha.js');
@@ -53,7 +50,7 @@ async function generateProject(options) {
     await createPackageJson(projectPath, projectName, actualMode, template);
   }
 
-  // Install dependencies for modern mode - USA actualMode!
+  // Install dependencies for modern mode - CORRETTO: usa actualMode!
   if (actualMode === 'modern') {
     console.log('Installing dependencies...');
     try {
