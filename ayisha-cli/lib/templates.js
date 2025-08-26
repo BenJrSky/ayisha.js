@@ -653,7 +653,6 @@ This ensures **100% uptime** even with SSR issues.
   "version": "1.0.0",
   "description": "{{projectName}} - Ayisha.js SSR Application",
   "main": "server.js",
-  "type": "module",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
