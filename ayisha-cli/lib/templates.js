@@ -672,17 +672,11 @@ This ensures **100% uptime** even with SSR issues.
   }
 }`,
 
-      'server.js': `import express from 'express';
-import path from 'path';
-import fs from 'fs';
-import compression from 'compression';
-import helmet from 'helmet';
-import { fileURLToPath } from 'url';
-import { createRequire } from 'module';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const require = createRequire(import.meta.url);
+      'server.js': `const express = require('express');
+const path = require('path');
+const fs = require('fs');
+const compression = require('compression');
+const helmet = require('helmet');
 
 // Import Ayisha.js
 const AyishaVDOM = require('./ayisha.js');
@@ -755,8 +749,8 @@ async function renderPageWithFallback(path) {
         window.__AYISHA_STATE__ = \${JSON.stringify(result.state || {})};
     </script>
     \${result.hydrationScript || ''}
-    <script type="module" src="/static/ayisha.js"></script>
-    <script type="module" src="/static/client.js"></script>
+    <script src="/static/ayisha.js"></script>
+    <script src="/static/client.js"></script>
 </body>
 </html>\`;
 
@@ -841,8 +835,8 @@ function getClientSideTemplate() {
     <div id="app">
         <div class="loading">Loading...</div>
     </div>
-    <script type="module" src="/static/ayisha.js"></script>
-    <script type="module" src="/static/client.js"></script>
+    <script src="/static/ayisha.js"></script>
+    <script src="/static/client.js"></script>
 </body>
 </html>\`;
 }
@@ -868,9 +862,7 @@ app.listen(PORT, () => {
   console.log('SSR capabilities:', validateSSRCapabilities() ? '✅ Available' : '⚠️ Limited');
 });`,
 
-      'client.js': `import { AyishaVDOM } from './ayisha.js';
-
-(function() {
+      'client.js': `(function() {
   'use strict';
   
   function initializeClient() {
@@ -954,9 +946,7 @@ app.listen(PORT, () => {
   }
 })();`,
 
-      'test-ssr.js': `import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-const AyishaVDOM = require('./ayisha.js');
+      'test-ssr.js': `const AyishaVDOM = require('./ayisha.js');
 
 console.log('🧪 Testing Ayisha SSR capabilities...');
 
@@ -1022,8 +1012,8 @@ try {
 
 console.log('\n🏁 SSR testing completed. Check results above.');`,
 
-      'build.js': `import fs from 'fs';
-import path from 'path';
+      'build.js': `const fs = require('fs');
+const path = require('path');
 
 console.log('🔨 Building SSR application...');
 
@@ -1058,12 +1048,11 @@ console.log('🔧 Run "npm run dev" for development with auto-reload');`,
 
       'README.md': `# {{projectName}} - Ayisha.js SSR Application
 
-Server-Side Rendered application built with Ayisha.js and Express.js using modern ES modules.
+Server-Side Rendered application built with Ayisha.js and Express.js.
 
 ## 🚀 Features
 
 - ✅ **Server-Side Rendering** with fallback to Client-Side Rendering
-- ✅ **ES Modules** support for modern JavaScript
 - ✅ **Enhanced error handling** and validation
 - ✅ **Client-side hydration** for interactivity
 - ✅ **Performance optimizations** (compression, helmet)
@@ -1110,10 +1099,6 @@ npm test
 Runs comprehensive SSR capability tests.
 
 ## ⚠️ Important Notes
-
-### Modern JavaScript
-
-This template uses **ES Modules** (\`"type": "module"\`) for modern JavaScript development.
 
 ### SSR Reliability
 
