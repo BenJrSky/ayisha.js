@@ -1051,103 +1051,106 @@ const fs = require('fs');
 const compression = require('compression');
 const helmet = require('helmet');
 
+// Import Ayisha.js
+const AyishaVDOM = require('./ayisha.js');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
-const isDev = process.argv.includes('--dev');
+const isDev = process.env.NODE_ENV !== 'production';
 
-// Security middleware
+// Security and performance middleware
 app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
-      styleSrc: ["'self'", "'unsafe-inline'"]
-    }
-  }
+  contentSecurityPolicy: false
 }));
-
-// Compression middleware
 app.use(compression());
 
-// Static files
+// Serve static files
 app.use(express.static('.'));
 
-// SSR Route
-app.get('/', (req, res) => {
+// SSR Route - legge index.html dalla cartella
+app.get('/', async (req, res) => {
   try {
-    const html = \`<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{projectName}} - SSR</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <div id="app">
-        <div class="container">
-            <header class="header">
-                <img src="ayisha-logo-black.png" alt="Ayisha.js Logo">
-                <h1>{{projectName}} SSR</h1>
-                <p>Server-Side Rendered at: \${new Date().toISOString()}</p>
-            </header>
-            
-            <main class="main">
-                <section class="features">
-                    <h2>✨ SSR Features</h2>
-                    <ul>
-                        <li>Server-Side Rendering</li>
-                        <li>Client-Side Hydration</li>
-                        <li>Express.js Server</li>
-                        <li>Security with Helmet</li>
-                        <li>Gzip Compression</li>
-                        <li>Hot Reload (Dev Mode)</li>
-                    </ul>
-                </section>
-                
-                <section class="info">
-                    <h3>Server Info</h3>
-                    <p>Mode: \${isDev ? 'Development' : 'Production'}</p>
-                    <p>Port: \${PORT}</p>
-                    <p>Node.js: \${process.version}</p>
-                </section>
-            </main>
-            
-            <footer>
-                <small><img src="ayisha-logo-black.png" alt="Ayisha.js Logo"></small>
-                <small>Made with ❤️ using <a href="https://ayisha.app" target="_blank">Ayisha.js</a></small>
-            </footer>
-        </div>
-    </div>
+    // 1. Leggi il file index.html dalla cartella
+    const indexPath = path.join(__dirname, 'index.html');
     
-    <script src="https://cdn.jsdelivr.net/npm/ayisha@latest/dist/ayisha-min.js"></script>
-    <script src="client.js"></script>
-</body>
-</html>\`;
+    if (!fs.existsSync(indexPath)) {
+      return res.status(404).send('<h1>Error</h1><p>index.html not found</p>');
+    }
     
-    res.send(html);
+    const htmlTemplate = fs.readFileSync(indexPath, 'utf8');
+    
+    // 2. Estrai il contenuto del body per elaborazione SSR
+    const bodyMatch = htmlTemplate.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+    if (!bodyMatch) {
+      // Se non c'è body o direttive Ayisha, restituisci l'HTML così com'è
+      return res.send(htmlTemplate);
+    }
+    
+    const bodyContent = bodyMatch[1];
+    
+    // 3. Controlla se ci sono direttive Ayisha da elaborare
+    const hasAyishaDirectives = /<init>|{{|@\w+/.test(bodyContent);
+    
+    if (!hasAyishaDirectives) {
+      // Nessuna direttiva Ayisha, restituisci HTML originale
+      return res.send(htmlTemplate);
+    }
+    
+    // 4. Elabora con Ayisha SSR
+    const ayisha = new AyishaVDOM({
+      ssr: true,
+      hydration: false
+    });
+    
+    const result = ayisha.renderToString(bodyContent, {
+      currentPath: req.path,
+      serverRendered: true,
+      timestamp: new Date().toISOString(),
+      isDev: isDev,
+      PORT: PORT
+    });
+    
+    if (!result || !result.html) {
+      console.warn('SSR failed, serving original HTML');
+      return res.send(htmlTemplate);
+    }
+    
+    // 5. Ricostruisci l'HTML con contenuto elaborato
+    const processedHtml = htmlTemplate.replace(
+      /<body[^>]*>[\s\S]*?<\/body>/i,
+      \`<body>
+        \${result.html}
+        <script>
+          window.__AYISHA_STATE__ = \${JSON.stringify(result.state || {})};
+        </script>
+        \${result.hydrationScript || ''}
+      </body>\`
+    );
+    
+    res.send(processedHtml);
+    
   } catch (error) {
     console.error('SSR Error:', error);
-    res.status(500).send('<h1>Server Error</h1><p>Something went wrong with server-side rendering.</p>');
+    
+    // Fallback: prova a servire index.html originale
+    try {
+      const indexPath = path.join(__dirname, 'index.html');
+      if (fs.existsSync(indexPath)) {
+        const fallbackHtml = fs.readFileSync(indexPath, 'utf8');
+        res.send(fallbackHtml);
+      } else {
+        res.status(500).send('<h1>Server Error</h1><p>Something went wrong.</p>');
+      }
+    } catch (fallbackError) {
+      res.status(500).send('<h1>Server Error</h1><p>Something went wrong.</p>');
+    }
   }
 });
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    timestamp: new Date().toISOString(),
-    mode: isDev ? 'development' : 'production'
-  });
-});
-
-// Start server
 app.listen(PORT, () => {
-  console.log(\`🚀 {{projectName}} SSR Server running on http://localhost:\${PORT}\`);
-  console.log(\`📦 Mode: \${isDev ? 'Development' : 'Production'}\`);
-  if (isDev) {
-    console.log('🔧 Development mode: Hot reload enabled');
-  }
+  console.log(\`🚀 SSR Server running on http://localhost:\${PORT}\`);
+  console.log('📄 Reading index.html from file system');
+  console.log('✨ Ayisha.js SSR ready!');
 });
 
 // Graceful shutdown
@@ -1631,6 +1634,67 @@ For production deployment:
 ## License
 
 MIT`,
+      'index.html': `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{projectName}} - SSR</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <init>
+        title = '{{projectName}} SSR';
+        message = 'Hello from Server-Side Rendering!';
+        features = ['SSR', 'Hydration', 'Performance', 'SEO'];
+        serverTime = new Date().toISOString();
+        counter = 0;
+    </init>
+    
+    <div id="app">
+        <div class="container">
+            <header class="header">
+                <img src="ayisha-logo-black.png" alt="Ayisha.js Logo">
+                <h1>{{ title }}</h1>
+                <p>{{ message }}</p>
+            </header>
+            
+            <main class="main">
+                <section class="features">
+                    <h2>Features</h2>
+                    <ul>
+                        @for(feature in features)
+                            <li>{{ feature }}</li>
+                        @endfor
+                    </ul>
+                </section>
+                
+                <section class="interactive">
+                    <h3>Interactive Counter</h3>
+                    <p>Count: {{ counter }}</p>
+                    <button @click="counter++">Increment</button>
+                    <button @click="counter--">Decrement</button>
+                    <button @click="counter = 0">Reset</button>
+                </section>
+                
+                <section class="info">
+                    <p>This page was rendered on the server!</p>
+                    <p>Server time: {{ serverTime }}</p>
+                    <p @if="typeof window !== 'undefined'">Client hydrated: {{ new Date().toLocaleTimeString() }}</p>
+                </section>
+            </main>
+            
+            <footer>
+                <small><img src="ayisha-logo-black.png" alt="Ayisha.js Logo"></small>
+                <small>Made with ❤️ using <a href="https://ayisha.app" target="_blank">Ayisha.js</a></small>
+            </footer>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/ayisha.js"></script>
+    <script src="client.js"></script>
+</body>
+</html>`,
       'ayisha-1.1.0.js': '/* Ayisha.js will be copied here during project creation */'
     }
   }
