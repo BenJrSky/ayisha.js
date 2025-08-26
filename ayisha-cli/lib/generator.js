@@ -46,7 +46,10 @@ async function generateProject(options) {
     await fs.copy(ayishaSourcePath, ayishaDestPath);
   }
 
-  await createPackageJson(projectPath, projectName, mode, template);
+  // Create package.json SOLO se NON è template SSR (che ha già il suo package.json)
+  if (template !== 'ssr') {
+    await createPackageJson(projectPath, projectName, mode, template);
+  }
 
   // Install dependencies for modern mode
   if (mode === 'modern') {
