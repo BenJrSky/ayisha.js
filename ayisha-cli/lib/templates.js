@@ -149,6 +149,67 @@ const cdnTemplates = {
   },
   'SSR': {
     files: {
+      'index.html': `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{projectName}} - SSR</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <init>
+        title = '{{projectName}} SSR';
+        message = 'Hello from Server-Side Rendering!';
+        features = ['SSR', 'Hydration', 'Performance', 'SEO'];
+        serverTime = new Date().toISOString();
+        counter = 0;
+    </init>
+    
+    <div id="app">
+        <div class="container">
+            <header class="header">
+                <img src="ayisha-logo-black.png" alt="Ayisha.js Logo">
+                <h1>{{ title }}</h1>
+                <p>{{ message }}</p>
+            </header>
+            
+            <main class="main">
+                <section class="features">
+                    <h2>Features</h2>
+                    <ul>
+                        @for(feature in features)
+                            <li>{{ feature }}</li>
+                        @endfor
+                    </ul>
+                </section>
+                
+                <section class="interactive">
+                    <h3>Interactive Counter</h3>
+                    <p>Count: {{ counter }}</p>
+                    <button @click="counter++">Increment</button>
+                    <button @click="counter--">Decrement</button>
+                    <button @click="counter = 0">Reset</button>
+                </section>
+                
+                <section class="info">
+                    <p>This page was rendered on the server!</p>
+                    <p>Server time: {{ serverTime }}</p>
+                    <p @if="typeof window !== 'undefined'">Client hydrated: {{ new Date().toLocaleTimeString() }}</p>
+                </section>
+            </main>
+            
+            <footer>
+                <small><img src="ayisha-logo-black.png" alt="Ayisha.js Logo"></small>
+                <small>Made with ❤️ using <a href="https://ayisha.app" target="_blank">Ayisha.js</a></small>
+            </footer>
+        </div>
+    </div>
+    
+    <script src="ayisha.js"></script>
+    <script src="client.js"></script>
+</body>
+</html>`,
       'package.json': `{
   "name": "{{projectName}}-ssr",
   "version": "1.0.0",
@@ -192,260 +253,120 @@ app.use(helmet({
 app.use(compression());
 
 // Serve static files
-app.use('/static', express.static(path.join(__dirname, 'public')));
+app.use(express.static('.'));
 
-// SSR Route with enhanced error handling
+// SSR Route - legge index.html e lo elabora
 app.get('*', async (req, res) => {
   try {
-    const ssrResult = await renderPageWithFallback(req.path);
+    const ssrResult = await renderPageWithSSR(req.path);
     
     if (ssrResult.success) {
       res.send(ssrResult.html);
     } else {
-      console.warn('SSR failed, falling back to CSR:', ssrResult.error);
-      res.send(getClientSideTemplate());
+      console.warn('SSR failed, serving original index.html:', ssrResult.error);
+      // Fallback: serve index.html originale
+      const indexPath = path.join(__dirname, 'index.html');
+      res.sendFile(indexPath);
     }
   } catch (error) {
     console.error('Server error:', error);
-    res.status(500).send(getErrorTemplate(error));
+    res.status(500).send('<h1>Server Error</h1>');
   }
 });
 
-// Enhanced SSR function with validation
-async function renderPageWithFallback(path) {
+// Funzione SSR che legge index.html e lo elabora
+async function renderPageWithSSR(requestPath) {
   try {
-    if (!validateSSRCapabilities()) {
-      return {
-        success: false,
-        error: 'SSR capabilities not available'
-      };
-    }
-
-    const template = getTemplate();
-    const initialState = getInitialState(path);
+    // 1. Leggi il file index.html
+    const indexPath = path.join(__dirname, 'index.html');
+    const htmlTemplate = fs.readFileSync(indexPath, 'utf8');
     
+    // 2. Estrai il contenuto del body (con le direttive Ayisha)
+    const bodyMatch = htmlTemplate.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+    if (!bodyMatch) {
+      throw new Error('No body tag found in index.html');
+    }
+    
+    const bodyContent = bodyMatch[1];
+    
+    // 3. Crea istanza Ayisha per SSR
     const ayisha = new AyishaVDOM({
       ssr: true,
       hydration: false
     });
-
-    const result = ayisha.renderToString(template, initialState);
+    
+    // 4. Elabora il template con renderToString
+    const result = ayisha.renderToString(bodyContent, {
+      currentPath: requestPath,
+      serverRendered: true,
+      timestamp: new Date().toISOString()
+    });
     
     if (!result || !result.html) {
       throw new Error('renderToString returned invalid result');
     }
-
-    const html = \`<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{projectName}} - SSR</title>
-    <link rel="stylesheet" href="/static/styles.css">
-    \${result.metaTags || ''}
-</head>
-<body>
-    <div id="app">\${result.html}</div>
-    <script>
-        window.__AYISHA_STATE__ = \${JSON.stringify(result.state || {})};
-    </script>
-    \${result.hydrationScript || ''}
-    <script src="/static/ayisha.js"></script>
-    <script src="/static/client.js"></script>
-</body>
-</html>\`;
-
-    return { success: true, html };
+    
+    // 5. Ricostruisci l'HTML completo con contenuto elaborato
+    const processedHtml = htmlTemplate.replace(
+      /<body[^>]*>[\s\S]*?<\/body>/i,
+      \`<body>
+        \${result.html}
+        <script>
+          window.__AYISHA_STATE__ = \${JSON.stringify(result.state || {})};
+        </script>
+        \${result.hydrationScript || ''}
+      </body>\`
+    );
+    
+    return { success: true, html: processedHtml };
+    
   } catch (error) {
     return { success: false, error: error.message };
   }
 }
 
-function validateSSRCapabilities() {
-  try {
-    const testInstance = new AyishaVDOM({ ssr: true });
-    return (
-      typeof testInstance.renderToString === 'function' &&
-      typeof testInstance.isServerSide === 'function' &&
-      testInstance.isServerSide() === true
-    );
-  } catch (error) {
-    console.error('SSR validation failed:', error);
-    return false;
-  }
-}
-
-function getTemplate() {
-  return \`
-    <div class="container">
-      <init>
-        title = "{{projectName}} SSR";
-        message = "Hello from Server-Side Rendering!";
-        features = ["SSR", "Hydration", "Performance", "SEO"];
-        serverTime = new Date().toISOString();
-      </init>
-      
-      <header class="header">
-        <img src="/static/ayisha-logo-black.png" alt="Ayisha.js Logo">
-        <h1>{{ title }}</h1>
-        <p>{{ message }}</p>
-      </header>
-      
-      <main class="main">
-        <section class="features">
-          <h2>Features</h2>
-          <ul>
-            @for(feature in features)
-              <li>{{ feature }}</li>
-            @endfor
-          </ul>
-        </section>
-        
-        <section class="info">
-          <p>This page was rendered on the server!</p>
-          <p>Server time: {{ serverTime }}</p>
-        </section>
-      </main>
-      
-      <footer>
-        <small><img src="/static/ayisha-logo-black.png" alt="Ayisha.js Logo"></small>
-        <small>Made with ❤️ using <a href="https://ayisha.app" target="_blank">Ayisha.js</a></small>
-      </footer>
-    </div>
-  \`;
-}
-
-function getInitialState(path) {
-  return {
-    currentPath: path,
-    serverRendered: true,
-    timestamp: new Date().toISOString()
-  };
-}
-
-function getClientSideTemplate() {
-  return \`<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{projectName}} (CSR Fallback)</title>
-    <link rel="stylesheet" href="/static/styles.css">
-</head>
-<body>
-    <div id="app">
-        <div class="loading">Loading...</div>
-    </div>
-    <script src="/static/ayisha.js"></script>
-    <script src="/static/client.js"></script>
-</body>
-</html>\`;
-}
-
-function getErrorTemplate(error) {
-  return \`<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Error</title>
-</head>
-<body>
-    <h1>Server Error</h1>
-    <p>Something went wrong. Please try again later.</p>
-    \${process.env.NODE_ENV === 'development' ? \`<pre>\${error.stack}</pre>\` : ''}
-</body>
-</html>\`;
-}
-
 app.listen(PORT, () => {
-  console.log(\`🚀 SSR Server running on http://localhost:\${PORT}\`);
-  console.log('SSR capabilities:', validateSSRCapabilities() ? '✅ Available' : '⚠️ Limited');
+  console.log(\`🚀 {{projectName}} SSR Server running on http://localhost:\${PORT}\`);
+  console.log('📄 Reading and processing index.html with Ayisha.js SSR');
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('🛑 Server shutting down gracefully...');
+  process.exit(0);
 });`,
 
-      'client.js': `(function() {
-  'use strict';
+      'client.js': `// Client-side hydration
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('🎯 Starting client-side hydration...');
   
-  function initializeClient() {
+  if (typeof Ayisha !== 'undefined') {
     try {
+      // Recupera lo stato dal server
       const initialState = window.__AYISHA_STATE__ || {};
       
-      const ayisha = new AyishaVDOM({
+      // Crea istanza Ayisha per hydration
+      const ayisha = new Ayisha({
         ssr: false,
         hydration: true
       });
       
-      const template = \`
-        <div class="container">
-          <init>
-            title = "{{projectName}} SSR";
-            message = "Now running on client-side!";
-            features = ["SSR", "Hydration", "Performance", "SEO", "Interactivity"];
-            counter = 0;
-            serverTime = "";
-          </init>
-          
-          <header class="header">
-            <img src="/static/ayisha-logo-black.png" alt="Ayisha.js Logo">
-            <h1>{{ title }}</h1>
-            <p>{{ message }}</p>
-          </header>
-          
-          <main class="main">
-            <section class="features">
-              <h2>Features</h2>
-              <ul>
-                @for(feature in features)
-                  <li>{{ feature }}</li>
-                @endfor
-              </ul>
-            </section>
-            
-            <section class="interactive">
-              <h3>Interactive Counter</h3>
-              <p>Count: {{ counter }}</p>
-              <button @click="counter++">Increment</button>
-              <button @click="counter--">Decrement</button>
-              <button @click="counter = 0">Reset</button>
-            </section>
-            
-            <section class="info">
-              <p>Server rendered: {{ serverRendered ? 'Yes' : 'No' }}</p>
-              <p>Hydrated at: {{ new Date().toLocaleTimeString() }}</p>
-              @if(serverTime)
-                <p>Original server time: {{ serverTime }}</p>
-              @endif
-            </section>
-          </main>
-          
-          <footer>
-            <small><img src="/static/ayisha-logo-black.png" alt="Ayisha.js Logo"></small>
-            <small>Made with ❤️ using <a href="https://ayisha.app" target="_blank">Ayisha.js</a></small>
-          </footer>
-        </div>
-      \`;
-      
-      const clientState = {
-        ...initialState,
-        hydrated: true,
-        hydratedAt: new Date().toISOString()
-      };
-      
-      ayisha.mount('#app', template, clientState);
+      // Idrata l'applicazione
+      ayisha.hydrate('#app', initialState);
       
       console.log('✅ Client-side hydration completed');
+      
     } catch (error) {
-      console.error('❌ Client initialization failed:', error);
-      document.getElementById('app').innerHTML = '<p>App loaded with limited functionality</p>';
+      console.error('❌ Hydration failed:', error);
+      console.log('🔄 Falling back to full client-side rendering...');
+      
+      // Fallback: re-inizializza completamente
+      window.location.reload();
     }
-  }
-  
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeClient);
   } else {
-    initializeClient();
+    console.error('❌ Ayisha.js not loaded');
   }
-})();`,
+});`,
 
       'test-ssr.js': `const AyishaVDOM = require('./ayisha.js');
 
@@ -862,89 +783,37 @@ app.listen(PORT, () => {
   console.log('SSR capabilities:', validateSSRCapabilities() ? '✅ Available' : '⚠️ Limited');
 });`,
 
-      'client.js': `(function() {
-  'use strict';
+      'client.js': `// Client-side hydration
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('🎯 Starting client-side hydration...');
   
-  function initializeClient() {
+  if (typeof Ayisha !== 'undefined') {
     try {
+      // Recupera lo stato dal server
       const initialState = window.__AYISHA_STATE__ || {};
       
-      const ayisha = new AyishaVDOM({
+      // Crea istanza Ayisha per hydration
+      const ayisha = new Ayisha({
         ssr: false,
         hydration: true
       });
       
-      const template = \`
-        <div class="container">
-          <init>
-            title = "{{projectName}} SSR";
-            message = "Now running on client-side!";
-            features = ["SSR", "Hydration", "Performance", "SEO", "Interactivity"];
-            counter = 0;
-            serverTime = "";
-          </init>
-          
-          <header class="header">
-            <img src="/static/ayisha-logo-black.png" alt="Ayisha.js Logo">
-            <h1>{{ title }}</h1>
-            <p>{{ message }}</p>
-          </header>
-          
-          <main class="main">
-            <section class="features">
-              <h2>Features</h2>
-              <ul>
-                @for(feature in features)
-                  <li>{{ feature }}</li>
-                @endfor
-              </ul>
-            </section>
-            
-            <section class="interactive">
-              <h3>Interactive Counter</h3>
-              <p>Count: {{ counter }}</p>
-              <button @click="counter++">Increment</button>
-              <button @click="counter--">Decrement</button>
-              <button @click="counter = 0">Reset</button>
-            </section>
-            
-            <section class="info">
-              <p>Server rendered: {{ serverRendered ? 'Yes' : 'No' }}</p>
-              <p>Hydrated at: {{ new Date().toLocaleTimeString() }}</p>
-              @if(serverTime)
-                <p>Original server time: {{ serverTime }}</p>
-              @endif
-            </section>
-          </main>
-          
-          <footer>
-            <small><img src="/static/ayisha-logo-black.png" alt="Ayisha.js Logo"></small>
-            <small>Made with ❤️ using <a href="https://ayisha.app" target="_blank">Ayisha.js</a></small>
-          </footer>
-        </div>
-      \`;
-      
-      const clientState = {
-        ...initialState,
-        hydrated: true,
-        hydratedAt: new Date().toISOString()
-      };
-      
-      ayisha.mount('#app', template, clientState);
+      // Idrata l'applicazione
+      ayisha.hydrate('#app', initialState);
       
       console.log('✅ Client-side hydration completed');
+      
     } catch (error) {
-      console.error('❌ Client initialization failed:', error);
-      document.getElementById('app').innerHTML = '<p>App loaded with limited functionality</p>';
+      console.error('❌ Hydration failed:', error);
+      console.log('🔄 Falling back to full client-side rendering...');
+      
+      // Fallback: re-inizializza completamente
+      window.location.reload();
     }
-  }
-  
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeClient);
   } else {
-    initializeClient();
+    console.error('❌ Ayisha.js not loaded');
   }
-})();`,
+});`,
 
       'test-ssr.js': `const AyishaVDOM = require('./ayisha.js');
 

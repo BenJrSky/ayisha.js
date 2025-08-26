@@ -92,7 +92,7 @@ async function createPackageJson(projectPath, projectName, mode, template) {
   
   if (mode === 'modern') {
     // Per template SSR, usa script CommonJS invece di Vite
-    if (template === 'ssr') {
+    if (template === 'SSR') {
       packageJson = {
         name: projectName,
         version: "1.0.0",
