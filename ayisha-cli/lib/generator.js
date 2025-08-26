@@ -24,8 +24,17 @@ async function generateProject(options) {
   const stylesSourcePath = path.join(assetsPath, 'styles.css');
   const logoSourcePath = path.join(assetsPath, 'ayisha-logo-black.png');
 
-  const stylesDestPath = path.join(projectPath, 'styles.css');
-  const logoDestPath = path.join(projectPath, 'ayisha-logo-black.png');
+  // Determine destination paths based on mode
+  let stylesDestPath, logoDestPath;
+  if (mode === 'modern') {
+    // For modern mode, copy to src/ directory
+    stylesDestPath = path.join(projectPath, 'src', 'styles.css');
+    logoDestPath = path.join(projectPath, 'src', 'ayisha-logo-black.png');
+  } else {
+    // For CDN mode, copy to root directory
+    stylesDestPath = path.join(projectPath, 'styles.css');
+    logoDestPath = path.join(projectPath, 'ayisha-logo-black.png');
+  }
 
   await fs.copy(stylesSourcePath, stylesDestPath);
   await fs.copy(logoSourcePath, logoDestPath);
