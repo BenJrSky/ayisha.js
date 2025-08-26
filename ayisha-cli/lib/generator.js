@@ -8,7 +8,7 @@ async function generateProject(options) {
   const projectPath = path.join(process.cwd(), projectName);
 
   // Force modern mode for SSR template
-  const actualMode = template === 'ssr' ? 'modern' : mode;
+  const actualMode = template === 'SSR' ? 'modern' : mode;
 
   // Check if directory exists
   if (await fs.pathExists(projectPath)) {
@@ -46,7 +46,7 @@ async function generateProject(options) {
   }
 
   // Create package.json SOLO se NON è template SSR
-  if (template !== 'ssr') {
+  if (template !== 'SSR') {
     await createPackageJson(projectPath, projectName, actualMode, template);
   }
 
