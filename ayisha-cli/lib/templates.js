@@ -263,17 +263,17 @@ export default defineConfig({
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{projectName}} - Todo App</title>
-    <link rel="stylesheet" href="./src/styles.css">
+    <link rel="stylesheet" href="./src/style.css">
 </head>
 <body>
     <init>
-       newTodo = ""
+       newTodo =""
        todos = []
     </init>
     
     <header>
         <div>
-            <img src="./src/ayisha-logo-black.png" alt="Ayisha.js Logo">
+            <img src="ayisha-logo-black.png" alt="Ayisha.js Logo">
             <h1>{{projectName}} Todo App</h1>
             <p class="hero-subtitle">Build and manage your tasks with the power of Ayisha.js reactive framework</p>
         </div>
@@ -311,7 +311,7 @@ export default defineConfig({
     </main>
     
     <footer>
-        <small><img src="./src/ayisha-logo-black.png" alt="Ayisha.js Logo"></small>
+        <small><img src="ayisha-logo-black.png" alt="Ayisha.js Logo"></small>
         <small>Made with ❤️ using <a href="https://ayisha.app" target="_blank">Ayisha.js</a></small>
     </footer>
     
@@ -320,8 +320,8 @@ export default defineConfig({
 </html>`,
       'src/main.js': `import { AyishaVDOM } from '../ayisha.js';
 
-new AyishaVDOM.mount();`,
-      // Rimuovere 'src/style.css': `/* This will be replaced with the actual styles.css content */`,
+new AyishaVDOM(document.body).mount();`,
+      'src/style.css': `/* This will be replaced with the actual styles.css content */`,
       'vite.config.js': `import { defineConfig } from 'vite';
 
 export default defineConfig({

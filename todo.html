@@ -1,63 +1,77 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Todo App - Ayisha.js</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>{{projectName}}</title>
+    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
     <init>
-       newTodo =""
-       todos = []
+        projectName = '{{projectName}}';
+        features = [
+            { icon: '⚡', title: 'Fast', description: 'Lightning fast reactive framework' },
+            { icon: '🎯', title: 'Simple', description: 'Easy to learn and use' },
+            { icon: '🚀', title: 'Modern', description: 'Built for modern web development' }
+        ];
+        currentYear = new Date().getFullYear();
     </init>
     
     <header>
         <div>
-            <img src="ayisha-logo-black.png" alt="Ayisha.js Logo">
-            <h1>My Todo App</h1>
-            <p class="hero-subtitle">Build and manage your tasks with the power of Ayisha.js reactive framework</p>
+            <img src="./src/ayisha-logo-black.png" alt="Ayisha.js Logo">
+            <h1>Welcome to {{ projectName }}</h1>
+            <p class="hero-subtitle">Get started by editing this template and building something amazing!</p>
         </div>
     </header>
     
-    
     <main>
         <section>
-            <input type="text" @model="newTodo" placeholder="What needs to be done?">
-            <nav>
-                <button @click="if(newTodo.trim()) { todos.push({text: newTodo.trim(), completed: false}); newTodo = '' }">Add Todo</button>
-                <button @click="todos = []">Clear All</button>
-                <button @click="todos = todos.filter(t => !t.completed)">Clear Completed</button>
-            </nav>
+            <h2>🎉 Your Modern Ayisha.js App is Ready!</h2>
+            <p>Congratulations! You've successfully created a new modern Ayisha.js application with module support. This powerful reactive framework will help you build modern web applications with ease.</p>
         </section>
         
-        <div @show="todos.length > 0">
-            <p><strong @text="todos.filter(t => !t.completed).length"></strong> active, 
-            <strong @text="todos.filter(t => t.completed).length"></strong> completed, 
-            <strong @text="todos.length"></strong> total</p>
-        </div>
+        <section>
+            <h2>✨ Key Features</h2>
+            <div @for="feature in features">
+                <article>
+                    <h3>{{ feature.icon }} {{ feature.title }}</h3>
+                    <p>{{ feature.description }}</p>
+                </article>
+            </div>
+        </section>
         
-        <div @if="todos.length === 0">
-            <p>🎯 No todos yet. Add one above to get started!</p>
-        </div>
+        <section>
+            <h2>🚀 Getting Started</h2>
+            <article>
+                <h3>1. Edit Your Content</h3>
+                <p>Start by modifying the <strong>&lt;init&gt;</strong> block to add your own data and variables.</p>
+            </article>
+            <article>
+                <h3>2. Add Interactivity</h3>
+                <p>Use Ayisha.js directives like <strong>@click</strong>, <strong>@model</strong>, and <strong>@if</strong> to make your app interactive.</p>
+            </article>
+            <article>
+                <h3>3. Build and Deploy</h3>
+                <p>Use <strong>npm run build</strong> to create a production build of your application.</p>
+            </article>
+        </section>
         
-        <ul @if="todos.length > 0">
-            <li @for="todo in todos">
-                <label>
-                    <input type="checkbox" @model="todo.completed">
-                    <span @text="todo.text"></span>
-                    <span @click="todos = todos.filter(t => t !== todo)">❌</span>
-                </label>
-            </li>
-        </ul>
+        <section>
+            <h2>📚 Next Steps</h2>
+            <nav>
+                <a href="https://ayisha.app/docs" target="_blank">📖 Documentation</a>
+                <a href="https://ayisha.app/examples" target="_blank">💡 Examples</a>
+                <a href="https://github.com/BenJrSky/ayisha.js" target="_blank">⭐ GitHub</a>
+            </nav>
+        </section>
     </main>
     
     <footer>
-        <small><img src="ayisha-logo-black.png" alt="Ayisha.js Logo"></small>
-        <small>Made with ❤️ using <a href="https://ayisha.app" target="_blank">Ayisha.js</a></small>
+        <small><img src="./src/ayisha-logo-black.png" alt="Ayisha.js Logo"></small>
+        <small>Made with ❤️ using <a href="https://ayisha.app" target="_blank">Ayisha.js</a> • © {{ currentYear }}</small>
     </footer>
     
-    <script src="ayisha-1.0.4.js"></script>
-   
+    <script type="module" src="/ayisha.js"></script>
 </body>
 </html>
