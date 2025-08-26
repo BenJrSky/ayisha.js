@@ -7,6 +7,9 @@ async function generateProject(options) {
   const { projectName, template, mode = 'cdn', includeExamples, setupGit } = options;
   const projectPath = path.join(process.cwd(), projectName);
 
+  // Force modern mode for SSR template
+  const actualMode = template === 'ssr' ? 'modern' : mode;
+
   // Check if directory exists
   if (await fs.pathExists(projectPath)) {
     throw new Error(`Directory ${projectName} already exists`);
@@ -16,7 +19,7 @@ async function generateProject(options) {
   await fs.ensureDir(projectPath);
 
   // Copy template files based on mode
-  const templateData = getTemplate(template, mode);
+  const templateData = getTemplate(template, actualMode);
   await copyTemplate(templateData, projectPath, { projectName, includeExamples });
 
   // Copy shared assets (CSS and logo) for all templates
@@ -46,7 +49,7 @@ async function generateProject(options) {
     await fs.copy(ayishaSourcePath, ayishaDestPath);
   }
 
-  // Create package.json SOLO se NON è template SSR (che ha già il suo package.json)
+  // Create package.json SOLO se NON è template SSR
   if (template !== 'ssr') {
     await createPackageJson(projectPath, projectName, mode, template);
   }
