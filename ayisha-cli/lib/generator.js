@@ -85,36 +85,59 @@ async function copyTemplate(templateData, projectPath, variables) {
   }
 }
 
-// Modifica alla funzione createPackageJson (righe 89-132)
 async function createPackageJson(projectPath, projectName, mode, template) {
   let packageJson;
   
   if (mode === 'modern') {
-    packageJson = {
-      name: projectName,
-      version: "1.0.0",
-      description: "An Ayisha.js application",
-      main: "src/main.js",
-      scripts: {
-        "dev": "vite",
-        "build": "vite build",
-        "preview": "vite preview"
-      },
-      devDependencies: {
-        "vite": "^5.0.0"
-      },
-      keywords: ["ayisha", "spa", "javascript", "vite"],
-      author: "",
-      license: "MIT"
-    };
-    
-    // NON aggiungere "type": "module" per i template SSR
-    // perché utilizzano CommonJS (require/module.exports)
-    if (template !== 'ssr') {
-      packageJson.type = "module";
+    // Per template SSR, usa script CommonJS invece di Vite
+    if (template === 'ssr') {
+      packageJson = {
+        name: projectName,
+        version: "1.0.0",
+        description: "An Ayisha.js SSR application",
+        main: "server.js",
+        scripts: {
+          "start": "node server.js",
+          "dev": "nodemon server.js",
+          "build": "node build.js",
+          "test": "echo \"Error: no test specified\" && exit 1"
+        },
+        dependencies: {
+          "express": "^4.18.2",
+          "compression": "^1.7.4",
+          "helmet": "^7.0.0"
+        },
+        devDependencies: {
+          "nodemon": "^3.0.1"
+        },
+        keywords: ["ayisha", "ssr", "javascript", "express"],
+        author: "",
+        license: "MIT"
+      };
+      // NON aggiungere "type": "module" per SSR (usa CommonJS)
+    } else {
+      // Altri template con Vite e ES Modules
+      packageJson = {
+        name: projectName,
+        version: "1.0.0",
+        description: "An Ayisha.js application",
+        type: "module",
+        main: "src/main.js",
+        scripts: {
+          "dev": "vite",
+          "build": "vite build",
+          "preview": "vite preview"
+        },
+        devDependencies: {
+          "vite": "^5.0.0"
+        },
+        keywords: ["ayisha", "spa", "javascript", "vite"],
+        author: "",
+        license: "MIT"
+      };
     }
   } else {
-    // CDN mode
+    // CDN mode (invariato)
     packageJson = {
       name: projectName,
       version: "1.0.0",
