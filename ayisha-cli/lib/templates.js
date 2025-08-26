@@ -2377,8 +2377,7 @@ if (fs.existsSync('ayisha-logo-black.png')) {
 console.log('✅ Build completed successfully!\n');
 console.log('🚀 Run "npm start" to start the SSR server');
 console.log('🔧 Run "npm run dev" for development with auto-reload');`,
-      'styles.css': `/* Modern SSR Application Styles */
-* {
+      'styles.css': `* {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
