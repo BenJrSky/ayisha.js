@@ -46,8 +46,7 @@ async function generateProject(options) {
     await fs.copy(ayishaSourcePath, ayishaDestPath);
   }
 
-  // Create package.json based on mode
-  await createPackageJson(projectPath, projectName, mode);
+  await createPackageJson(projectPath, projectName, mode, template);
 
   // Install dependencies for modern mode
   if (mode === 'modern') {
@@ -86,7 +85,8 @@ async function copyTemplate(templateData, projectPath, variables) {
   }
 }
 
-async function createPackageJson(projectPath, projectName, mode) {
+// Modifica alla funzione createPackageJson (righe 89-132)
+async function createPackageJson(projectPath, projectName, mode, template) {
   let packageJson;
   
   if (mode === 'modern') {
@@ -94,7 +94,6 @@ async function createPackageJson(projectPath, projectName, mode) {
       name: projectName,
       version: "1.0.0",
       description: "An Ayisha.js application",
-      type: "module",
       main: "src/main.js",
       scripts: {
         "dev": "vite",
@@ -108,6 +107,12 @@ async function createPackageJson(projectPath, projectName, mode) {
       author: "",
       license: "MIT"
     };
+    
+    // NON aggiungere "type": "module" per i template SSR
+    // perché utilizzano CommonJS (require/module.exports)
+    if (template !== 'ssr') {
+      packageJson.type = "module";
+    }
   } else {
     // CDN mode
     packageJson = {
