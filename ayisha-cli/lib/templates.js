@@ -320,7 +320,7 @@ export default defineConfig({
 </html>`,
       'src/main.js': `import { AyishaVDOM } from '../ayisha.js';
 
-new AyishaVDOM(document.body).mount();`,
+new AyishaVDOM.mount();`,
       // Rimuovere 'src/style.css': `/* This will be replaced with the actual styles.css content */`,
       'vite.config.js': `import { defineConfig } from 'vite';
 
