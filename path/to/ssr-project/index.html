@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La Mia App SSR</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <init>
+        titolo = 'Benvenuto nella mia app!';
+        contatore = 0;
+        features = ['SSR', 'Hydration', 'Performance'];
+    </init>
+    
+    <div id="app">
+        <h1>{{ titolo }}</h1>
+        <p>Contatore: {{ contatore }}</p>
+        <button @click="contatore++">Incrementa</button>
+        
+        <ul>
+            @for(feature in features)
+                <li>{{ feature }}</li>
+            @endfor
+        </ul>
+    </div>
+    
+    <script src="ayisha.js"></script>
+    <script src="client.js"></script>
+</body>
+</html>

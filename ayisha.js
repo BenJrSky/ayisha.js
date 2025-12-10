@@ -6,6 +6,8 @@
  */
 
 (function () {
+
+
   if (typeof window !== 'undefined' && window.AyishaVDOM) return;
 
   class AyishaErrorBus {
@@ -33,6 +35,95 @@
     onError(fn) {
       this.listeners.push(fn);
     }
+  }
+
+  function escapeHTML(str) {
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function isSafeExpression(expr) {
+    if (!expr || typeof expr !== 'string') return true;
+    const forbidden = /(^|[^A-Za-z0-9_$])(new\s+Function|Function\s*\(|eval\s*\(|\.constructor)\b/i;
+    try {
+      if (forbidden.test(expr)) return false;
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function sanitizeHTML(html) {
+    if (!html) return '';
+    const doc = (new DOMParser()).parseFromString(String(html), 'text/html');
+    const removeEls = Array.from(doc.querySelectorAll('script,iframe,object,embed'));
+    removeEls.forEach(e => e.remove());
+    const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_ELEMENT, null, false);
+    let node = walker.nextNode();
+    while (node) {
+      Array.from(node.attributes || []).forEach(attr => {
+        const name = attr.name || '';
+        const val = attr.value || '';
+        if (/^on/i.test(name)) node.removeAttribute(name);
+        if ((/^(href|src|xlink:href)$/i).test(name) && /^\s*javascript:/i.test(val)) node.removeAttribute(name);
+      });
+      node = walker.nextNode();
+    }
+    return doc.body.innerHTML;
+  }
+
+  function cleanComponentHTML(html) {
+    if (!html) return '';
+    const tpl = document.createElement('template');
+    tpl.innerHTML = String(html);
+    const root = tpl.content;
+
+    root.querySelectorAll('script,iframe,object,embed,link[rel=import]').forEach(e => e.remove());
+
+    const allowedTags = new Set([
+      'a','abbr','b','br','button','canvas','caption','code','col','colgroup','data','datalist','dd','div','dl','dt',
+      'em','fieldset','figure','figcaption','footer','form','h1','h2','h3','h4','h5','h6','header','hr','i','img','input',
+      'label','legend','li','main','nav','ol','option','p','pre','progress','q','s','section','select','small','span','strong',
+      'sub','sup','table','tbody','td','textarea','tfoot','th','thead','tr','ul','template','slot','svg','init'
+    ]);
+
+    const allowedAttrRe = /^(?:@|data-|aria-|class$|id$|src$|href$|alt$|title$|role$|slot$|name$|type$|value$|style$|width$|height$|viewBox$)/i;
+
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, null, false);
+    let node = walker.nextNode();
+    while (node) {
+      const tag = (node.tagName || '').toLowerCase();
+      if (!allowedTags.has(tag)) {
+        const parent = node.parentNode;
+        while (node.firstChild) parent.insertBefore(node.firstChild, node);
+        parent.removeChild(node);
+        node = walker.nextNode();
+        continue;
+      }
+
+      Array.from(node.attributes || []).forEach(attr => {
+        const name = attr.name || '';
+        const val = attr.value || '';
+        if (/^on/i.test(name)) {
+          node.removeAttribute(name);
+          return;
+        }
+        if (allowedAttrRe.test(name)) {
+          if ((/^(href|src|xlink:href)$/i).test(name) && /^\s*javascript:/i.test(val)) {
+            node.removeAttribute(name);
+          } else if (name === 'style' && /\bexpression\s*\(/i.test(val)) {
+            node.removeAttribute(name);
+          }
+          return;
+        }
+        if (name.startsWith('@') || name.startsWith('#')) return;
+        node.removeAttribute(name);
+      });
+
+      node = walker.nextNode();
+    }
+
+    return tpl.innerHTML;
   }
 
   class DirectiveCompletionListener {
@@ -159,7 +250,7 @@
     }
 
     _onComplete() {
-      if (this.done) return; 
+      if (this.done) return;
       this.completed++;
       if (this.completed > this.total) this.completed = this.total;
       this._checkCompletion();
@@ -258,6 +349,10 @@
       if (/^['"].*['"]$/.test(t)) return t.slice(1, -1);
       if (/^\d+(\.\d+)?$/.test(t)) return Number(t);
       try {
+        if (!isSafeExpression(expr)) {
+          console.error('Blocked unsafe expression in evalExpr:', expr);
+          return undefined;
+        }
         const sp = new Proxy(this.state, {
           get: (o, k) => o[k],
           set: (o, k, v) => { o[k] = v; return true; }
@@ -285,6 +380,10 @@
 
         for (const singleExpr of expressions) {
           if (singleExpr.trim()) {
+            if (!isSafeExpression(singleExpr)) {
+              console.warn('Blocked unsafe expression in executeMultipleExpressions:', singleExpr);
+              return false;
+            }
             new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${singleExpr.trim()}}}`)(sp, ctx, event);
           }
         }
@@ -320,6 +419,10 @@
         }
 
         const cleanCode = processedCode;
+        if (!isSafeExpression(cleanCode)) {
+          console.error('Blocked unsafe expression in executeDirectiveExpression:', cleanCode);
+          return false;
+        }
         new Function('state', 'ctx', 'event', `with(state){with(ctx||{}){${cleanCode}}}`)
           (this.state, ctx || {}, event);
 
@@ -468,7 +571,7 @@
         expr.includes('%') || expr.includes('[') || expr.includes(']') ||
         expr.includes('{') || expr.includes('}') || expr.includes('?') ||
         expr.includes(':') || expr.includes(';') || expr.includes(',')) {
-        return; 
+        return;
       }
 
       const jsGlobals = [
@@ -489,7 +592,7 @@
       const varName = expr.split('.')[0];
 
       if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(varName)) {
-        return; 
+        return;
       }
 
       if (!jsGlobals.includes(varName) && !(varName in this.state)) {
@@ -627,31 +730,47 @@
       this.loadingComponents = new Map();
     }
 
+    _normalizeKey(url) {
+      if (!url) return url;
+      try {
+        let k = String(url);
+        if (typeof location !== 'undefined' && k.indexOf(location.origin) === 0) {
+          k = k.slice(location.origin.length);
+        }
+        k = k.replace(/^\.{1,2}\//, '');
+        k = k.replace(/^\/+/,'');
+        return k;
+      } catch (e) {
+        return String(url);
+      }
+    }
+
     component(name, html) {
       this.components[name] = html;
     }
 
     async loadExternalComponent(url) {
-      if (this.cache[url]) {
-        return this.cache[url];
+      const key = this._normalizeKey(url);
+      if (this.cache[key]) {
+        return this.cache[key];
       }
 
-      if (this.loadingComponents.has(url)) {
-        return this.loadingComponents.get(url);
+      if (this.loadingComponents.has(key)) {
+        return this.loadingComponents.get(key);
       }
 
       const loadingPromise = this._fetchComponent(url);
-      this.loadingComponents.set(url, loadingPromise);
+      this.loadingComponents.set(key, loadingPromise);
 
       try {
         const html = await loadingPromise;
-        this.cache[url] = html;
+        this.cache[key] = html;
         return html;
       } catch (error) {
         console.error(`❌ ComponentManager: Error loading component ${url}:`, error);
         return null;
       } finally {
-        this.loadingComponents.delete(url);
+        this.loadingComponents.delete(key);
       }
     }
 
@@ -669,11 +788,13 @@
     }
 
     getCachedComponent(url) {
-      return this.cache[url];
+      const key = this._normalizeKey(url);
+      return this.cache[key];
     }
 
     isLoading(url) {
-      return this.loadingComponents.has(url);
+      const key = this._normalizeKey(url);
+      return this.loadingComponents.has(key);
     }
   }
 
@@ -893,7 +1014,7 @@
             if (allWithPage.length > 0) {
               firstPage = allWithPage[0].getAttribute('@page');
             }
-          } catch (e) {}
+          } catch (e) { }
         }
         segments = [(firstPage || (this.state._currentPage && this.state._currentPage !== '' ? this.state._currentPage : 'home'))];
       }
@@ -911,7 +1032,7 @@
               if (allWithPage.length > 0) {
                 firstPage = allWithPage[0].getAttribute('@page');
               }
-            } catch (e) {}
+            } catch (e) { }
           }
           segs = [(firstPage || (this.state._currentPage && this.state._currentPage !== '' ? this.state._currentPage : 'home'))];
         }
@@ -947,6 +1068,7 @@
       this.renderCallback();
     }
   }
+
   class FetchManager {
     constructor(evaluator) {
       this.evaluator = evaluator;
@@ -961,14 +1083,14 @@
 
     setupFetch(expr, rk, ctx, event, force) {
       let url = this.evaluator.evalExpr(expr, ctx, event);
-      
+
       const isInvalidUrlString = (s) => {
         if (s == null) return true;
         const str = String(s).trim();
         if (!str) return true;
-        if (/\{[^}]+\}/.test(str)) return true;               
-        if (/(^|\/)(undefined|null)(\/|$)/i.test(str)) return true; 
-        if (/\/\.(?:[a-z0-9]+)?(\?|$|#)/i.test(str)) return true;  
+        if (/\{[^}]+\}/.test(str)) return true;
+        if (/(^|\/)(undefined|null)(\/|$)/i.test(str)) return true;
+        if (/\/\.(?:[a-z0-9]+)?(\?|$|#)/i.test(str)) return true;
         return false;
       };
 
@@ -1005,13 +1127,13 @@
       }
 
       if (!/^https?:\/\//.test(url)) {
-        url = url.replace(/\/+$/, ''); 
-        url = url.replace(/\?$/, ''); 
-        url = url.replace(/\?&/, '?'); 
-        url = url.replace(/\?$/, ''); 
-        url = url.replace(/\&+$/, ''); 
-        url = url.replace(/\?page=(&|$)/, '?').replace(/\?$/, ''); 
-        url = url.replace(/\/\//g, '/'); 
+        url = url.replace(/\/+$/, '');
+        url = url.replace(/\?$/, '');
+        url = url.replace(/\?&/, '?');
+        url = url.replace(/\?$/, '');
+        url = url.replace(/\&+$/, '');
+        url = url.replace(/\?page=(&|$)/, '?').replace(/\?$/, '');
+        url = url.replace(/\/\//g, '/');
         if (!url.startsWith('/')) {
           url = '/' + url;
         }
@@ -1076,7 +1198,6 @@
         return null;
       }
 
-      // Se lo stesso URL ha già dato errore, non ripetere automaticamente (a meno di force/event)
       if (!force && !event && this.fetched[url]?.error) {
         return null;
       }
@@ -1319,10 +1440,10 @@
         banner.style.border = '1px solid #900';
         banner.style.position = 'relative';
         banner.style.zIndex = '1000';
-        banner.innerHTML = `<b>Errore JS:</b> ${err.message}<br><code>${expr}</code>`;
+        banner.innerHTML = '<b>Errore JS:</b> ' + escapeHTML(err && err.message) + '<br><code>' + escapeHTML(expr) + '</code>';
         el.parentNode && el.parentNode.insertBefore(banner, el.nextSibling);
       } else {
-        banner.innerHTML = `<b>Errore JS:</b> ${err.message}<br><code>${expr}</code>`;
+        banner.innerHTML = '<b>Errore JS:</b> ' + escapeHTML(err && err.message) + '<br><code>' + escapeHTML(expr) + '</code>';
       }
       if (this.errorBus) {
         this.errorBus.report(err, { expr, el });
@@ -1339,7 +1460,7 @@
       errorDiv.style.borderRadius = '4px';
       errorDiv.style.fontWeight = 'bold';
       errorDiv.style.border = '1px solid #900';
-      errorDiv.innerHTML = message;
+      errorDiv.innerHTML = escapeHTML(message);
       if (this.errorBus) {
         this.errorBus.report(new Error(message), { type: 'createErrorElement', message });
       }
@@ -1356,7 +1477,7 @@
       warnDiv.style.borderRadius = '4px';
       warnDiv.style.fontWeight = 'bold';
       warnDiv.style.border = '1px solid #e0c200';
-      warnDiv.innerHTML = message;
+      warnDiv.innerHTML = escapeHTML(message);
       return warnDiv;
     }
   }
@@ -1676,6 +1797,7 @@
       this.modelBindings = [];
     }
   }
+
   class Directive {
     constructor(evaluator, bindingManager, errorHandler) {
       this.evaluator = evaluator;
@@ -1702,6 +1824,7 @@
       this.errorHandler.showAyishaError(el, error, expression);
     }
   }
+
   class ScopeDirective extends Directive {
     apply(vNode, ctx, state, el, completionListener = null) {
       if (!vNode.directives || !vNode.directives['@scope']) {
@@ -1741,7 +1864,6 @@
       }
     }
   }
-
 
   class FormDirective extends Directive {
     apply(vNode, ctx, state, el, completionListener = null) {
@@ -1795,6 +1917,7 @@
       }
     }
   }
+
   class DateDirective extends Directive {
     apply(vNode, ctx, state, el, completionListener = null) {
       let value = this.evaluator.evalExpr(vNode.directives['@date'], ctx);
@@ -1864,6 +1987,7 @@
       return date.toLocaleTimeString(navigator.language || navigator.userLanguage || 'it-IT', { hour: '2-digit', minute: '2-digit' });
     }
   }
+
   class IfDirective extends Directive {
     apply(vNode, ctx, state, el, completionListener = null) {
       const expr = vNode.directives['@if'];
@@ -1871,7 +1995,22 @@
       try {
         visible = this.evaluator.evalExpr(expr, ctx);
       } catch { }
-      if (el) el.style.display = visible ? '' : 'none';
+      
+      if (el) {
+        if (!visible) {
+          if (el.parentNode) {
+            if (!el._ifPlaceholder) {
+              el._ifPlaceholder = document.createComment('if:' + expr);
+              el.parentNode.insertBefore(el._ifPlaceholder, el);
+            }
+            el.parentNode.removeChild(el);
+          }
+        } else {
+          if (el._ifPlaceholder && el._ifPlaceholder.parentNode) {
+            el._ifPlaceholder.parentNode.insertBefore(el, el._ifPlaceholder);
+          }
+        }
+      }
 
       if (completionListener) {
         completionListener.addTask(() => Promise.resolve());
@@ -1886,15 +2025,28 @@
       try {
         visible = !this.evaluator.evalExpr(expr, ctx);
       } catch { }
-      if (el) el.style.display = visible ? '' : 'none';
+      
+      if (el) {
+        if (!visible) {
+          if (el.parentNode) {
+            if (!el._notPlaceholder) {
+              el._notPlaceholder = document.createComment('not:' + expr);
+              el.parentNode.insertBefore(el._notPlaceholder, el);
+            }
+            el.parentNode.removeChild(el);
+          }
+        } else {
+          if (el._notPlaceholder && el._notPlaceholder.parentNode) {
+            el._notPlaceholder.parentNode.insertBefore(el, el._notPlaceholder);
+          }
+        }
+      }
 
       if (completionListener) {
         completionListener.addTask(() => Promise.resolve());
       }
     }
   }
-
-
 
   class JsonManager {
     constructor(evaluator) {
@@ -1912,14 +2064,13 @@
     setupJson(expr, rk, ctx, event, force) {
       let url = this.evaluator.evalExpr(expr, ctx, event);
 
-      // Heuristica: funzione per rilevare URL "non popolato"
       const isInvalidUrlString = (s) => {
         if (s == null) return true;
         const str = String(s).trim();
         if (!str) return true;
-        if (/\{[^}]+\}/.test(str)) return true;               // placeholder non risolti
-        if (/(^|\/)(undefined|null)(\/|$)/i.test(str)) return true; // segmenti undefined/null
-        if (/\/\.(?:[a-z0-9]+)?(\?|$|#)/i.test(str)) return true;   // '/.json' o '/.'
+        if (/\{[^}]+\}/.test(str)) return true;               
+        if (/(^|\/)(undefined|null)(\/|$)/i.test(str)) return true; 
+        if (/\/\.(?:[a-z0-9]+)?(\?|$|#)/i.test(str)) return true;   
         return false;
       };
 
@@ -1941,7 +2092,6 @@
         url = expr;
       }
 
-      // Se l'URL finale è "non popolato", non avviare la richiesta
       if (isInvalidUrlString(url)) {
         return null;
       }
@@ -1967,7 +2117,6 @@
         }
       }
 
-      // Se lo stesso URL ha già dato errore, non ripetere automaticamente (a meno di force/event)
       if (!force && !event && this.fetched[url]?.error) {
         return null;
       }
@@ -2093,6 +2242,7 @@
       return fetchPromise;
     }
   }
+
   class JsonDirective extends Directive {
     constructor(evaluator, bindingManager, errorHandler, jsonManager) {
       super(evaluator, bindingManager, errorHandler);
@@ -2108,8 +2258,7 @@
       const autoExpr = this.evaluator.autoVarExpr(expr);
       const resultVar = vNode.directives['@result'] || 'result';
       const ctxWithVNode = Object.assign({}, ctx, { _vNode: vNode });
-      
-      // Controllare se è cache hit prima di chiamare setupJson
+
       let url = this.evaluator.evalExpr(autoExpr, ctxWithVNode);
       if (url === undefined) {
         url = autoExpr;
@@ -2123,14 +2272,14 @@
       }
       if (!/^https?:\/\//.test(url)) {
         if (!url.startsWith('/')) {
-          url = '/' + url.replace(/^\.\//,'');
+          url = '/' + url.replace(/^\.\//, '');
         }
         url = location.origin + url;
       }
-      
+
       const isCached = this.jsonManager.cacheByUrl.has(url);
       const jsonPromise = this.jsonManager.setupJson(autoExpr, resultVar, ctxWithVNode);
-      
+
       if (completionListener && jsonPromise && typeof jsonPromise.then === 'function' && !isCached) {
         completionListener.addTask(
           jsonPromise.then(data => {
@@ -2192,7 +2341,7 @@
           window.ayisha.addWatcher(watchExpr, () => {
             const jsonPromise = this.jsonManager.setupJson(expr, resultVar, undefined, undefined, true);
             if (jsonPromise && typeof jsonPromise.then === 'function') {
-              jsonPromise.catch(() => {});
+              jsonPromise.catch(() => { });
             }
           }, { oneShot: true });
         }
@@ -2301,6 +2450,7 @@
       return false;
     }
   }
+
   class AyishaNestedUtil {
     static setNested(obj, path, value) {
       const keys = path.split('.');
@@ -2409,6 +2559,7 @@
     }
     handleSubDirective() { return false; }
   }
+
   class ShowDirective extends Directive {
     apply(vNode, ctx, state, el, completionListener = null) {
       const expr = vNode.directives['@show'];
@@ -2423,6 +2574,7 @@
       }
     }
   }
+
   class HideDirective extends Directive {
     apply(vNode, ctx, state, el, completionListener = null) {
       const expr = vNode.directives['@hide'];
@@ -2516,6 +2668,7 @@
       }
     }
   }
+
   class ClassDirective extends Directive {
     apply(vNode, ctx, state, el, completionListener = null) {
       const expr = vNode.directives['@class'];
@@ -2526,11 +2679,10 @@
         const raw = typeof expr === 'string' ? expr.trim() : expr;
         let result = this.evalExpr(expr, ctx);
 
-        // Support object literal passed as a plain string (e.g. {'open': mobileNavOpen})
         if ((result === undefined || result === null) && typeof raw === 'string' && raw.startsWith('{') && raw.endsWith('}')) {
           try {
             result = this.evaluator.evalExpr(`(${raw})`, ctx);
-          } catch {}
+          } catch { }
         }
 
         if (typeof result === 'string') {
@@ -2712,7 +2864,6 @@
           return;
         }
 
-        // Handle simple toggle pattern: foo = !foo
         const toggleMatch = processedCode.match(/^\s*([a-zA-Z_$][\w$]*)\s*=\s*!\s*\1\s*$/);
         if (toggleMatch) {
           const varName = toggleMatch[1];
@@ -2937,9 +3088,26 @@
       const resultVar = vNode.directives['@result'] || 'result';
       const ctxWithVNode = Object.assign({}, ctx, { _vNode: vNode });
 
-      const fetchPromise = this.fetchManager.setupFetch(autoExpr, resultVar, ctxWithVNode);
-      
-      // SOLO aggiungere task se fetchPromise è una Promise valida
+      let fetchPromise;
+      const waitExpr = vNode.directives && vNode.directives['@wait'];
+      let delay = 0;
+      if (waitExpr) {
+        try {
+          const evalDelay = this.evaluator.evalExpr(waitExpr, ctxWithVNode);
+          delay = parseInt(evalDelay, 10);
+          if (isNaN(delay)) {
+            const parsed = parseInt(String(waitExpr).trim(), 10);
+            delay = isNaN(parsed) ? 0 : parsed;
+          }
+        } catch (e) { delay = 0; }
+      }
+
+      if (delay > 0) {
+        fetchPromise = new Promise((resolve) => setTimeout(resolve, delay)).then(() => this.fetchManager.setupFetch(autoExpr, resultVar, ctxWithVNode));
+      } else {
+        fetchPromise = this.fetchManager.setupFetch(autoExpr, resultVar, ctxWithVNode);
+      }
+
       if (completionListener && fetchPromise && typeof fetchPromise.then === 'function') {
         completionListener.addTask(
           fetchPromise.then(data => {
@@ -2948,9 +3116,6 @@
           })
         );
       }
-      // Se fetchPromise è null (cache hit, errore, URL invalido), NON aggiungere task
-
-      // Removed direct handling of @then/@finally here
 
       if (vNode.directives['@watch']) {
         this.handleWatchDirective(vNode, autoExpr, resultVar);
@@ -2972,13 +3137,34 @@
             url = expression;
           }
 
-          const fetchPromise = this.fetchManager.setupFetch(url, resultVar, ctxWithVNode, e, true);
-          if (fetchPromise) {
-            fetchPromise.then(data => {
-              ctxWithVNode._eventResult = data;
-            }).finally(() => { if (done) done(); });
-          } else if (done) {
-            done();
+          const waitExpr = vNode.directives && vNode.directives['@wait'];
+          let delay = 0;
+          if (waitExpr) {
+            try {
+              const evalDelay = this.evaluator.evalExpr(waitExpr, ctxWithVNode);
+              delay = parseInt(evalDelay, 10);
+              if (isNaN(delay)) {
+                const parsed = parseInt(String(waitExpr).trim(), 10);
+                delay = isNaN(parsed) ? 0 : parsed;
+              }
+            } catch (err) { delay = 0; }
+          }
+
+          const doFetch = () => {
+            const fetchPromise = this.fetchManager.setupFetch(url, resultVar, ctxWithVNode, e, true);
+            if (fetchPromise) {
+              fetchPromise.then(data => {
+                ctxWithVNode._eventResult = data;
+              }).finally(() => { if (done) done(); });
+            } else if (done) {
+              done();
+            }
+          };
+
+          if (delay > 0) {
+            setTimeout(doFetch, delay);
+          } else {
+            doFetch();
           }
 
         } catch (err) {
@@ -3568,7 +3754,6 @@
           }
         } else {
           executeNow();
-          // Notifica il completionListener per esecuzione immediata
           if (completionListener) {
             setTimeout(() => {
               completionListener.markSyncDone();
@@ -3635,7 +3820,7 @@
       if (!targetPage) return '';
 
       if (targetPage.startsWith('/')) {
-        return targetPage.substring(1); 
+        return targetPage.substring(1);
       }
 
       return targetPage;
@@ -3707,34 +3892,34 @@
   }
 
   class ThenDirective extends Directive {
-  apply(vNode, ctx, state, el, completionListener = null) {
-    const expr = vNode.directives['@then'];
-    if (completionListener && expr) {
-      completionListener.addThen(() => {
-        try {
-          this.evaluator.executeDirectiveExpression(expr, ctx, state, el);
-        } catch (err) {
-          this.showError(el, err, expr);
-        }
-      });
+    apply(vNode, ctx, state, el, completionListener = null) {
+      const expr = vNode.directives['@then'];
+      if (completionListener && expr) {
+        completionListener.addThen(() => {
+          try {
+            this.evaluator.executeDirectiveExpression(expr, ctx, state, el);
+          } catch (err) {
+            this.showError(el, err, expr);
+          }
+        });
+      }
     }
   }
-}
 
-class FinallyDirective extends Directive {
-  apply(vNode, ctx, state, el, completionListener = null) {
-    const expr = vNode.directives['@finally'];
-    if (completionListener && expr) {
-      completionListener.addFinally(() => {
-        try {
-          this.evaluator.executeDirectiveExpression(expr, ctx, state, el);
-        } catch (err) {
-          this.showError(el, err, expr);
-        }
-      });
+  class FinallyDirective extends Directive {
+    apply(vNode, ctx, state, el, completionListener = null) {
+      const expr = vNode.directives['@finally'];
+      if (completionListener && expr) {
+        completionListener.addFinally(() => {
+          try {
+            this.evaluator.executeDirectiveExpression(expr, ctx, state, el);
+          } catch (err) {
+            this.showError(el, err, expr);
+          }
+        });
+      }
     }
   }
-}
 
   class KeyDirective extends Directive {
     apply(vNode, ctx, state, el, completionListener = null) {
@@ -3785,8 +3970,8 @@ class FinallyDirective extends Directive {
       this._instanceIdMap = new WeakMap();
     }
     static _scopeCounter = 1;
-    static _scopeMap = new WeakMap(); 
-    static _elementInstanceMap = new WeakMap(); 
+    static _scopeMap = new WeakMap();
+    static _elementInstanceMap = new WeakMap();
     apply(vNode, ctx, state, el, completionListener = null) {
       const src = vNode.directives['@src'];
       if (!src) {
@@ -3862,7 +4047,7 @@ class FinallyDirective extends Directive {
         }
 
         const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = componentHtml;
+        tempDiv.innerHTML = cleanComponentHTML(componentHtml);
         window.ayisha?._processComponentInitBlocks(tempDiv);
         const componentVNode = window.ayisha?.parse(tempDiv);
         if (componentVNode && componentVNode.children) {
@@ -3873,7 +4058,7 @@ class FinallyDirective extends Directive {
               let val = v;
               try {
                 val = window.ayisha.evaluator.evalExpr(v, ctx);
-              } catch {}
+              } catch { }
               componentCtx[k] = val;
             }
           } else {
@@ -3909,7 +4094,7 @@ class FinallyDirective extends Directive {
             }
 
             const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = patchedHtml;
+            tempDiv.innerHTML = cleanComponentHTML(patchedHtml);
             window.ayisha?._processComponentInitBlocks(tempDiv);
             if (!window.ayisha?._isRendering && !window.ayisha?._componentRenderQueued) {
               clearTimeout(window.ayisha?._componentRenderTimeout);
@@ -3924,7 +4109,7 @@ class FinallyDirective extends Directive {
           }
         }).catch(err => {
           console.error('Error loading component:', err);
-          cm.cache[srcUrl] = `<div class='component-error' style='padding: 10px; background: #ffe6e6; border: 1px solid #ff6b6b; border-radius: 4px; color: #d32f2f;'>Errore: ${err.message}</div>`;
+          cm.cache[srcUrl] = "<div class='component-error' style='padding: 10px; background: #ffe6e6; border: 1px solid #ff6b6b; border-radius: 4px; color: #d32f2f;'>Errore: " + escapeHTML(err && err.message) + "</div>";
           if (!window.ayisha?._isRendering && !window.ayisha?._componentRenderQueued) {
             clearTimeout(window.ayisha?._componentRenderTimeout);
             window.ayisha._componentRenderQueued = true;
@@ -3943,7 +4128,7 @@ class FinallyDirective extends Directive {
       const placeholder = document.createElement('div');
       placeholder.className = 'component-loading';
       placeholder.style.cssText = 'padding: 10px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; color: #6c757d; font-size: 14px; text-align: center;';
-      placeholder.innerHTML = `⏳ Loading component: <code>${srcUrl}</code>`;
+      placeholder.innerHTML = '⏳ Loading component: <code>' + escapeHTML(srcUrl) + '</code>';
       return placeholder;
     }
   }
@@ -4114,7 +4299,7 @@ class FinallyDirective extends Directive {
                 }
               }
             }
-          } catch {}
+          } catch { }
 
           if (targetPage && typeof targetPage === 'object') {
             targetPage = Array.isArray(targetPage) ? targetPage.join('/') : (typeof raw === 'string' ? raw.trim() : '');
@@ -4351,7 +4536,6 @@ class FinallyDirective extends Directive {
         ancestry = ancestry.reverse();
         uniqueId = ancestry.join('>') + '::' + vNode.directives['@watch'] + '::' + vNode.directives['@do'];
 
-        vNode.directives['@__autoKey'] = uniqueId;
         vNode.directives['@watch'].split(',').forEach(watchExpr => {
           const prop = watchExpr.trim();
           const regKey = prop + '::' + vNode.directives['@do'] + '::' + uniqueId;
@@ -5078,6 +5262,83 @@ class FinallyDirective extends Directive {
   }
 
   class AyishaVDOM {
+
+    _rehydrateVDOM(vNode) {
+      if (!vNode || typeof vNode !== 'object') return;
+      if (vNode.directives) {
+        for (const dir in vNode.directives) {
+          if (ModularDirectives[dir]) {
+            vNode.directives[dir] = vNode.directives[dir];
+          }
+        }
+      }
+      if (vNode.children && Array.isArray(vNode.children)) {
+        vNode.children.forEach(child => this._rehydrateVDOM(child));
+      }
+      if (vNode.subDirectives) {
+        for (const sub in vNode.subDirectives) {
+          if (typeof vNode.subDirectives[sub] === 'object') {
+            Object.values(vNode.subDirectives[sub]).forEach(expr => {
+              // placeholder per eventuale logica custom
+            });
+          }
+        }
+      }
+    }
+
+    hydrateFromVDOM(vdom) {
+      this._vdom = vdom;
+      this._rehydrateVDOM(this._vdom);
+      if (!this.state._currentPage) {
+        const firstPage = this._findFirstPageDirective(this._vdom);
+        if (firstPage) this.state._currentPage = firstPage.directives['@page'];
+      }
+      this._preInitializeEssentialVariables();
+      this._makeReactive();
+      this._runInitBlocks();
+      this.reactivitySystem.enableWatchers();
+      this._setupRouting();
+      this.router.setupCurrentPageProperty();
+      this.preloadComponents().then(() => {
+        if (!this._isRendering) {
+          this.render();
+        }
+      });
+      this.render();
+      this.root.addEventListener('click', e => {
+        let el = e.target;
+        while (el && el !== this.root) {
+          if (el.hasAttribute('@link')) {
+            e.preventDefault();
+            const targetPage = el.getAttribute('@link');
+            let finalPage = targetPage;
+            if (targetPage.startsWith('/')) {
+              finalPage = targetPage.substring(1);
+            }
+            this.state._currentPage = finalPage;
+            this.render();
+            return;
+          }
+          if (el.tagName === 'A' && el.hasAttribute('href')) {
+            const href = el.getAttribute('href');
+            if (href && (href === 'index.html' || href === './index.html' || href === '/index.html')) {
+              e.preventDefault();
+              window.location.href = '/index.html';
+              return;
+            }
+            if (href && !/^(https?:|ftp:|mailto:|tel:|#|javascript:)/i.test(href)) {
+              e.preventDefault();
+              window.location.href = '/' + href.replace(/^\/+/, '');
+              return;
+            }
+            return;
+          }
+          el = el.parentNode;
+        }
+      }, true);
+    }
+
+
     showAllErrors(container = document.body) {
       if (!this.errorBus) return;
       const old = container.querySelector('.ayisha-error-list');
@@ -5098,17 +5359,13 @@ class FinallyDirective extends Directive {
       max-width: 600px;
       box-shadow: 0 2px 8px rgba(200,0,0,0.08);
     `;
-      wrapper.innerHTML = `<div style='font-weight:bold; color:#900; margin-bottom:8px;'>❌ Ayisha Error Log (${errors.length})</div>`;
+      wrapper.innerHTML = '<div style=\'font-weight:bold; color:#900; margin-bottom:8px;\'>❌ Ayisha Error Log (' + String(errors.length) + ')</div>';
       errors.forEach((err, i) => {
         const div = document.createElement('div');
         div.style.cssText = `margin-bottom:10px; padding:8px; border-bottom:1px solid #fdd;`;
-        div.innerHTML = `
-        <div style='font-weight:bold;'>${i + 1}. ${err.error?.message || err.error || 'Unknown error'}</div>
-        <div style='color:#333; font-size:12px;'>${err.context && err.context.expr ? `<b>Expr:</b> <code>${err.context.expr}</code><br>` : ''}
-          ${err.context && err.context.type ? `<b>Type:</b> ${err.context.type}<br>` : ''}
-          <b>Time:</b> ${new Date(err.timestamp).toLocaleString()}
-        </div>
-      `;
+        const title = '<div style=\'font-weight:bold;\'>' + String(i + 1) + '. ' + escapeHTML(err.error?.message || err.error || 'Unknown error') + '</div>';
+        const details = '<div style=\'color:#333; font-size:12px;\'>' + (err.context && err.context.expr ? '<b>Expr:</b> <code>' + escapeHTML(err.context.expr) + '</code><br>' : '') + (err.context && err.context.type ? '<b>Type:</b> ' + escapeHTML(err.context.type) + '<br>' : '') + '<b>Time:</b> ' + escapeHTML(new Date(err.timestamp).toLocaleString()) + '</div>';
+        div.innerHTML = title + details;
         wrapper.appendChild(div);
       });
       container.appendChild(wrapper);
@@ -5119,431 +5376,10 @@ class FinallyDirective extends Directive {
       return /bot|crawler|spider|googlebot|bingbot|facebookexternalhit|twitterbot/i.test(ua);
     }
 
-    renderForSEO() {
-      this.processAllDirectivesSync();
-      this.loadAllComponentsSync();
-      this.executeAllFetchSync();
-      this.generateMetaTags();
-    }
-
-    processAllDirectivesSync() {
-      Object.keys(ModularDirectives).forEach(dir => {
-        const elements = document.querySelectorAll(`[\\${dir}]`);
-        elements.forEach(el => {
-          const DirectiveClass = ModularDirectives[dir];
-          const directive = new DirectiveClass(this.evaluator, this.bindingManager, this.errorHandler);
-          const vNode = {
-            _el: el,
-            directives: { [dir]: el.getAttribute(dir) }
-          };
-          directive.apply(vNode, this.state, this.state, el);
-        });
-      });
-    }
-
-    loadAllComponentsSync() {
-      const components = document.querySelectorAll('[data-component]');
-      components.forEach(el => {
-        const componentName = el.getAttribute('data-component');
-        if (this.componentManager && this.componentManager.getComponent(componentName)) {
-          el.innerHTML = this.componentManager.getComponent(componentName);
-        }
-      });
-    }
-
-    executeAllFetchSync() {
-      const fetchElements = document.querySelectorAll('[\\@fetch]');
-      const fetchPromises = [];
-      fetchElements.forEach(el => {
-        const fetchConfig = el.getAttribute('@fetch');
-        let url = fetchConfig, resultVar = 'result';
-        const asMatch = fetchConfig.match(/(.+) as (\w+)/);
-        if (asMatch) {
-          url = asMatch[1].trim();
-          resultVar = asMatch[2].trim();
-        }
-        try {
-          url = this.evaluator.evalExpr(url, this.state);
-        } catch { }
-        if (!url) return;
-        fetchPromises.push(
-          fetch(url)
-            .then(res => res.json())
-            .then(data => {
-              this.state[resultVar] = data;
-            })
-            .catch(() => { this.state[resultVar] = null; })
-        );
-      });
-      if (fetchPromises.length > 0) {
-        const start = Date.now();
-        let done = false;
-        Promise.all(fetchPromises).then(() => { done = true; });
-        while (!done && Date.now() - start < 2000) {
-        }
-      }
-    }
-
-    generateMetaTags() {
-      const h1 = document.querySelector('h1');
-      if (h1 && !document.title) {
-        document.title = h1.textContent;
-      }
-      const content = document.body.textContent.slice(0, 160);
-      if (!document.querySelector('meta[name="description"]')) {
-        const meta = document.createElement('meta');
-        meta.name = 'description';
-        meta.content = content;
-        document.head.appendChild(meta);
-      }
-    }
-
-    renderToString(template, initialState = {}) {
-      if (!this.isServerSide() && !this.options.ssr) {
-        throw new Error('renderToString can only be called in SSR mode');
-      }
-
-      this._isSSRMode = true;
-      this.state = { ...this.state, ...initialState };
-
-      this._preInitializeEssentialVariables();
-      this._runInitBlocks();
-
-      this._vdom = this._parseTemplateForSSR(template);
-
-      const rendered = this._renderVNodeToString(this._vdom, this.state);
-
-      this._hydrationData = {
-        state: this._serializeState(this.state),
-        version: AyishaVDOM.version
-      };
-
-      return {
-        html: rendered,
-        state: this._hydrationData.state,
-        hydrationScript: this._generateHydrationScript()
-      };
-    }
-
-    _parseTemplateForSSR(template) {
-      const stack = [];
-      const root = { tag: 'fragment', children: [], directives: {} };
-      let current = root;
-
-      const htmlRegex = /<(\/?[a-zA-Z][a-zA-Z0-9]*)((?:\s+[^>]*)?)>/g;
-      let lastIndex = 0;
-      let match;
-
-      while ((match = htmlRegex.exec(template)) !== null) {
-        const textBefore = template.slice(lastIndex, match.index).trim();
-        if (textBefore) {
-          current.children.push({
-            type: 'text',
-            text: textBefore
-          });
-        }
-
-        const tagName = match[1];
-        const attributes = match[2];
-
-        if (tagName.startsWith('/')) {
-          if (stack.length > 0) {
-            current = stack.pop();
-          }
-        } else {
-          const element = {
-            tag: tagName.toLowerCase(),
-            children: [],
-            directives: {},
-            attrs: {}
-          };
-
-          if (attributes) {
-            const quotedAttrRegex = /([a-zA-Z@][a-zA-Z0-9_-]*)\s*=\s*"([^"]*)"/g;
-            let quotedMatch;
-            while ((quotedMatch = quotedAttrRegex.exec(attributes)) !== null) {
-              const attrName = quotedMatch[1];
-              const attrValue = quotedMatch[2];
-
-              if (attrName.startsWith('@')) {
-                element.directives[attrName] = attrValue;
-              } else {
-                element.attrs[attrName] = attrValue;
-              }
-            }
-
-            const singleQuotedAttrRegex = /([a-zA-Z@][a-zA-Z0-9_-]*)\s*=\s*'([^']*)'/g;
-            let singleMatch;
-            while ((singleMatch = singleQuotedAttrRegex.exec(attributes)) !== null) {
-              const attrName = singleMatch[1];
-              const attrValue = singleMatch[2];
-
-              if (attrName.startsWith('@')) {
-                element.directives[attrName] = attrValue;
-              } else {
-                element.attrs[attrName] = attrValue;
-              }
-            }
-
-            const simpleAttrRegex = /([a-zA-Z@][a-zA-Z0-9_-]*)\s*=\s*([^"'\s>]+)/g;
-            let simpleMatch;
-            while ((simpleMatch = simpleAttrRegex.exec(attributes)) !== null) {
-              const attrName = simpleMatch[1];
-              const attrValue = simpleMatch[2];
-
-              if (attrName.startsWith('@')) {
-                element.directives[attrName] = attrValue;
-              } else {
-                element.attrs[attrName] = attrValue;
-              }
-            }
-          }
-
-          current.children.push(element);
-
-          const selfClosingTags = ['img', 'br', 'hr', 'input', 'meta', 'link'];
-          if (!selfClosingTags.includes(tagName.toLowerCase()) && !attributes.includes('/')) {
-            stack.push(current);
-            current = element;
-          }
-        }
-
-        lastIndex = htmlRegex.lastIndex;
-      }
-
-      const remainingText = template.slice(lastIndex).trim();
-      if (remainingText) {
-        current.children.push({
-          type: 'text',
-          text: remainingText
-        });
-      }
-
-      return root;
-    }
-
-    _createVirtualElement(tagName) {
-      const element = {
-        tagName: tagName.toUpperCase(),
-        innerHTML: '',
-        textContent: '',
-        setAttribute: function (name, value) {
-          this.attributes = this.attributes || {};
-          this.attributes[name] = value;
-        },
-        getAttribute: function (name) {
-          return this.attributes?.[name] || null;
-        },
-        hasAttribute: function (name) {
-          return this.attributes && name in this.attributes;
-        },
-        childNodes: [],
-        children: [],
-        nodeType: 1,
-        attributes: {},
-        appendChild: function (child) {
-          this.childNodes.push(child);
-          if (child.nodeType === 1) {
-            this.children.push(child);
-          }
-        },
-        querySelector: function (selector) {
-          return null;
-        },
-        querySelectorAll: function (selector) {
-          return [];
-        }
-      };
-
-      Object.defineProperty(element, 'innerHTML', {
-        get: function () {
-          return this._innerHTML || '';
-        },
-        set: function (html) {
-          this._innerHTML = html;
-          this.childNodes = [];
-          this.children = [];
-
-          if (html) {
-            this._parseHTML(html);
-          }
-        }
-      });
-
-      element._parseHTML = function (html) {
-        if (html.trim()) {
-          const textNode = {
-            nodeType: 3,
-            textContent: html,
-            nodeValue: html
-          };
-          this.childNodes.push(textNode);
-        }
-      };
-
-      return element;
-    }
-
-    _renderVNodeToString(vNode, ctx) {
-      if (!vNode) return '';
-
-      if (vNode.type === 'text') {
-        return this._escapeHtml(this.evaluator.evalText(vNode.text, ctx));
-      }
-
-      if (vNode.tag === 'fragment') {
-        return vNode.children.map(child => this._renderVNodeToString(child, ctx)).join('');
-      }
-
-      if (vNode.directives && vNode.directives['@if'] && !this.evaluator.evalExpr(vNode.directives['@if'], ctx)) return '';
-      if (vNode.directives && vNode.directives['@show'] && !this.evaluator.evalExpr(vNode.directives['@show'], ctx)) return '';
-      if (vNode.directives && vNode.directives['@hide'] && this.evaluator.evalExpr(vNode.directives['@hide'], ctx)) return '';
-
-      if (vNode.directives && vNode.directives['@for']) {
-        return this._handleForDirectiveSSR(vNode, ctx);
-      }
-
-      if (vNode.directives && vNode.directives['@switch']) {
-        return this._handleSwitchDirectiveSSR(vNode, ctx);
-      }
-
-      if (vNode.tag === 'component') {
-        return this._handleComponentDirectiveSSR(vNode, ctx);
-      }
-
-      let html = `<${vNode.tag}`;
-
-      Object.entries(vNode.attrs || {}).forEach(([k, v]) => {
-        const value = this.evaluator.evalAttrValue ? this.evaluator.evalAttrValue(v, ctx) : v;
-        html += ` ${k}="${this._escapeHtml(value)}"`;
-      });
-
-      if (vNode.directives && Object.keys(vNode.directives).length > 0) {
-        html += ` data-ayisha-hydrate="true"`;
-        html += ` data-ayisha-directives="${this._escapeHtml(JSON.stringify(vNode.directives))}"`;
-      }
-
-      html += '>';
-
-      if (vNode.directives && vNode.directives['@text']) {
-        const textValue = this.evaluator.evalExpr(vNode.directives['@text'], ctx);
-        html += this._escapeHtml(String(textValue || ''));
-      } else {
-        if (vNode.children) {
-          vNode.children.forEach(child => {
-            html += this._renderVNodeToString(child, ctx);
-          });
-        }
-      }
-
-      html += `</${vNode.tag}>`;
-      return html;
-    }
-
-    _handleForDirectiveSSR(vNode, ctx) {
-      let match = vNode.directives['@for'].match(/(\w+),\s*(\w+) in (.+)/);
-      if (match) {
-        const [, indexVar, itemVar, expr] = match;
-        let arr = this.evaluator.evalExpr(expr, ctx) || [];
-        if (typeof arr === 'object' && !Array.isArray(arr)) arr = Object.values(arr);
-
-        return arr.map((val, index) => {
-          const clone = JSON.parse(JSON.stringify(vNode));
-          delete clone.directives['@for'];
-          const subCtx = { ...ctx, [itemVar]: val, [indexVar]: index };
-          return this._renderVNodeToString(clone, subCtx);
-        }).join('');
-      }
-
-      match = vNode.directives['@for'].match(/(\w+) in (.+)/);
-      if (match) {
-        const [, itemVar, expr] = match;
-        let arr = this.evaluator.evalExpr(expr, ctx) || [];
-        if (typeof arr === 'object' && !Array.isArray(arr)) arr = Object.values(arr);
-
-        return arr.map((val, index) => {
-          const clone = JSON.parse(JSON.stringify(vNode));
-          delete clone.directives['@for'];
-          const subCtx = { ...ctx, [itemVar]: val, $index: index };
-          return this._renderVNodeToString(clone, subCtx);
-        }).join('');
-      }
-
-      return '';
-    }
-
-    _handleSwitchDirectiveSSR(vNode, ctx) {
-      const swVal = this.evaluator.evalExpr(vNode.directives['@switch'], ctx);
-      for (const child of vNode.children || []) {
-        if (!child.directives) continue;
-        if (child.directives['@case'] != null) {
-          let cv = child.directives['@case'];
-          if (/^['"].*['"]$/.test(cv)) cv = cv.slice(1, -1);
-          if (String(cv) === String(swVal)) {
-            return this._renderVNodeToString(child, ctx);
-          }
-        }
-        if (child.directives['@default'] != null) {
-          return this._renderVNodeToString(child, ctx);
-        }
-      }
-      return '';
-    }
-
-    _handleComponentDirectiveSSR(vNode, ctx) {
-      const src = vNode.directives['@src'];
-      if (src && this.componentManager?.getCachedComponent(src)) {
-        const componentHtml = this.componentManager.getCachedComponent(src);
-        return componentHtml; 
-      }
-      return `<!-- Component: ${src || 'unknown'} -->`;
-    }
-
-    _escapeHtml(text) {
-      const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-      };
-      return String(text).replace(/[&<>"']/g, m => map[m]);
-    }
-
-    _serializeState(state) {
-      const serializable = {};
-      Object.keys(state).forEach(key => {
-        if (typeof state[key] !== 'function' && key !== '_ayishaInstance') {
-          try {
-            JSON.stringify(state[key]);
-            serializable[key] = state[key];
-          } catch (e) {
-          }
-        }
-      });
-      return serializable;
-    }
-
-    _generateHydrationScript() {
-      return `
-<script>
-window.__AYISHA_HYDRATION_DATA__ = ${JSON.stringify(this._hydrationData)};
-</script>`;
-    }
-
-    static version = "1.0.4";
-
-    isServerSide() {
-      return typeof window === 'undefined' || typeof document === 'undefined' || typeof global !== 'undefined';
-    }
-
-    isNodeJS() {
-      return typeof process !== 'undefined' && process.versions && process.versions.node;
-    }
+    static version = "1.1.0";
 
     constructor(root = document.body, options = {}) {
       this.options = {
-        ssr: false,
         hydration: false,
         initialState: {},
         ...options
@@ -5563,10 +5399,7 @@ window.__AYISHA_HYDRATION_DATA__ = ${JSON.stringify(this._hydrationData)};
       this._componentRenderTimeout = null;
       this._setNodes = new WeakSet();
 
-      this._isSSRMode = this.options.ssr || this.isServerSide();
       this._isHydrationMode = this.options.hydration;
-      this._ssrOutput = '';
-      this._hydrationData = {};
 
       this.evaluator = new ExpressionEvaluator(this.state);
       this.parser = new DOMParser(this._initBlocks);
@@ -5607,9 +5440,6 @@ window.__AYISHA_HYDRATION_DATA__ = ${JSON.stringify(this._hydrationData)};
         this.state._currentPage = firstPage || 'home';
       }
 
-      if (this.isBot && typeof this.isBot === 'function' && this.isBot()) {
-        this.renderForSEO();
-      }
       if (typeof window !== 'undefined') {
         window.ayisha = this;
       }
@@ -5683,7 +5513,11 @@ window.__AYISHA_HYDRATION_DATA__ = ${JSON.stringify(this._hydrationData)};
         transformed = transformedLines.join('\n');
 
         try {
-          new Function('state', transformed)(this.state);
+          if (!isSafeExpression(transformed)) {
+            console.error('Blocked unsafe init block. Skipping.');
+          } else {
+            new Function('state', transformed)(this.state);
+          }
         } catch (e) {
           console.error('Init error:', e);
         }
@@ -5970,7 +5804,7 @@ window.__AYISHA_HYDRATION_DATA__ = ${JSON.stringify(this._hydrationData)};
           `;
 
           const logContent = this._generateInlineLogContent(el, savedDirectiveInfo);
-          logDisplay.innerHTML = logContent;
+          logDisplay.innerHTML = sanitizeHTML(logContent);
 
           if (el.parentNode) {
             el.parentNode.insertBefore(logDisplay, el.nextSibling);
@@ -5999,7 +5833,7 @@ window.__AYISHA_HYDRATION_DATA__ = ${JSON.stringify(this._hydrationData)};
           font-weight: bold !important;
           display: block !important;
         `;
-        errorDisplay.innerHTML = `❌ Log Error: ${errorMessage}`;
+        errorDisplay.innerHTML = '❌ Log Error: ' + escapeHTML(errorMessage);
 
         if (el.parentNode) {
           el.parentNode.insertBefore(errorDisplay, el.nextSibling);
@@ -6277,25 +6111,23 @@ window.__AYISHA_HYDRATION_DATA__ = ${JSON.stringify(this._hydrationData)};
           let val = v;
           try {
             val = this.evaluator.evalExpr(v, ctx);
-          } catch {}
+          } catch { }
           mergedCtx[k] = val;
         }
       }
 
       let completionListener = null;
       if (vNode && vNode.directives && Object.keys(vNode.directives).length > 0) {
-        // Escludi @then e @finally dal conteggio per evitare loop
         const hasOtherDirectives = Object.keys(vNode.directives)
           .some(key => key !== '@then' && key !== '@finally');
-        
+
         if (hasOtherDirectives || vNode.directives['@then'] || vNode.directives['@finally']) {
           completionListener = new DirectiveCompletionListener(vNode, mergedCtx, this);
-          
-          // Registra @then e @finally se presenti
+
           if (vNode.directives['@then']) {
             completionListener.addThen(vNode.directives['@then']);
           }
-          
+
           if (vNode.directives['@finally']) {
             completionListener.addFinally(vNode.directives['@finally']);
           }
@@ -6476,7 +6308,7 @@ window.__AYISHA_HYDRATION_DATA__ = ${JSON.stringify(this._hydrationData)};
       if (vNode.directives && vNode.directives['@text']) {
         vNode.children.forEach(child => {
           if (child.type !== 'text') {
-            const node = this._renderVNode(child, mergedCtx);    
+            const node = this._renderVNode(child, mergedCtx);
             if (node) el.appendChild(node);
           }
         });
@@ -6600,7 +6432,7 @@ window.__AYISHA_HYDRATION_DATA__ = ${JSON.stringify(this._hydrationData)};
           let val = v;
           try {
             val = this.evaluator.evalExpr(v, ctx);
-          } catch {}
+          } catch { }
           componentCtx[k] = val;
         }
       }
@@ -6677,7 +6509,11 @@ window.__AYISHA_HYDRATION_DATA__ = ${JSON.stringify(this._hydrationData)};
         transformed = transformedLines.join('\n');
 
         try {
-          new Function('state', transformed)(this.state);
+          if (!isSafeExpression(transformed)) {
+            console.error('Blocked unsafe component init block. Skipping.');
+          } else {
+            new Function('state', transformed)(this.state);
+          }
         } catch (e) {
           console.error('Component init error:', e, 'Original code:', code, 'Cleaned:', cleanCode, 'Transformed:', transformed);
         }
@@ -6765,7 +6601,7 @@ window.__AYISHA_HYDRATION_DATA__ = ${JSON.stringify(this._hydrationData)};
         if (el.parentNode) {
           el.parentNode.removeChild(el);
         }
-        return; 
+        return;
       }
 
       if (vNode.directives.hasOwnProperty('@attr')) {
@@ -6918,102 +6754,42 @@ window.__AYISHA_HYDRATION_DATA__ = ${JSON.stringify(this._hydrationData)};
 
   }
 
+
   if (typeof window !== 'undefined') {
     window.AyishaVDOM = AyishaVDOM;
   }
 
-  // Creo l'alias Ayisha per compatibilità
-  const Ayisha = AyishaVDOM;
-
-  // Export per diversi ambienti (dentro l'IIFE)
   if (typeof module !== 'undefined' && module.exports) {
-    // CommonJS
     module.exports = { AyishaVDOM, Ayisha: AyishaVDOM };
     module.exports.default = AyishaVDOM;
   } else if (typeof define === 'function' && define.amd) {
-    // AMD
-    define([], function() {
+    define([], function () {
       return { AyishaVDOM, Ayisha: AyishaVDOM, default: AyishaVDOM };
     });
   } else if (typeof window !== 'undefined') {
     window.Ayisha = AyishaVDOM;
   }
 
-  const addDefaultAnimationStyles = () => {
-    if (typeof document === 'undefined') return; 
-
-    const existingStyle = document.getElementById('ayisha-default-animations');
-    if (!existingStyle) {
-      const style = document.createElement('style');
-      style.id = 'ayisha-default-animations';
-      style.textContent = `
-        /* FadeIn animation for both .fadeIn and .fade-in */
-        .fadeIn, .fade-in {
-          animation: ayishaFadeIn 0.3s ease-in-out;
-        }
-
-        @keyframes ayishaFadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-
-        /* Slide-down animation */
-        .slide-down {
-          overflow: hidden;
-          transition: height 0.3s ease-in-out;
-        }
-
-        /* Styles for @log display as sibling */
-        .ayisha-log-display {
-          background: rgba(0, 20, 40, 0.95) !important;
-          color: #fff !important;
-          padding: 8px 12px !important;
-          margin: 4px 0 !important;
-          border-radius: 6px !important;
-          font-family: 'JetBrains Mono', 'Courier New', monospace !important;
-          font-size: 11px !important;
-          border-left: 4px solid #0066cc !important;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
-          max-width: 400px !important;
-          overflow-x: auto !important;
-          line-height: 1.4 !important;
-          display: block !important;
-        }
-
-        /* Styles for @log error display */
-        .ayisha-log-error-display {
-          background: rgba(255, 0, 0, 0.9) !important;
-          color: white !important;
-          padding: 8px 12px !important;
-          margin: 4px 0 !important;
-          border-radius: 6px !important;
-          font-family: monospace !important;
-          font-size: 11px !important;
-          font-weight: bold !important;
-          display: block !important;
-        }
-      `;
-      document.head.appendChild(style);
-    }
-  };
-
   if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => {
-        addDefaultAnimationStyles();
+    document.addEventListener('DOMContentLoaded', function () {
+      const tpl = document.querySelector('template');
+      if (tpl) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = tpl.innerHTML || tpl.textContent || '';
+        const ayisha = new AyishaVDOM(document.body);
+        ayisha._vdom = ayisha.parse(tempDiv);
+        ayisha.hydrateFromVDOM(ayisha._vdom);
+        window._ayishaHydrated = true;
+      } else if (window.__AYISHA_VDOM__) {
+        const ayisha = new AyishaVDOM(document.body);
+        ayisha.hydrateFromVDOM(window.__AYISHA_VDOM__);
+        window._ayishaHydrated = true;
+      } else {
         new AyishaVDOM(document.body).mount();
-      });
-    } else {
-      addDefaultAnimationStyles();
-      new AyishaVDOM(document.body).mount();
-    }
+        window._ayishaHydrated = true;
+      }
+    });
   }
 
+
 })();
-
-// Export ES6 utilizzando la variabile globale
-const AyishaVDOM = window.AyishaVDOM;
-const Ayisha = AyishaVDOM;
-
-export { AyishaVDOM, Ayisha };
-export default AyishaVDOM;

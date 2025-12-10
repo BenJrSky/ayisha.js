@@ -1,4 +1,4 @@
-# Ayisha.js v1.0.4
+# Ayisha.js v1.1.0
 
 Ayisha.js is a micro JavaScript framework for building reactive, component-based user interfaces. It offers a minimalist syntax, a powerful directive system, and an extremely lightweight bundle for fast and modern web development.
 
@@ -22,7 +22,7 @@ Ayisha.js is a micro JavaScript framework for building reactive, component-based
 ### Via CDN (recommended)
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.0.4-min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.1.0-min.js"></script>
 ```
 
 ### Local Download
@@ -30,13 +30,13 @@ Ayisha.js is a micro JavaScript framework for building reactive, component-based
 Download the file and include it in your project:
 
 ```html
-<script src="Ayisha-1.0.4.js"></script>
+<script src="Ayisha-1.1.0.js"></script>
 ```
 
 Or use the minified version:
 
 ```html
-<script src="Ayisha-1.0.4-min.js"></script>
+<script src="Ayisha-1.1.0-min.js"></script>
 ```
 
 ## Basic Example
@@ -57,38 +57,33 @@ Or use the minified version:
   </ul>
 </div>
 
-<script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.0.4-min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.1.0-min.js"></script>
 ```
 
-## What's New in v1.0.4
+## What's New in v1.1.0
 
-### Improvements
+### Highlights
 
-- **Enhanced Stability** - Bug fixes and performance optimizations
-- **Improved Error Handling** - Better error reporting and debugging capabilities
-- **Code Optimization** - Internal code improvements for better performance
-- **Maintenance Updates** - Updated dependencies and internal optimizations
+- **Version bump to v1.1.0** — core library rebuilt and shipped as `ayisha-1.1.0-min.js` with significant internal improvements.
+- **Complete modular directive system** — directives are now implemented as small, testable modules (faster to maintain and extend).
+- **Improved component loading & scoping** — better caching and `@scope` support to avoid variable collisions between component instances.
+- **New `@json` directive** — load local JSON files with built-in caching/error handling and map results to state variables.
+- **Enhanced logging & diagnostics** — richer `@log` output, inline log panels and centralized logger for debugging directive behaviour.
+- **Fetch/JSON managers** — smarter caching, inflight request deduplication, and clearer error propagation to `_error` or custom error variables.
+- **Performance and stability** — rendering optimizations, safer sanitization and more robust evaluation engine.
 
-### New Directives
+### Notable additions and fixes
 
-- **`@form`** - Declarative form container with built-in validation and submission
-- **`@file`** - Handle single file uploads with base64 encoding
-- **`@files`** - Handle multiple file uploads
-- **`@not`** - Inverse conditional rendering
-- **`@date`** - Format dates with locale support
-- **`@dateonly`** - Display only date (no time)
-- **`@time`** - Display only time
-- **`@prev`** - Show previous values for debugging
-- **`@error`** - Custom error handling for fetch operations
+- `@json` — load local JSON files into state and use `@result`/`@watch` to react to content.
+- `@scope` — declarative scoping for component variables to prevent collisions across multiple instances.
+- Improved `@when` / `@do` / `@wait` semantics with better debounce/delay handling.
+- Enhanced `@fetch` with request signature-based caching and more robust error handling.
+- Better form/file handling and validation edge-cases fixed for `@form`, `@file` and `@files`.
+- More helpful help-texts and examples embedded in the library for common directives.
 
-### Enhanced Features
+### Previous (v1.0.4)
 
-- **Improved Error Handling** - Better error reporting and debugging capabilities
-- **Enhanced Fetch Management** - Better error handling, caching, and duplicate request prevention
-- **Modular Directive System** - Complete rewrite with modular architecture
-- **Better State Management** - Improved reactivity with history tracking
-- **Enhanced Validation** - More robust and extensible form validation engine (`_validate`)
-- **Native Form Handling** - `@form` now manages validation, submission, and error display automatically
+The prior release contained stability improvements, performance optimizations and the major `@form` / validation work described below for history and compatibility.
 
 ## Complete Directive Reference
 
