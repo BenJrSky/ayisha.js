@@ -1,4 +1,4 @@
-# Ayisha.js v1.1.1
+# Ayisha.js v1.1.0
 
 Ayisha.js is a micro JavaScript framework for building reactive, component-based user interfaces. It offers a minimalist syntax, a powerful directive system, and an extremely lightweight bundle for fast and modern web development.
 
@@ -22,7 +22,7 @@ Ayisha.js is a micro JavaScript framework for building reactive, component-based
 ### Via CDN (recommended)
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.1.1-min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.1.0-min.js"></script>
 ```
 
 ### Local Download
@@ -30,13 +30,13 @@ Ayisha.js is a micro JavaScript framework for building reactive, component-based
 Download the file and include it in your project:
 
 ```html
-<script src="Ayisha-1.1.1.js"></script>
+<script src="Ayisha-1.1.0.js"></script>
 ```
 
 Or use the minified version:
 
 ```html
-<script src="Ayisha-1.1.1-min.js"></script>
+<script src="Ayisha-1.1.0-min.js"></script>
 ```
 
 ## Basic Example
@@ -57,51 +57,33 @@ Or use the minified version:
   </ul>
 </div>
 
-  <script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.1.1-min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.1.0-min.js"></script>
 ```
 
-## What's New in v1.1.1
+## What's New in v1.1.0
 
-### Refactor e centralizzazioni
+### Highlights
 
-- **AYISHA_CONSTS**: introdotta la costante centrale `AYISHA_CONSTS` per raggruppare `JS_GLOBALS`, `TIMINGS` e la regex `SIMPLE_IDENTIFIER_RE`.
-- **Helper identificatori**: aggiunte le funzioni `ayisha_isSimpleIdentifier(expr)` e `ayisha_hasUnsafeExpressionChars(expr)` per unificare i controlli ripetuti e rendere il codice più leggibile e sicuro.
-- **Tempi centralizzati**: tutti i "valori magici" (es. `10`, `1500`, `2000`) sono stati sostituiti con `AYISHA_CONSTS.TIMINGS.*` dove appropriato.
+- **Version bump to v1.1.0** — core library rebuilt and shipped as `ayisha-1.1.0-min.js` with significant internal improvements.
+- **Complete modular directive system** — directives are now implemented as small, testable modules (faster to maintain and extend).
+- **Improved component loading & scoping** — better caching and `@scope` support to avoid variable collisions between component instances.
+- **New `@json` directive** — load local JSON files with built-in caching/error handling and map results to state variables.
+- **Enhanced logging & diagnostics** — richer `@log` output, inline log panels and centralized logger for debugging directive behaviour.
+- **Fetch/JSON managers** — smarter caching, inflight request deduplication, and clearer error propagation to `_error` or custom error variables.
+- **Performance and stability** — rendering optimizations, safer sanitization and more robust evaluation engine.
 
-### Rimozione SSR / Hydration
+### Notable additions and fixes
 
-- **Rimosso SSR**: eliminati i metodi e i percorsi relativi a SSR e rendering stringa: `renderForSEO`, `renderToString`, `_parseTemplateForSSR`, `_renderVNodeToString` e gli helper SSR correlati.
-- **Rimosso hydration**: eliminati gli helper e i percorsi di hydration client-side (`hydrate`, `_hydrateEventListeners`, `_hydrateInteractiveDirectives`, `_hydrateBindings`, `AyishaVDOM.createSSRInstance`, `AyishaVDOM.hydrate`).
-- **Startup unificato**: l'avvio ora è sempre `new AyishaVDOM(document.body).mount()`; il branching su `__AYISHA_HYDRATION_DATA__` è stato rimosso.
-- **Opzioni/flag rimossi**: tolte le opzioni di default `ssr`/`hydration` dalle `options`; rimosse anche le variabili interne `_isSSRMode`, `_ssrOutput`, `_hydrationData`.
-- **Costante SSR rimossa**: `SSR_FETCH_WAIT` rimossa da `TIMINGS`.
+- `@json` — load local JSON files into state and use `@result`/`@watch` to react to content.
+- `@scope` — declarative scoping for component variables to prevent collisions across multiple instances.
+- Improved `@when` / `@do` / `@wait` semantics with better debounce/delay handling.
+- Enhanced `@fetch` with request signature-based caching and more robust error handling.
+- Better form/file handling and validation edge-cases fixed for `@form`, `@file` and `@files`.
+- More helpful help-texts and examples embedded in the library for common directives.
 
-### Sicurezza: centralizzazione e hardening dell'evaluator
+### Previous (v1.0.4)
 
-- **ExpressionCompiler**: introdotto un compilatore centralizzato per espressioni con cache separate per espressioni (`exprCache`), statement (`stmtCache`) e corpi di funzione (`funcCache`).
-- **Cache con limite**: semplice limite `MAX_CACHE` e pulizia automatica quando superato.
-- **API pubbliche**: funzioni esposte `compileExpr`, `compileStmt`, `compileFunction`, `isSuspicious` per instradare tutte le valutazioni nel compilatore.
-- **Routing della compilazione**: tutte le invocazioni che prima usavano `new Function(...)` (valutazione espressioni, init blocks, `@map`/`@filter`/`@reduce`, `executeMultipleExpressions`, ecc.) passano ora attraverso `ExpressionCompiler`.
-- **Validator warn-mode**: controllo conservativo per token sospetti (`process`, `require`, `global`, `Function`, `eval`, `constructor`) che emette `console.warn` (modalità non bloccante).
-- **Logging e fallback**: fallimenti di compilazione/esecuzione loggati con `console.error`; forniti fallback no-op per evitare crash a runtime.
-
-### Robustezza e performance
-
-- **Caching**: riduzione delle compilazioni ripetute migliorando le performance runtime.
-- **Try/catch aggiuntivi**: invocazioni dinamiche (map/filter/reduce e funzioni generate) ora avvolte da `try/catch` per isolare errori e prevenire interruzioni globali.
-- **Fallback sicuro**: in caso di errori di compilazione viene usato un fallback che evita crash dell'applicazione.
-
-### Gestione attività
-
-- **TODO interno aggiornato**: la lista TODO del progetto è stata creata/aggiornata (tramite `manage_todo_list`) per tracciare i passi completati e quelli successivi; le voci A/B/D sono state marcate completate internamente.
-
-### Nota di compatibilità
-
-Questi cambiamenti sono principalmente interni e mirano a migliorare sicurezza, manutenzione e performance. Se la tua integrazione dipendeva da API SSR/hydration o da exposures interne precedenti, verifica le parti che ora sono state rimosse o centralizzate (es. chiamate dirette a `AyishaVDOM.hydrate` o utilizzo di flag `ssr`/`hydration`).
-
-### Previous (v1.1.0)
-
-La release precedente (v1.1.0) conteneva la ristrutturazione delle direttive, miglioramenti di caricamento componenti e logging; v1.1.1 applica refactor di sicurezza, centralizzazione del compilatore ed elimina il supporto SSR/hydration lato client per semplificare il runtime.
+The prior release contained stability improvements, performance optimizations and the major `@form` / validation work described below for history and compatibility.
 
 ## Complete Directive Reference
 
