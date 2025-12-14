@@ -1,4 +1,4 @@
-# Ayisha.js v1.1.2
+# Ayisha.js v1.1.1
 
 Ayisha.js is a micro JavaScript framework for building reactive, component-based user interfaces. It offers a minimalist syntax, a powerful directive system, and an extremely lightweight bundle for fast and modern web development.
 
@@ -22,7 +22,7 @@ Ayisha.js is a micro JavaScript framework for building reactive, component-based
 ### Via CDN (recommended)
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.1.2-min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.1.1-min.js"></script>
 ```
 
 ### Local Download
@@ -30,13 +30,13 @@ Ayisha.js is a micro JavaScript framework for building reactive, component-based
 Download the file and include it in your project:
 
 ```html
-<script src="Ayisha-1.1.2.js"></script>
+<script src="Ayisha-1.1.1.js"></script>
 ```
 
 Or use the minified version:
 
 ```html
-<script src="Ayisha-1.1.2-min.js"></script>
+<script src="Ayisha-1.1.1-min.js"></script>
 ```
 
 ## Basic Example
@@ -57,28 +57,18 @@ Or use the minified version:
   </ul>
 </div>
 
-  <script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.1.2-min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/BenJrSky/ayisha.js@main/dist/ayisha-1.1.1-min.js"></script>
 ```
 
-## What's New in v1.1.2
+## What's New in v1.1.1
 
-### Bug Fixes and Performance Improvements
-
-- **Performance optimizations**: Improved rendering performance and reduced memory usage.
-- **Bug fixes**: Fixed various issues with directive handling and state management.
-- **Stability improvements**: Enhanced error handling and fallback mechanisms.
-
-### Previous (v1.1.1)
-
-La release precedente (v1.1.1) conteneva importanti refactor di sicurezza e centralizzazione:
-
-#### Refactor e centralizzazioni
+### Refactor e centralizzazioni
 
 - **AYISHA_CONSTS**: introdotta la costante centrale `AYISHA_CONSTS` per raggruppare `JS_GLOBALS`, `TIMINGS` e la regex `SIMPLE_IDENTIFIER_RE`.
 - **Helper identificatori**: aggiunte le funzioni `ayisha_isSimpleIdentifier(expr)` e `ayisha_hasUnsafeExpressionChars(expr)` per unificare i controlli ripetuti e rendere il codice più leggibile e sicuro.
 - **Tempi centralizzati**: tutti i "valori magici" (es. `10`, `1500`, `2000`) sono stati sostituiti con `AYISHA_CONSTS.TIMINGS.*` dove appropriato.
 
-#### Rimozione SSR / Hydration
+### Rimozione SSR / Hydration
 
 - **Rimosso SSR**: eliminati i metodi e i percorsi relativi a SSR e rendering stringa: `renderForSEO`, `renderToString`, `_parseTemplateForSSR`, `_renderVNodeToString` e gli helper SSR correlati.
 - **Rimosso hydration**: eliminati gli helper e i percorsi di hydration client-side (`hydrate`, `_hydrateEventListeners`, `_hydrateInteractiveDirectives`, `_hydrateBindings`, `AyishaVDOM.createSSRInstance`, `AyishaVDOM.hydrate`).
@@ -86,7 +76,7 @@ La release precedente (v1.1.1) conteneva importanti refactor di sicurezza e cent
 - **Opzioni/flag rimossi**: tolte le opzioni di default `ssr`/`hydration` dalle `options`; rimosse anche le variabili interne `_isSSRMode`, `_ssrOutput`, `_hydrationData`.
 - **Costante SSR rimossa**: `SSR_FETCH_WAIT` rimossa da `TIMINGS`.
 
-#### Sicurezza: centralizzazione e hardening dell'evaluator
+### Sicurezza: centralizzazione e hardening dell'evaluator
 
 - **ExpressionCompiler**: introdotto un compilatore centralizzato per espressioni con cache separate per espressioni (`exprCache`), statement (`stmtCache`) e corpi di funzione (`funcCache`).
 - **Cache con limite**: semplice limite `MAX_CACHE` e pulizia automatica quando superato.
@@ -95,23 +85,23 @@ La release precedente (v1.1.1) conteneva importanti refactor di sicurezza e cent
 - **Validator warn-mode**: controllo conservativo per token sospetti (`process`, `require`, `global`, `Function`, `eval`, `constructor`) che emette `console.warn` (modalità non bloccante).
 - **Logging e fallback**: fallimenti di compilazione/esecuzione loggati con `console.error`; forniti fallback no-op per evitare crash a runtime.
 
-#### Robustezza e performance
+### Robustezza e performance
 
 - **Caching**: riduzione delle compilazioni ripetute migliorando le performance runtime.
 - **Try/catch aggiuntivi**: invocazioni dinamiche (map/filter/reduce e funzioni generate) ora avvolte da `try/catch` per isolare errori e prevenire interruzioni globali.
 - **Fallback sicuro**: in caso di errori di compilazione viene usato un fallback che evita crash dell'applicazione.
 
-#### Gestione attività
+### Gestione attività
 
 - **TODO interno aggiornato**: la lista TODO del progetto è stata creata/aggiornata (tramite `manage_todo_list`) per tracciare i passi completati e quelli successivi; le voci A/B/D sono state marcate completate internamente.
 
-#### Nota di compatibilità
+### Nota di compatibilità
 
 Questi cambiamenti sono principalmente interni e mirano a migliorare sicurezza, manutenzione e performance. Se la tua integrazione dipendeva da API SSR/hydration o da exposures interne precedenti, verifica le parti che ora sono state rimosse o centralizzate (es. chiamate dirette a `AyishaVDOM.hydrate` o utilizzo di flag `ssr`/`hydration`).
 
-### Previous (v1.1.1)
+### Previous (v1.1.0)
 
-La release precedente (v1.1.1) conteneva importanti refactor di sicurezza e centralizzazione come descritto sopra; v1.1.2 applica correzioni di bug e miglioramenti di performance.
+La release precedente (v1.1.0) conteneva la ristrutturazione delle direttive, miglioramenti di caricamento componenti e logging; v1.1.1 applica refactor di sicurezza, centralizzazione del compilatore ed elimina il supporto SSR/hydration lato client per semplificare il runtime.
 
 ## Complete Directive Reference
 
@@ -670,6 +660,6 @@ MIT License © 2025 devBen
 
 ---
 
-**Ayisha.js v1.1.2** - Build reactive UIs with minimal code. Fast, lightweight, and powerful.
+**Ayisha.js v1.0.3** - Build reactive UIs with minimal code. Fast, lightweight, and powerful.
 
 *Created with ❤️ by [devBen](https://github.com/BenJrSky)*
